@@ -1,0 +1,104 @@
+/* เปลือกแอป: พื้นหลังโทนมืดให้กระจก 70% มีอะไรให้เบลอ */
+.app {
+  --sw: var(--sidebar-w);
+  min-height: 100vh;
+  background:
+    radial-gradient(900px 500px at 0% 0%, rgba(243, 112, 33, 0.28), transparent 70%),
+    var(--dark-background);
+}
+.app.is-collapsed { --sw: var(--sidebar-w-collapsed); }
+
+.shell-sidebar, .shell-header {
+  position: fixed;
+  z-index: 10;
+  background: var(--shell-bg);
+  backdrop-filter: blur(var(--shell-blur));
+  -webkit-backdrop-filter: blur(var(--shell-blur));
+  border: 0 solid var(--shell-border);
+  color: #fff;
+}
+.shell-sidebar {
+  inset: 0 auto 0 0;
+  width: var(--sw);
+  padding: var(--sp-lg);
+  border-right-width: 1px;
+  transition: width 300ms var(--ease);
+}
+.shell-header {
+  top: 0; right: 0; left: var(--sw);
+  height: var(--header-h);
+  padding: 0 var(--sp-lg);
+  border-bottom-width: 1px;
+  display: flex; align-items: center; gap: var(--sp-md);
+  transition: left 300ms var(--ease);
+}
+.header-title { flex: 1; color: rgba(255, 255, 255, 0.7); font-weight: 500; }
+
+.brand { display: flex; align-items: center; gap: var(--sp-md); height: 40px; margin-bottom: var(--sp-xl); font-weight: 700; font-size: 1.125rem; white-space: nowrap; }
+.brand-mark { flex: none; width: 32px; height: 32px; display: grid; place-items: center; border-radius: var(--radius-md); background: linear-gradient(135deg, var(--primary-warm), var(--primary)); color: #fff; }
+
+.nav { display: grid; gap: var(--sp-xs); }
+.nav-item { display: flex; align-items: center; gap: var(--sp-md); padding: 6px 12px; min-height: 36px; border-radius: var(--radius-md); color: rgba(255, 255, 255, 0.7); text-decoration: none; font-size: 0.8125rem; font-weight: 700; white-space: nowrap; overflow: hidden; transition: background 150ms var(--ease), color 150ms var(--ease); }
+.nav-item svg { flex: none; }
+.nav-item:hover, .nav-item.is-active { background: var(--primary); color: var(--on-primary); }
+
+.btn-ghost-shell { width: 40px; height: 40px; display: grid; place-items: center; border: 0; border-radius: var(--radius-md); background: transparent; color: rgba(255, 255, 255, 0.7); transition: background 150ms var(--ease); }
+.btn-ghost-shell:hover { background: var(--primary); color: #fff; }
+
+.workspace {
+  margin-top: var(--header-h);
+  margin-left: var(--sw);
+  min-height: calc(100vh - var(--header-h));
+  background: var(--background);
+  transition: margin 300ms var(--ease);
+  overflow: hidden;
+  /* ใช้ 100% ของ parent (body) ลบ sidebar — ไม่ใช้ 100vw */
+  width: calc(100% - var(--sw));
+  max-width: calc(100% - var(--sw));
+  box-sizing: border-box;
+}
+.container {
+  max-width: var(--container-max);
+  margin: 0 auto;
+  padding: var(--sp-xl) var(--sp-lg) var(--sp-2xl);
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.page-title { font-size: 1.5rem; line-height: 2rem; font-weight: 700; }
+.page-sub { margin-bottom: var(--sp-xl); }
+
+.calc-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(240px, 340px);
+  gap: var(--sp-lg);
+  align-items: start;
+}
+.calc-grid > * { min-width: 0; overflow: hidden; }
+.calc-grid > .stack:last-child {
+  min-width: 0;
+  width: 100%;
+}
+.stack { display: grid; gap: var(--sp-lg); min-width: 0; }
+.sticky { position: sticky; top: calc(var(--header-h) + var(--sp-xl)); }
+
+@media (max-width: 1100px) {
+  .calc-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .calc-grid > .stack:last-child { max-width: none; }
+  .sticky { position: static; }
+}
+@media (max-width: 768px) {
+  .app { --sw: var(--sidebar-w-collapsed); }
+  .nav-item span, .brand span:last-child { display: none; }
+  .container { padding: var(--sp-md); }
+}
+@media (max-width: 480px) {
+  .container { padding: var(--sp-sm); }
+  .shell-header { padding: 0 var(--sp-sm); }
+}
+
+/* ย่อ Sidebar */
+.is-collapsed .brand span:last-child, .is-collapsed .nav-item span { display: none; }
+.nav-item svg, .btn svg { width: 18px; height: 18px; flex: none; }

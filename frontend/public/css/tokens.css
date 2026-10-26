@@ -1,0 +1,57 @@
+/* โทเคนดีไซน์ NU SROI (ธีมสีส้ม มหาวิทยาลัยนเรศวร) */
+:root {
+  --background: #fbf9f6;
+  --on-background: #1f2937;
+  --surface: #f3f4f6;
+  --surface-soft: #edebe9;
+  --surface-elevated: #ffffff;
+  --muted: #6b7280;
+  --outline: #e5e7eb;
+  --outline-strong: #d1d5dc;
+
+  /* สีประจำมหาวิทยาลัยนเรศวร: เทา - แสด (ส้ม) */
+  --primary: #f37021;
+  --primary-strong: #e45b0a;
+  --primary-warm: #ff9d5c;
+  --primary-focus: #f37021;
+  --primary-gradient: linear-gradient(135deg, #ff6b00 0%, #ff8c00 100%);
+  --primary-soft: rgba(243, 112, 33, 0.12);
+  --on-primary: #ffffff;
+
+  --nu-orange: #f37021;
+  --nu-gray: #4b5563;
+  --nu-slate: #1e293b;
+
+  --shell-bg: rgba(25, 23, 21, 0.82);
+  --shell-border: rgba(255, 255, 255, 0.1);
+  --shell-blur: 12px;
+  --dark-background: #201b17;
+
+  --success: #10b981;
+  --success-bg: #dcfce7;
+  --success-fg: #047857;
+  --danger: #ef4444;
+  --warning: #f59e0b;
+
+  --status-mock-bg: #fff7ed;        --status-mock-fg: #c2410c;
+  --status-planned-bg: #f3f4f6;     --status-planned-fg: #374151;
+  --status-development-bg: #ffedd5; --status-development-fg: #c2410c;
+  --status-integrated-bg: #e0e7ff;  --status-integrated-fg: #4338ca;
+  --status-production-bg: #dcfce7;  --status-production-fg: #047857;
+
+  --font-sans: 'Inter', ui-sans-serif, system-ui, 'Noto Sans Thai', 'Sarabun', sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  --radius-xs: 4px; --radius-sm: 6px; --radius-md: 8px; --radius-lg: 14px; --radius-xl: 20px; --radius-pill: 9999px;
+  --sp-xs: 4px; --sp-sm: 8px; --sp-md: 12px; --sp-lg: 16px; --sp-xl: 24px; --sp-2xl: 32px;
+
+  --container-max: 1360px;
+  --header-h: 64px;
+  --sidebar-w: 256px;
+  --sidebar-w-collapsed: 64px;
+
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --shadow-subtle: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-card: 0 10px 25px -5px rgba(0, 0, 0, 0.06), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
+  --shadow-hero: 0 20px 45px -10px rgba(243, 112, 33, 0.18), 0 10px 20px -8px rgba(0, 0, 0, 0.08);
+}
