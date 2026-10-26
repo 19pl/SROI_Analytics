@@ -24,7 +24,7 @@ export function renderCalculator(root) {
     <div style="margin-bottom: 4px;">
       <span class="badge badge-development" style="font-weight: 700;">NU SROI มหาวิทยาลัยนเรศวร</span>
     </div>
-    <h1 class="page-title">เครื่องคำนวณ SROI</h1>
+    <h1 class="page-title">คำนวณ SROI</h1>
     <p class="muted page-sub" id="scenarioName"></p>
     <div class="calc-grid">
       <div class="stack">
