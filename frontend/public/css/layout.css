@@ -53,17 +53,7 @@
 
 /* กลุ่มรายการเมนูด้านข้าง เรียงเป็น Grid และเว้นระยะระหว่างรายการ */
 .nav { display: grid; gap: var(--sp-xs); }
-/* รายการเมนูแต่ละรายการ: จัดไอคอนกับข้อความแนวนอน กำหนดขนาด สี และการเปลี่ยนสถานะ */
-.nav-item { display: flex; align-items: center; gap: var(--sp-md); padding: 6px 12px; min-height: 36px; border-radius: var(--radius-md); color: rgba(255, 255, 255, 0.7); text-decoration: none; font-size: 0.8125rem; font-weight: 700; white-space: nowrap; overflow: hidden; transition: background 150ms var(--ease), color 150ms var(--ease); }
-/* ป้องกันไอคอน SVG ในเมนูถูกบีบจนเล็กลง */
-.nav-item svg { flex: none; }
-/* เปลี่ยนสีพื้นหลังและข้อความเมื่อชี้เมาส์หรือเมนูนั้นเป็นหน้าปัจจุบัน */
-.nav-item:hover, .nav-item.is-active { background: var(--primary); color: var(--on-primary); }
 
-/* ปุ่มแบบโปร่งใสในแถบหลัก เช่น ปุ่มย่อ/ขยาย Sidebar */
-.btn-ghost-shell { width: 40px; height: 40px; display: grid; place-items: center; border: 0; border-radius: var(--radius-md); background: transparent; color: rgba(255, 255, 255, 0.7); transition: background 150ms var(--ease); }
-/* เปลี่ยนสีปุ่มเมื่อชี้เมาส์ */
-.btn-ghost-shell:hover { background: var(--primary); color: #fff; }
 
 /* พื้นที่เนื้อหาหลัก: เว้นด้านบนให้ Header และด้านซ้ายให้ Sidebar
  * ปรับระยะและความกว้างตาม --sw พร้อมป้องกันเนื้อหาล้นแนวนอน
@@ -128,19 +118,107 @@
 /* ย่อ Sidebar */
 .is-collapsed .brand span:last-child, .is-collapsed .nav-item span { display: none; }
 .nav-item svg, .btn svg { width: 18px; height: 18px; flex: none; }
+/* Sidebar: เรียบง่ายและเป็นระเบียบ */
+.shell-sidebar {
+  padding: 20px 16px;
+  background: #1e1916;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+}
 
+/* ส่วนโลโก้และชื่อระบบ */
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 76px;
+  height: auto;
+  margin-bottom: 24px;
+  padding: 0 4px 18px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 1.1rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
 
-/* NU SROI logo: use the university seal served from public/images and size it slightly larger. */
-.brand { min-height: 48px; height: 48px; gap: 10px; }
 .brand-logo {
   display: block;
-  flex: 0 0 44px;
-  width: 44px;
-  height: 44px;
+  flex: 0 0 72px;
+  width: 72px;
+  height: 72px;
   object-fit: contain;
   background: #fff;
+  border: 2px solid rgba(255, 255, 255, 0.8);
   border-radius: 50%;
-  padding: 1px;
+  padding: 2px;
+}
+
+/* ระยะห่างระหว่างเมนู */
+.nav {
+  display: grid;
+  gap: 8px;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 42px;
+  padding: 10px 12px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  color: rgba(255, 255, 255, 0.72);
+  text-decoration: none;
+  font-size: 0.84rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  transition: background 180ms ease,
+              color 180ms ease,
+              border-color 180ms ease;
+}
+
+.nav-item svg {
+  flex: none;
+  width: 18px;
+  height: 18px;
+}
+
+.nav-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+}
+
+.nav-item.is-active {
+  background: #f36f21;
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 3px 8px rgba(243, 111, 33, 0.16);
+}
+
+/* เมื่อย่อ Sidebar */
+.app.is-collapsed .brand {
+  justify-content: center;
+  padding: 0 0 16px;
+}
+
+.app.is-collapsed .brand-logo {
+  flex-basis: 40px;
+  width: 40px;
+  height: 40px;
+}
+
+/* รองรับหน้าจอขนาดเล็ก */
+@media (max-width: 768px) {
+  .brand {
+    justify-content: center;
+    gap: 0;
+  }
+
+  .brand-logo {
+    flex-basis: 40px;
+    width: 40px;
+    height: 40px;
+  }
 }
 .app.is-collapsed .shell-sidebar { padding-left: 12px; padding-right: 12px; }
 .app.is-collapsed .brand { justify-content: center; gap: 0; }
@@ -149,3 +227,33 @@
   .brand { justify-content: center; gap: 0; }
   .brand-logo { flex-basis: 40px; width: 40px; height: 40px; }
 }
+/* หน้าแนะนำ SROI */
+.about-page { display: grid; gap: var(--sp-lg); }
+.about-page > .badge { justify-self: start; }
+.about-hero { display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: var(--sp-lg); align-items: start; padding: clamp(20px, 3vw, 32px); border: 1px solid rgba(243, 112, 33, 0.22); border-radius: var(--radius-lg); background: linear-gradient(120deg, rgba(243, 112, 33, 0.11), rgba(255,255,255,0.7)); }
+.about-hero-icon { width: 56px; height: 56px; display: grid; place-items: center; border-radius: 16px; background: var(--primary); color: white; }
+.about-hero-icon svg { width: 28px; height: 28px; }
+.about-eyebrow { margin: 0 0 6px; color: var(--primary-strong); font-size: 0.72rem; font-weight: 800; letter-spacing: .08em; }
+.about-hero h2 { margin: 0 0 10px; font-size: clamp(1.2rem, 2vw, 1.65rem); }
+.about-hero p:last-child { max-width: 850px; margin: 0; color: var(--muted); line-height: 1.8; }
+.about-content-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-lg); }
+.about-list { display: grid; gap: 12px; margin: 0; padding-left: 20px; line-height: 1.7; }
+.about-list li::marker { color: var(--primary); }
+.about-ratio { display: flex; align-items: center; gap: 14px; margin-bottom: 12px; }
+.about-ratio strong { color: var(--primary-strong); font-size: 2.3rem; line-height: 1; }
+.about-ratio span { color: var(--muted); font-size: .875rem; }
+.about-note { padding: 10px 12px; border-radius: var(--radius-sm); background: var(--surface-soft); color: var(--muted); font-size: .8rem; line-height: 1.6; }
+.about-steps-card .card-head { margin-bottom: 20px; }
+.about-steps { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+.about-step { display: flex; align-items: flex-start; gap: 12px; }
+.about-step > span { flex: 0 0 32px; width: 32px; height: 32px; display: grid; place-items: center; border-radius: 50%; background: rgba(243,112,33,.13); color: var(--primary-strong); font-weight: 800; }
+.about-step h3 { margin: 2px 0 5px; font-size: .95rem; }
+.about-step p { margin: 0; color: var(--muted); font-size: .875rem; line-height: 1.7; }
+.about-formula { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 24px; border-radius: var(--radius-lg); background: #211b18; color: #fff; }
+.about-formula h2 { margin: 0 0 6px; font-size: 1.25rem; }
+.about-formula p:last-child { margin: 0; color: rgba(255,255,255,.7); font-size: .875rem; }
+.about-formula-equation { min-width: 230px; display: grid; justify-items: center; gap: 6px; color: #ffb37e; font-weight: 700; text-align: center; }
+.about-formula-equation i { width: 100%; height: 1px; background: rgba(255,255,255,.65); }
+.about-disclaimer { margin: 0; color: var(--muted); font-size: .8rem; line-height: 1.7; }
+@media (max-width: 800px) { .about-content-grid, .about-steps { grid-template-columns: minmax(0, 1fr); } .about-formula { align-items: stretch; flex-direction: column; } .about-formula-equation { min-width: 0; align-self: stretch; } }
+@media (max-width: 480px) { .about-hero { grid-template-columns: 1fr; } }

@@ -24,7 +24,7 @@ export function renderCalculator(root) {
     <div style="margin-bottom: 4px;">
       <span class="badge badge-development" style="font-weight: 700;">NU SROI มหาวิทยาลัยนเรศวร</span>
     </div>
-    <h1 class="page-title">คำนวณ SROI</h1>
+    <h1 class="page-title">เครื่องคำนวณ SROI</h1>
     <p class="muted page-sub" id="scenarioName"></p>
     <div class="calc-grid">
       <div class="stack">
@@ -32,12 +32,11 @@ export function renderCalculator(root) {
           ${textField({ key: 'name', label: 'ชื่อโครงการ', value: s.name })}
           ${numberField({ key: 'investment', label: 'เงินลงทุนรวม', suffix: 'บาท', value: s.investment, step: 10000 })}
           <div class="field">
-            <span class="field-label">ระยะเวลาวัดผล</span>
+            <span class="field-label">ระยะเวลาวัดผล (ไม่เกิน 5 ปี)</span>
             <span class="field-control">
               <input class="input" type="number" data-field="years" value="${s.years}" min="1" max="5" />
               <span class="field-suffix">ปี</span>
             </span>
-            <input type="range" class="field-range-slider" data-field="years" min="1" max="5" value="${s.years}" step="1" title="แถบเลื่อนปรับระยะเวลา 1-5 ปี" />
           </div>
           ${numberField({ key: 'discountRate', label: 'อัตราคิดลด', suffix: '%', value: s.discountRate, max: 20, step: 0.5 })}</div>` })}
         ${card({ title: 'ผลลัพธ์ทางสังคม', description: 'แต่ละแถวคือการเปลี่ยนแปลงที่เกิดกับกลุ่มผู้ได้รับผลกระทบ',
