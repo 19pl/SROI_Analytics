@@ -1,4 +1,8 @@
-/* เปลือกแอป: พื้นหลังโทนมืดให้กระจก 70% มีอะไรให้เบลอ */
+/*
+ * โครงหลักของแอป (app)
+ * - กำหนดความกว้าง Sidebar ที่ใช้งานอยู่ผ่านตัวแปร --sw
+ * - กำหนดความสูงอย่างน้อยเต็มหน้าจอ และตกแต่งพื้นหลังด้วยแสงไล่ระดับสีส้ม
+ */
 .app {
   --sw: var(--sidebar-w);
   min-height: 100vh;
@@ -6,9 +10,15 @@
     radial-gradient(900px 500px at 0% 0%, rgba(243, 112, 33, 0.28), transparent 70%),
     var(--dark-background);
 }
+/* เมื่อ Sidebar ถูกย่อ ให้เปลี่ยน --sw เป็นความกว้างแบบย่อ */
 .app.is-collapsed { --sw: var(--sidebar-w-collapsed); }
 
-.shell-sidebar, .shell-header {
+/* รูปแบบร่วมของแถบเมนูด้านข้างและแถบหัวเว็บ
+ * ใช้ position: fixed ให้แถบอยู่กับที่, z-index ให้ซ้อนอยู่เหนือเนื้อหา,
+ * backdrop-filter ทำพื้นหลังเบลอ และ border/color กำหนดเส้นขอบกับสีตัวอักษร
+ */
+.shell-sidebar, /* Header: แถบด้านบนเริ่มถัดจาก Sidebar และขยายไปทางขวาจนสุดหน้าจอ */
+.shell-header {
   position: fixed;
   z-index: 10;
   background: var(--shell-bg);
@@ -17,6 +27,7 @@
   border: 0 solid var(--shell-border);
   color: #fff;
 }
+/* Sidebar: ยึดด้านซ้ายเต็มความสูง กำหนดความกว้าง/ระยะขอบ และแอนิเมชันตอนย่อ-ขยาย */
 .shell-sidebar {
   inset: 0 auto 0 0;
   width: var(--sw);
@@ -32,19 +43,31 @@
   display: flex; align-items: center; gap: var(--sp-md);
   transition: left 300ms var(--ease);
 }
+/* ชื่อหน้าหรือชื่อระบบใน Header ให้ใช้พื้นที่ว่างที่เหลือ */
 .header-title { flex: 1; color: rgba(255, 255, 255, 0.7); font-weight: 500; }
 
+/* ส่วนแบรนด์/โลโก้ด้านบนของ Sidebar: จัดโลโก้กับชื่อให้อยู่แนวเดียวกัน */
 .brand { display: flex; align-items: center; gap: var(--sp-md); height: 40px; margin-bottom: var(--sp-xl); font-weight: 700; font-size: 1.125rem; white-space: nowrap; }
+/* กล่องไอคอนแบรนด์แบบเดิม: จัดเนื้อหาให้อยู่กลางกล่องและใช้พื้นหลังไล่สี */
 .brand-mark { flex: none; width: 32px; height: 32px; display: grid; place-items: center; border-radius: var(--radius-md); background: linear-gradient(135deg, var(--primary-warm), var(--primary)); color: #fff; }
 
+/* กลุ่มรายการเมนูด้านข้าง เรียงเป็น Grid และเว้นระยะระหว่างรายการ */
 .nav { display: grid; gap: var(--sp-xs); }
+/* รายการเมนูแต่ละรายการ: จัดไอคอนกับข้อความแนวนอน กำหนดขนาด สี และการเปลี่ยนสถานะ */
 .nav-item { display: flex; align-items: center; gap: var(--sp-md); padding: 6px 12px; min-height: 36px; border-radius: var(--radius-md); color: rgba(255, 255, 255, 0.7); text-decoration: none; font-size: 0.8125rem; font-weight: 700; white-space: nowrap; overflow: hidden; transition: background 150ms var(--ease), color 150ms var(--ease); }
+/* ป้องกันไอคอน SVG ในเมนูถูกบีบจนเล็กลง */
 .nav-item svg { flex: none; }
+/* เปลี่ยนสีพื้นหลังและข้อความเมื่อชี้เมาส์หรือเมนูนั้นเป็นหน้าปัจจุบัน */
 .nav-item:hover, .nav-item.is-active { background: var(--primary); color: var(--on-primary); }
 
+/* ปุ่มแบบโปร่งใสในแถบหลัก เช่น ปุ่มย่อ/ขยาย Sidebar */
 .btn-ghost-shell { width: 40px; height: 40px; display: grid; place-items: center; border: 0; border-radius: var(--radius-md); background: transparent; color: rgba(255, 255, 255, 0.7); transition: background 150ms var(--ease); }
+/* เปลี่ยนสีปุ่มเมื่อชี้เมาส์ */
 .btn-ghost-shell:hover { background: var(--primary); color: #fff; }
 
+/* พื้นที่เนื้อหาหลัก: เว้นด้านบนให้ Header และด้านซ้ายให้ Sidebar
+ * ปรับระยะและความกว้างตาม --sw พร้อมป้องกันเนื้อหาล้นแนวนอน
+ */
 .workspace {
   margin-top: var(--header-h);
   margin-left: var(--sw);
@@ -57,6 +80,7 @@
   max-width: calc(100% - var(--sw));
   box-sizing: border-box;
 }
+/* กล่องครอบเนื้อหาแต่ละหน้า: จำกัดความกว้าง จัดกลาง และเพิ่มระยะขอบภายใน */
 .container {
   max-width: var(--container-max);
   margin: 0 auto;
@@ -65,7 +89,9 @@
   width: 100%;
 }
 
+/* หัวข้อหลักของหน้า */
 .page-title { font-size: 1.5rem; line-height: 2rem; font-weight: 700; }
+/* ระยะด้านล่างของข้อความรองใต้หัวข้อ */
 .page-sub { margin-bottom: var(--sp-xl); }
 
 .calc-grid {
