@@ -63,7 +63,7 @@ export const mockProjects = [
     name: 'โครงการดูแลสุขภาวะผู้สูงอายุ ม.นเรศวร',
     status: 'production',
     investment: 2500000,
-    years: 6,
+    years: 5,
     discountRate: 3,
     outcomes: [
       outcome('o1', 'ลดการเข้าโรงพยาบาลฉุกเฉิน', 'ผู้สูงอายุ', 200, 18000, 20, 25, 10),
