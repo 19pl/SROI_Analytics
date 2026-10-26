@@ -1,6 +1,17 @@
-*, *::before, *::after { box-sizing: border-box; }
-html, body, #root { margin: 0; min-height: 100%; }
-html, body { overflow-x: hidden; }
+/* รีเซ็ตพื้นฐาน และ utility class ขนาดเล็กที่ใช้ทั่วแอป */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  overflow-x: hidden;
+}
+
 body {
   font-family: var(--font-sans);
   font-size: 0.875rem;
@@ -8,11 +19,39 @@ body {
   color: var(--on-background);
   background: var(--dark-background);
 }
-h1, h2, p, dl, dd { margin: 0; }
-button { font: inherit; cursor: pointer; }
-:focus-visible { outline: 2px solid var(--primary-focus); outline-offset: 2px; }
-.muted { color: var(--muted); }
-.strong { font-weight: 700; }
-.num { text-align: right; font-variant-numeric: tabular-nums; }
-.neg { color: var(--danger); }
-@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+
+h1,
+h2,
+p {
+  margin: 0;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+}
+
+:focus-visible {
+  outline: 2px solid var(--primary-focus);
+  outline-offset: 2px;
+}
+
+/* Utilities */
+.muted {
+  color: var(--muted);
+}
+
+.strong {
+  font-weight: 700;
+}
+
+.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+  }
+}

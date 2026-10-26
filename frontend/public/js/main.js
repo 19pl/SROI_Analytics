@@ -1,19 +1,32 @@
+import { APP_TITLE, HOME_HASH } from './config/constants.js';
 import { routes } from './routes.js';
 
 const $ = (id) => document.getElementById(id);
 
-$('nav').innerHTML = routes
-  .map((r) => `<a class="nav-item" href="${r.path}" title="${r.label}">${r.icon}<span>${r.label}</span></a>`)
-  .join('');
+const navItemHtml = ({ path, label, icon }) =>
+  `<a class="nav-item" href="${path}" title="${label}">${icon}<span>${label}</span></a>`;
 
-function navigate() {
-  const currentHash = location.hash || '#/';
-  const route = routes.find((r) => r.path === currentHash) ?? routes[0];
-  route.render($('view'));
-  $('headerTitle').textContent = `NU SROI / ${route.label}`;
-  document.querySelectorAll('.nav-item').forEach((a) => a.classList.toggle('is-active', a.getAttribute('href') === route.path));
+const findRoute = (hash) => routes.find((route) => route.path === hash) ?? routes[0];
+
+function renderNav() {
+  $('nav').innerHTML = routes.map(navItemHtml).join('');
 }
 
+function highlightActiveNav(route) {
+  document.querySelectorAll('.nav-item').forEach((link) => {
+    link.classList.toggle('is-active', link.getAttribute('href') === route.path);
+  });
+}
+
+function navigate() {
+  const route = findRoute(location.hash || HOME_HASH);
+
+  route.render($('view'));
+  $('headerTitle').textContent = `${APP_TITLE} / ${route.label}`;
+  highlightActiveNav(route);
+}
+
+renderNav();
 $('toggleSidebar').addEventListener('click', () => $('app').classList.toggle('is-collapsed'));
 window.addEventListener('hashchange', navigate);
 navigate();

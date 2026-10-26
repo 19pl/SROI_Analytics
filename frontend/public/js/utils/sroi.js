@@ -1,25 +1,52 @@
-const sum = (xs) => xs.reduce((a, b) => a + b, 0);
-export const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
+import { sum } from './math.js';
 
-/** สูตรหลักของ SROI: แก้ที่ไฟล์นี้ไฟล์เดียว */
-export function calculateSroi(s) {
-  const rows = s.outcomes.map((outcome) => {
-    const base = outcome.quantity * outcome.proxyValue * (1 - outcome.deadweight / 100) * (1 - outcome.attribution / 100);
-    const yearly = Array.from(
-      { length: s.years },
-      (_, i) => (base * Math.pow(1 - outcome.dropOff / 100, i)) / Math.pow(1 + s.discountRate / 100, i + 1),
-    );
-    return { outcome, yearly, presentValue: sum(yearly) };
-  });
-  const yearlyPV = Array.from({ length: s.years }, (_, i) => sum(rows.map((r) => r.yearly[i])));
-  const totalPV = sum(yearlyPV);
-  return { rows, yearlyPV, totalPV, npv: totalPV - s.investment, ratio: s.investment > 0 ? totalPV / s.investment : 0 };
+const percentToRate = (percent) => percent / 100;
+
+/**
+ * มูลค่าของผลลัพธ์ 1 รายการ ณ ปีแรก (ก่อนคิดลด)
+ * = จำนวน × มูลค่าต่อหน่วย × (1 − Deadweight) × (1 − Attribution)
+ */
+function baseValue({ quantity, proxyValue, deadweight, attribution }) {
+  return quantity * proxyValue * (1 - percentToRate(deadweight)) * (1 - percentToRate(attribution));
 }
 
-const baht = new Intl.NumberFormat('th-TH', { style: 'currency', currency: 'THB', maximumFractionDigits: 0 });
-export const formatBaht = (v) => baht.format(Math.round(v));
-/** แบบย่อ (฿3.42M / ฿850K) สำหรับป้ายบนกราฟที่พื้นที่แคบ */
-export const formatBahtCompact = (v) =>
-  Math.abs(v) >= 1e6 ? `฿${(v / 1e6).toFixed(2)}M` : Math.abs(v) >= 1e3 ? `฿${(v / 1e3).toFixed(0)}K` : formatBaht(v);
-export const formatRatio = (v) => `${v.toFixed(2)} : 1`;
-export const escapeHtml = (t) => String(t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+/**
+ * มูลค่าปัจจุบันของผลลัพธ์ 1 รายการ แยกรายปี
+ * ปีที่ i (เริ่มที่ 0): ลดลงด้วย Drop-off ปีละ i รอบ แล้วคิดลดด้วยอัตราคิดลด (i + 1) ปี
+ */
+function yearlyPresentValues(outcome, { years, discountRate }) {
+  const base = baseValue(outcome);
+  const retention = 1 - percentToRate(outcome.dropOff);
+  const discountFactor = 1 + percentToRate(discountRate);
+
+  return Array.from(
+    { length: years },
+    (_, i) => (base * Math.pow(retention, i)) / Math.pow(discountFactor, i + 1),
+  );
+}
+
+/**
+ * สูตรหลักของ SROI: แก้ที่ไฟล์นี้ไฟล์เดียว
+ * @param {object} scenario โครงการ { investment, years, discountRate, outcomes[] }
+ * @returns {{ rows, yearlyPV, totalPV, npv, ratio }}
+ */
+export function calculateSroi(scenario) {
+  const rows = scenario.outcomes.map((outcome) => {
+    const yearly = yearlyPresentValues(outcome, scenario);
+    return { outcome, yearly, presentValue: sum(yearly) };
+  });
+
+  const yearlyPV = Array.from({ length: scenario.years }, (_, i) =>
+    sum(rows.map((row) => row.yearly[i])),
+  );
+  const totalPV = sum(yearlyPV);
+  const { investment } = scenario;
+
+  return {
+    rows,
+    yearlyPV,
+    totalPV,
+    npv: totalPV - investment,
+    ratio: investment > 0 ? totalPV / investment : 0,
+  };
+}

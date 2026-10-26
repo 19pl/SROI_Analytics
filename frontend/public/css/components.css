@@ -1,363 +1,309 @@
-/* Card */
+/* ส่วนประกอบ UI ที่ใช้ซ้ำทั้งแอป: Card, Button, Input, Table, Badge */
+
+/* ---------- Card ---------- */
 .card {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  padding: var(--sp-lg);
   background: var(--surface-elevated);
   border: 1px solid var(--outline);
   border-radius: var(--radius-lg);
-  padding: var(--sp-lg);
   box-shadow: var(--shadow-subtle);
-  min-width: 0;
-  max-width: 100%;
-  box-sizing: border-box;
-  width: 100%;
   overflow: visible;
 }
+
 .card-head {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: flex-start;
   gap: var(--sp-lg);
+  min-width: 0;
   margin-bottom: var(--sp-lg);
-  flex-wrap: wrap;
-  min-width: 0;
 }
-.card-head > div:first-child {
-  min-width: 0;
-  flex: 1 1 auto;
-}
-.card-title { font-size: 1.125rem; line-height: 1.75rem; font-weight: 700; }
 
-/* Buttons */
+.card-head > div:first-child {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.card-title {
+  font-size: 1.125rem;
+  line-height: 1.75rem;
+  font-weight: 700;
+}
+
+/* ---------- Buttons ---------- */
 .btn {
-  height: 40px;
-  padding: 0 var(--sp-lg);
   display: inline-flex;
   align-items: center;
   gap: var(--sp-sm);
+  flex-shrink: 0;
+  height: 40px;
+  padding: 0 var(--sp-lg);
   border: 0;
   border-radius: var(--radius-sm);
   font-weight: 500;
   white-space: nowrap;
-  flex-shrink: 0;
   transition: background 150ms var(--ease);
 }
-.btn-primary { background: var(--primary); color: var(--on-primary); }
-.btn-primary:hover { background: var(--primary-strong); }
-.btn-icon { width: 32px; height: 32px; display: grid; place-items: center; border: 0; border-radius: var(--radius-md); background: transparent; color: var(--muted); flex-shrink: 0; }
-.btn-icon:hover { background: var(--surface-soft); color: var(--danger); }
 
-/* Inputs */
-.form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: var(--sp-lg); }
-.field { display: grid; gap: 6px; min-width: 0; }
-.field-label { font-size: 0.875rem; font-weight: 500; white-space: nowrap; }
-.field-control { position: relative; display: block; }
-.field-suffix { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 0.8125rem; pointer-events: none; }
-.input { width: 100%; height: 40px; padding: 0 12px; border: 1px solid var(--outline-strong); border-radius: var(--radius-sm); background: var(--surface-elevated); color: var(--on-background); font: inherit; transition: border-color 150ms var(--ease); }
-.field-control .input { padding-right: 42px; }
-.input:focus { outline: none; border-color: var(--primary-focus); box-shadow: 0 0 0 3px rgba(249, 112, 21, 0.2); }
-input[type="number"]::-webkit-inner-spin-button,
-input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
-input[type="number"] { -moz-appearance: textfield; }
-.input-cell { height: 32px; min-width: 56px; width: 100%; padding: 0 6px; text-align: right; }
-.input-wide { min-width: 90px; width: 100%; text-align: left; }
-
-/* Table: ฐานเป็นกลาง หัวตารางส้มจาง */
-.table-wrap {
-  overflow-x: auto;
-  max-width: 100%;
-  -webkit-overflow-scrolling: touch;
-  min-width: 0;
-}
-.table-wrap::-webkit-scrollbar { height: 6px; }
-.table-wrap::-webkit-scrollbar-track { background: var(--surface); border-radius: var(--radius-pill); }
-.table-wrap::-webkit-scrollbar-thumb { background: var(--outline-strong); border-radius: var(--radius-pill); }
-.table-wrap::-webkit-scrollbar-thumb:hover { background: var(--muted); }
-
-.table { width: 100%; border-collapse: collapse; }
-.table th { height: 44px; padding: 0 var(--sp-sm); text-align: left; white-space: nowrap; font-size: 0.75rem; font-weight: 600; color: var(--primary-strong); background: rgba(254, 110, 0, 0.05); }
-.table th.num { text-align: right; }
-.table td { padding: 6px var(--sp-sm); border-bottom: 1px solid var(--outline); color: var(--muted); vertical-align: middle; }
-.table td.strong { color: var(--on-background); }
-.table td.num { white-space: nowrap; }
-.table tbody tr:hover { background: var(--background); }
-.empty { text-align: center; padding: var(--sp-2xl) !important; }
-
-/* Badges */
-.badge { display: inline-block; padding: 4px 10px; border-radius: var(--radius-pill); font-size: 0.75rem; font-weight: 600; white-space: nowrap; }
-.badge-mock { background: var(--status-mock-bg); color: var(--status-mock-fg); }
-.badge-planned { background: var(--status-planned-bg); color: var(--status-planned-fg); }
-.badge-development { background: var(--status-development-bg); color: var(--status-development-fg); }
-.badge-integrated { background: var(--status-integrated-bg); color: var(--status-integrated-fg); }
-.badge-production { background: var(--status-production-bg); color: var(--status-production-fg); }
-
-/* Result */
-.ratio { font-size: 3rem; line-height: 1; font-weight: 600; letter-spacing: -0.025em; color: var(--primary); font-variant-numeric: tabular-nums; }
-.metrics { display: grid; gap: var(--sp-md); margin-top: var(--sp-lg); padding-top: var(--sp-lg); border-top: 1px solid var(--outline); }
-.metrics div { display: flex; justify-content: space-between; gap: var(--sp-lg); }
-.metrics dt { color: var(--muted); }
-.metrics dd { font-weight: 700; font-variant-numeric: tabular-nums; }
-
-/* ==========================================================================
-   NU SROI Summary Card (สไตล์ตามภาพต้นแบบ ธีมสีส้ม ม.นเรศวร)
-   ========================================================================== */
-.summary-card-nu {
-  display: grid;
-  gap: var(--sp-md);
-  padding: var(--sp-lg);
-}
-
-.sroi-banner-nu {
-  background: var(--primary-gradient);
-  border-radius: var(--radius-lg);
-  padding: 16px 20px;
-  color: #ffffff;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: var(--sp-sm) var(--sp-md);
-  box-shadow: 0 6px 18px rgba(243, 112, 33, 0.28);
-}
-.sroi-banner-nu.is-deficit {
-  background: linear-gradient(135deg, #ea580c 0%, #b45309 100%);
-}
-
-.sroi-banner-info {
-  display: flex;
-  flex-direction: column;
-}
-
-.sroi-banner-sub {
-  font-size: 0.75rem;
-  color: rgba(255, 255, 255, 0.9);
-  font-weight: 500;
-  margin-bottom: 2px;
-}
-
-.sroi-banner-ratio {
-  font-size: 2.25rem;
-  font-weight: 800;
-  line-height: 1;
-  letter-spacing: -0.02em;
-}
-.sroi-banner-ratio small {
-  white-space: nowrap;
-  font-size: 0.8125rem;
-  font-weight: 500;
-  margin-left: 4px;
-  opacity: 0.95;
-}
-
-.sroi-banner-badge {
-  background: rgba(255, 255, 255, 0.22);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-  padding: 5px 12px;
-  border-radius: var(--radius-pill);
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: #ffffff;
-  white-space: nowrap;
-}
-
-/* 3 Metrics Grid */
-.summary-metrics-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 6px;
-}
-
-.summary-metric-card {
-  border: 1px solid var(--outline);
-  border-radius: var(--radius-md);
-  padding: 8px 6px;
-  background: var(--surface-elevated);
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  overflow: hidden;
-}
-
-.metric-title {
-  font-size: 0.6875rem;
-  color: var(--muted);
-  margin-bottom: 2px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.metric-num {
-  font-size: 0.8125rem;
-  font-weight: 700;
-  color: var(--on-background);
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* NPV Strip */
-.summary-npv-strip {
-  border: 1px solid var(--outline);
-  border-radius: var(--radius-md);
-  padding: 10px 14px;
-  background: #fbf9f6;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.npv-icon {
-  width: 32px;
-  height: 32px;
-  border-radius: var(--radius-sm);
-  background: rgba(243, 112, 33, 0.12);
-  color: var(--primary);
-  display: grid;
-  place-items: center;
-  flex-shrink: 0;
-}
-.npv-icon svg {
+.btn svg {
+  flex: none;
   width: 18px;
   height: 18px;
 }
 
-.npv-details {
-  display: flex;
-  flex-direction: column;
+.btn-primary {
+  background: var(--primary);
+  color: var(--on-primary);
 }
 
-.npv-label {
-  font-size: 0.6875rem;
+.btn-primary:hover {
+  background: var(--primary-strong);
+}
+
+.btn-icon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
   color: var(--muted);
 }
 
-.npv-val {
-  font-size: 1rem;
-  font-weight: 700;
-  color: var(--on-background);
-  font-variant-numeric: tabular-nums;
-}
-.summary-npv-strip.is-pos .npv-val {
-  color: #059669;
-}
-.summary-npv-strip.is-neg .npv-val {
+.btn-icon:hover {
+  background: var(--surface-soft);
   color: var(--danger);
 }
 
-/* ==========================================================================
-   Chart: แท่งส้ม NU กว้างพอดีการ์ด (ไม่มีแถบเลื่อน)
-   ========================================================================== */
-.chart {
-  display: flex;
-  align-items: flex-end;
-  gap: var(--sp-sm);
-  height: 200px;
-  width: 100%;
-  padding: 8px 0 0;
+/* ---------- Form fields ---------- */
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: var(--sp-lg);
 }
-.chart-col {
-  flex: 1 1 0;
-  min-width: 0;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  align-items: center;
+
+.field {
+  display: grid;
   gap: 6px;
+  min-width: 0;
 }
-.chart-bar {
-  width: 100%;
-  max-width: 36px;
-  min-height: 4px;
-  background: rgba(243, 112, 33, 0.35);
-  border-radius: var(--radius-xs) var(--radius-xs) 0 0;
-  transition: height 400ms var(--ease), background 150ms var(--ease);
-}
-.chart-bar:hover {
-  background: rgba(243, 112, 33, 0.7);
-}
-.chart-bar.is-peak {
-  background: var(--primary);
-  box-shadow: 0 4px 12px rgba(243, 112, 33, 0.35);
-}
-.chart-value {
-  font-size: 0.6875rem;
-  color: var(--muted);
-  white-space: nowrap;
+
+.field-label {
+  font-size: 0.875rem;
   font-weight: 500;
-  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
-.chart-label {
+
+.field-control {
+  position: relative;
+  display: block;
+}
+
+.field-suffix {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted);
+  font-size: 0.8125rem;
+  pointer-events: none;
+}
+
+.input {
+  width: 100%;
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--outline-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface-elevated);
+  color: var(--on-background);
+  font: inherit;
+  transition: border-color 150ms var(--ease);
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--primary-focus);
+  box-shadow: 0 0 0 3px rgba(249, 112, 21, 0.2);
+}
+
+.field-control .input {
+  padding-right: 42px; /* เว้นที่ให้ .field-suffix */
+}
+
+/* ซ่อนปุ่มลูกศรเพิ่ม/ลดของ input[type=number] */
+input[type='number']::-webkit-inner-spin-button,
+input[type='number']::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type='number'] {
+  -moz-appearance: textfield;
+}
+
+/* ช่องกรอกขนาดเล็กในเซลล์ของตาราง */
+.input-cell {
+  width: 100%;
+  min-width: 56px;
+  height: 32px;
+  padding: 0 6px;
+  text-align: right;
+}
+
+.input-wide {
+  width: 100%;
+  min-width: 90px;
+  text-align: left;
+}
+
+/* ---------- Table: ฐานเป็นกลาง หัวตารางส้มจาง ---------- */
+.table-wrap {
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.table-wrap::-webkit-scrollbar {
+  height: 6px;
+}
+
+.table-wrap::-webkit-scrollbar-track {
+  background: var(--surface);
+  border-radius: var(--radius-pill);
+}
+
+.table-wrap::-webkit-scrollbar-thumb {
+  background: var(--outline-strong);
+  border-radius: var(--radius-pill);
+}
+
+.table-wrap::-webkit-scrollbar-thumb:hover {
+  background: var(--muted);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th {
+  height: 44px;
+  padding: 0 var(--sp-sm);
+  text-align: left;
+  white-space: nowrap;
   font-size: 0.75rem;
   font-weight: 600;
+  color: var(--primary-strong);
+  background: rgba(254, 110, 0, 0.05);
+}
+
+.table th.num {
+  text-align: right;
+}
+
+.table td {
+  padding: 6px var(--sp-sm);
+  border-bottom: 1px solid var(--outline);
+  color: var(--muted);
+  vertical-align: middle;
+}
+
+.table td.strong {
   color: var(--on-background);
 }
 
-/* แถบเลื่อนปรับระยะเวลาวัดผลในฟอร์ม */
-.field-range-slider {
-  width: 100%;
-  height: 5px;
-  -webkit-appearance: none;
-  appearance: none;
-  background: #e5e7eb;
-  border-radius: 9999px;
-  outline: none;
-  margin-top: 6px;
-  cursor: pointer;
-}
-.field-range-slider::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: var(--primary);
-  border: 2px solid #ffffff;
-  box-shadow: 0 2px 5px rgba(243, 112, 33, 0.35);
-  cursor: pointer;
-}
-.field-range-slider::-moz-range-thumb {
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: var(--primary);
-  border: 2px solid #ffffff;
-  box-shadow: 0 2px 5px rgba(243, 112, 33, 0.35);
-  cursor: pointer;
+.table td.num {
+  white-space: nowrap;
 }
 
+.table tbody tr:hover {
+  background: var(--background);
+}
 
-/* ==========================================================================
-   Responsive: Components
-   ========================================================================== */
+/* แถวข้อความ "ยังไม่มีข้อมูล" */
+.table td.empty {
+  padding: var(--sp-2xl);
+  text-align: center;
+}
 
-/* Laptop / smaller desktop */
+/* ---------- Badges ---------- */
+.badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* สีของแต่ละสถานะมาจาก --status-<ชื่อ>-bg / -fg ใน tokens.css */
+.badge-mock {
+  background: var(--status-mock-bg);
+  color: var(--status-mock-fg);
+}
+
+.badge-planned {
+  background: var(--status-planned-bg);
+  color: var(--status-planned-fg);
+}
+
+.badge-development {
+  background: var(--status-development-bg);
+  color: var(--status-development-fg);
+}
+
+.badge-integrated {
+  background: var(--status-integrated-bg);
+  color: var(--status-integrated-fg);
+}
+
+.badge-production {
+  background: var(--status-production-bg);
+  color: var(--status-production-fg);
+}
+
+/* ---------- Responsive ---------- */
 @media (max-width: 1366px) {
-  .form-grid { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
-  .sroi-banner-ratio { font-size: 1.75rem; }
-  .sroi-banner-ratio small { font-size: 0.75rem; }
-  .summary-metrics-grid { gap: 4px; }
-  .metric-num { font-size: 0.75rem; }
+  .form-grid {
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  }
 }
 
-/* Tablet */
 @media (max-width: 768px) {
-  .sroi-banner-nu { flex-direction: column; align-items: flex-start; gap: var(--sp-sm); }
-  .sroi-banner-badge { align-self: flex-start; }
-  .summary-metrics-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; }
-  .card { padding: var(--sp-lg); }
-  .form-grid { grid-template-columns: 1fr; }
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
-/* Mobile */
 @media (max-width: 480px) {
-  .sroi-banner-ratio { font-size: 1.5rem; }
-  .summary-metrics-grid { grid-template-columns: 1fr; }
-  .chart { height: 160px; }
-  .card { padding: var(--sp-md); }
-  .table th { font-size: 0.6875rem; padding: 0 4px; }
-  .table td { padding: 4px; }
-  .input-cell { min-width: 48px; height: 28px; font-size: 0.75rem; }
-  .input-wide { min-width: 70px; }
+  .card {
+    padding: var(--sp-md);
+  }
+
+  .table th {
+    padding: 0 4px;
+    font-size: 0.6875rem;
+  }
+
+  .table td {
+    padding: 4px;
+  }
+
+  .input-cell {
+    min-width: 48px;
+    height: 28px;
+    font-size: 0.75rem;
+  }
+
+  .input-wide {
+    min-width: 70px;
+  }
 }
