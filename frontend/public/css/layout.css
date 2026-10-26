@@ -102,3 +102,24 @@
 /* ย่อ Sidebar */
 .is-collapsed .brand span:last-child, .is-collapsed .nav-item span { display: none; }
 .nav-item svg, .btn svg { width: 18px; height: 18px; flex: none; }
+
+
+/* NU SROI logo: use the university seal served from public/images and size it slightly larger. */
+.brand { min-height: 48px; height: 48px; gap: 10px; }
+.brand-logo {
+  display: block;
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+  background: #fff;
+  border-radius: 50%;
+  padding: 1px;
+}
+.app.is-collapsed .shell-sidebar { padding-left: 12px; padding-right: 12px; }
+.app.is-collapsed .brand { justify-content: center; gap: 0; }
+.app.is-collapsed .brand-logo { flex-basis: 40px; width: 40px; height: 40px; }
+@media (max-width: 768px) {
+  .brand { justify-content: center; gap: 0; }
+  .brand-logo { flex-basis: 40px; width: 40px; height: 40px; }
+}
