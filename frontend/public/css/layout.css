@@ -51,7 +51,7 @@
   min-height: calc(100vh - var(--header-h));
   background: var(--background);
   transition: margin 300ms var(--ease);
-  overflow: hidden;
+  overflow-x: clip; /* กันล้นแนวนอนโดยไม่ตัดเงาการ์ดและไม่ทำให้ sticky พัง */
   /* ใช้ 100% ของ parent (body) ลบ sidebar — ไม่ใช้ 100vw */
   width: calc(100% - var(--sw));
   max-width: calc(100% - var(--sw));
@@ -74,7 +74,7 @@
   gap: var(--sp-lg);
   align-items: start;
 }
-.calc-grid > * { min-width: 0; overflow: hidden; }
+.calc-grid > * { min-width: 0; }
 .calc-grid > .stack:last-child {
   min-width: 0;
   width: 100%;

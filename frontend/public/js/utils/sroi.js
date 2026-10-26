@@ -18,5 +18,8 @@ export function calculateSroi(s) {
 
 const baht = new Intl.NumberFormat('th-TH', { style: 'currency', currency: 'THB', maximumFractionDigits: 0 });
 export const formatBaht = (v) => baht.format(Math.round(v));
+/** แบบย่อ (฿3.42M / ฿850K) สำหรับป้ายบนกราฟที่พื้นที่แคบ */
+export const formatBahtCompact = (v) =>
+  Math.abs(v) >= 1e6 ? `฿${(v / 1e6).toFixed(2)}M` : Math.abs(v) >= 1e3 ? `฿${(v / 1e3).toFixed(0)}K` : formatBaht(v);
 export const formatRatio = (v) => `${v.toFixed(2)} : 1`;
 export const escapeHtml = (t) => String(t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);

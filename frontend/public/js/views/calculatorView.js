@@ -1,6 +1,6 @@
 import { badge, card, icons, numberField, textField } from '../components/ui.js';
 import { addOutcome, getResult, getScenario, patchScenario, removeOutcome, updateOutcome } from '../store.js';
-import { clamp, escapeHtml, formatBaht, formatRatio } from '../utils/sroi.js';
+import { clamp, escapeHtml, formatBaht, formatBahtCompact, formatRatio } from '../utils/sroi.js';
 
 const numCols = [
   { key: 'quantity', label: 'จำนวน (คน)', max: 1e9 },
@@ -107,48 +107,15 @@ export function renderCalculator(root) {
     el.querySelector('#chart').innerHTML = card({
       title: 'มูลค่าปัจจุบันรายปี',
       description: 'หลังหัก Deadweight, Attribution, Drop-off และคิดลดแล้ว',
-      body: `<div class="chart-scroll-wrap" id="chartScrollWrap">
-        <div class="chart chart-nu" role="img" aria-label="กราฟแท่งมูลค่าปัจจุบันรายปี">${r.yearlyPV.map((v, i) => {
-          const isPeak = v === max && max > 0;
-          return `<div class="chart-col">
-            <span class="chart-value">${formatBaht(v)}</span>
-            <div class="chart-bar ${isPeak ? 'is-peak' : ''}" style="height:${(v / max) * 100}%" title="ปี ${i + 1}: ${formatBaht(v)}"></div>
-            <span class="chart-label ${isPeak ? 'strong' : ''}">ปี ${i + 1}</span>
-          </div>`;
-        }).join('')}</div>
-      </div>
-      <!-- แถบเลื่อนดูกราฟรายปี (Interactive Slider) -->
-      <div class="chart-slider-bar">
-        <button type="button" class="btn-slider-arrow" data-scroll="prev" title="เลื่อนไปปีก่อนหน้า">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-        </button>
-        <div class="chart-slider-track-wrap">
-          <input type="range" class="chart-slider-range" id="chartSliderRange" min="0" max="100" value="0" aria-label="แถบเลื่อนดูกราฟรายปี" />
-          <span class="chart-slider-hint">แถบเลื่อนดูกราฟรายปี (เลื่อนซ้าย-ขวา)</span>
-        </div>
-        <button type="button" class="btn-slider-arrow" data-scroll="next" title="เลื่อนไปปีถัดไป">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-        </button>
-      </div>`,
+      body: `<div class="chart chart-nu" role="img" aria-label="กราฟแท่งมูลค่าปัจจุบันรายปี">${r.yearlyPV.map((v, i) => {
+        const isPeak = v === max && max > 0;
+        return `<div class="chart-col">
+          <span class="chart-value" title="${formatBaht(v)}">${formatBahtCompact(v)}</span>
+          <div class="chart-bar ${isPeak ? 'is-peak' : ''}" style="height:${(v / max) * 100}%" title="ปี ${i + 1}: ${formatBaht(v)}"></div>
+          <span class="chart-label ${isPeak ? 'strong' : ''}">ปี ${i + 1}</span>
+        </div>`;
+      }).join('')}</div>`,
     });
-
-    const wrap = el.querySelector('#chartScrollWrap');
-    const slider = el.querySelector('#chartSliderRange');
-    if (wrap && slider) {
-      const syncSlider = () => {
-        const maxScroll = wrap.scrollWidth - wrap.clientWidth;
-        if (maxScroll > 0) {
-          slider.value = Math.round((wrap.scrollLeft / maxScroll) * 100);
-        } else {
-          slider.value = 0;
-        }
-      };
-      slider.addEventListener('input', () => {
-        const maxScroll = wrap.scrollWidth - wrap.clientWidth;
-        wrap.scrollLeft = (slider.value / 100) * maxScroll;
-      });
-      wrap.addEventListener('scroll', syncSlider);
-    }
   };
 
   el.addEventListener('input', (e) => {
@@ -172,14 +139,6 @@ export function renderCalculator(root) {
     if (e.target.closest('[data-add]')) { addOutcome(); renderRows(); updateResults(); }
     const rm = e.target.closest('[data-remove]');
     if (rm) { removeOutcome(rm.closest('tr').dataset.id); renderRows(); updateResults(); }
-    const scrollBtn = e.target.closest('[data-scroll]');
-    if (scrollBtn) {
-      const wrap = el.querySelector('#chartScrollWrap');
-      if (wrap) {
-        const dir = scrollBtn.dataset.scroll === 'next' ? 1 : -1;
-        wrap.scrollBy({ left: dir * 140, behavior: 'smooth' });
-      }
-    }
   });
 
   renderRows();
