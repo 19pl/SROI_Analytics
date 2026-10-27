@@ -1,0 +1,70 @@
+{
+  "name": "sroi-analytics",
+  "productName": "SROI Analytics",
+  "version": "1.0.0",
+  "description": "SROI Calculator - Naresuan University",
+  "main": "main.js",
+  "author": "SROI Analytics",
+  "license": "UNLICENSED",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win",
+    "dist:dir": "electron-builder --win --dir"
+  },
+  "build": {
+    "appId": "th.ac.nu.sroi",
+    "productName": "SROI Analytics",
+    "copyright": "Naresuan University",
+    "asar": true,
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "main.js",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "../frontend/public",
+        "to": "frontend/public"
+      },
+      {
+        "from": "../frontend/views",
+        "to": "frontend/views"
+      }
+    ],
+    "win": {
+      "icon": "build/icon.ico",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "deleteAppDataOnUninstall": true,
+      "artifactName": "SROI-Analytics-Setup-${version}.${ext}"
+    },
+    "portable": {
+      "artifactName": "SROI-Analytics-Portable-${version}.${ext}"
+    }
+  },
+  "devDependencies": {
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8"
+  }
+}
