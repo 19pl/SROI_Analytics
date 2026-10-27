@@ -291,3 +291,269 @@
     height: 160px;
   }
 }
+
+/* ---------- 6-Step Layout & Wizard ---------- */
+.wizard-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-lg);
+}
+
+.wizard-content-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: var(--sp-xl);
+  align-items: start;
+}
+
+@media (max-width: 1100px) {
+  .wizard-content-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Contextual Help Drawer */
+.help-drawer {
+  background: var(--surface);
+  border: 1px solid var(--outline);
+  border-radius: var(--radius-lg);
+  padding: var(--sp-lg);
+  box-shadow: var(--shadow-subtle);
+  position: sticky;
+  top: calc(var(--header-h) + var(--sp-lg));
+}
+
+.help-drawer-title {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--on-background);
+  margin-bottom: var(--sp-sm);
+  display: flex;
+  align-items: center;
+  gap: var(--sp-xs);
+}
+
+.help-drawer-body {
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+.formula-box {
+  background: var(--surface-soft);
+  border: 1px solid var(--outline);
+  border-radius: var(--radius-sm);
+  padding: var(--sp-sm) var(--sp-md);
+  margin: var(--sp-sm) 0;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--primary);
+  word-break: break-all;
+}
+
+/* Stakeholder Workspace & Cards */
+.stakeholder-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--sp-md);
+  margin-top: var(--sp-md);
+}
+
+.stakeholder-card {
+  background: var(--surface);
+  border: 1px solid var(--outline);
+  border-radius: var(--radius-lg);
+  padding: var(--sp-md) var(--sp-lg);
+  box-shadow: var(--shadow-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-sm);
+  position: relative;
+  transition: border-color 150ms var(--ease);
+}
+
+.stakeholder-card:hover {
+  border-color: var(--outline-strong);
+}
+
+.stakeholder-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sp-sm);
+}
+
+.stakeholder-card-title {
+  font-weight: 700;
+  font-size: 0.9375rem;
+  color: var(--on-background);
+}
+
+/* Proxy Library List & Items */
+.proxy-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-sm);
+  max-height: 400px;
+  overflow-y: auto;
+  margin-top: var(--sp-md);
+}
+
+.proxy-item {
+  padding: var(--sp-md);
+  border: 1px solid var(--outline);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: all 150ms var(--ease);
+}
+
+.proxy-item:hover {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+}
+
+.proxy-item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.proxy-item-name {
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: var(--on-background);
+}
+
+.proxy-item-source {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.proxy-item-val {
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--positive);
+}
+
+/* Outcome Item & Polarity */
+.polarity-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.polarity-positive {
+  background: var(--positive-bg);
+  color: var(--positive-fg);
+}
+
+.polarity-negative {
+  background: var(--negative-bg);
+  color: var(--negative-fg);
+}
+
+/* Charts & Visual Analytics */
+.chart-card {
+  background: var(--surface);
+  border: 1px solid var(--outline);
+  border-radius: var(--radius-lg);
+  padding: var(--sp-lg);
+  box-shadow: var(--shadow-subtle);
+}
+
+.chart-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--on-background);
+  margin-bottom: var(--sp-xs);
+}
+
+.chart-subtitle {
+  font-size: 0.8125rem;
+  color: var(--muted);
+  margin-bottom: var(--sp-lg);
+}
+
+.chart-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.svg-chart {
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+/* Horizontal Outcome Bars */
+.hbar-row {
+  display: grid;
+  grid-template-columns: 160px 1fr 100px;
+  align-items: center;
+  gap: var(--sp-md);
+  padding: var(--sp-xs) 0;
+}
+
+.hbar-label {
+  font-size: 0.8125rem;
+  color: var(--on-background);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hbar-track {
+  height: 20px;
+  background: var(--surface-soft);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  display: flex;
+}
+
+.hbar-fill {
+  height: 100%;
+  border-radius: var(--radius-sm);
+  transition: width 300ms var(--ease);
+}
+
+.hbar-fill-pos { background: var(--positive); }
+.hbar-fill-neg { background: var(--negative); }
+
+.hbar-val {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-align: right;
+  font-family: var(--font-mono);
+}
+
+/* Warning & Blocker Items in Review */
+.review-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-md);
+  padding: var(--sp-sm) var(--sp-md);
+  border-radius: var(--radius-md);
+  background: var(--surface-soft);
+  font-size: 0.875rem;
+}
+
+.review-item.blocker {
+  border-left: 4px solid var(--negative);
+}
+
+.review-item.warning {
+  border-left: 4px solid var(--warning);
+}
+
+.review-item.info {
+  border-left: 4px solid var(--info);
+}
+
