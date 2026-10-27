@@ -3,7 +3,10 @@
  * Communicates with PHP REST API on http://localhost:8000/api/v1
  */
 
-const API_BASE = window.API_BASE_URL || 'http://localhost:8000/api/v1';
+const API_BASE =
+  (typeof localStorage !== 'undefined' && localStorage.getItem('sroi_api_base_url')) ||
+  window.API_BASE_URL ||
+  'http://localhost:8000/api/v1';
 
 let authToken = localStorage.getItem('sroi_auth_token') || null;
 let currentUser = null;

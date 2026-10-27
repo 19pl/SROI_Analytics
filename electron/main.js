@@ -14,7 +14,15 @@ const ICON = path.join(__dirname, 'build', 'icon.ico'); // optional
 const INDEX_HTML = path.join(FRONTEND, 'views', 'index.html');
 
 protocol.registerSchemesAsPrivileged([
-  { scheme: 'app', privileges: { standard: true, secure: true, supportFetchAPI: true } },
+  {
+    scheme: 'app',
+    privileges: {
+      standard: true,
+      secure: true,
+      supportFetchAPI: true,
+      corsEnabled: true,
+    },
+  },
 ]);
 
 function registerAppProtocol() {
@@ -42,10 +50,23 @@ function createWindow() {
     show: false,
     title: 'SROI Analytics',
     ...(fs.existsSync(ICON) && { icon: ICON }),
-    webPreferences: { contextIsolation: true, nodeIntegration: false, sandbox: true },
+    webPreferences: {
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true,
+      webSecurity: false,
+    },
   });
   win.once('ready-to-show', () => win.show());
   win.loadURL('app://sroi/');
+
+  // Shortcut to toggle DevTools (F12 or Ctrl+Shift+I)
+  win.webContents.on('before-input-event', (event, input) => {
+    if (input.key === 'F12' || (input.control && input.shift && input.key.toLowerCase() === 'i')) {
+      win.webContents.toggleDevTools();
+      event.preventDefault();
+    }
+  });
 
   // ลิงก์ภายนอกเปิดในเบราว์เซอร์ปกติ ไม่เปิดในหน้าต่างแอป
   win.webContents.setWindowOpenHandler(({ url }) => {
