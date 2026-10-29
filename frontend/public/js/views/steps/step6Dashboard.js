@@ -31,7 +31,7 @@ export function renderStep6(container) {
       ${
         !isReady
           ? `
-        <div class="card" style="border-left: 6px solid var(--warning);">
+        <div class="card has-stripe" style="--stripe: var(--warning);">
           <div class="card-head">
             <div>
               <h2 class="card-title">${t('blockers_identified', 'Incomplete Project Inputs')}</h2>

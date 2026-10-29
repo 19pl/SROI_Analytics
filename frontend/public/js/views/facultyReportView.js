@@ -94,7 +94,7 @@ export async function renderFacultyReport(root) {
     content.innerHTML = `
       <div class="stack" style="gap: var(--sp-lg);">
         <!-- Double-Counting Protection Alert -->
-        <div class="alert alert-info" style="border-left: 4px solid var(--positive); background: rgba(34, 197, 94, 0.08);">
+        <div class="alert alert-info has-stripe" style="background: rgba(34, 197, 94, 0.08); --stripe: var(--positive);">
           <div style="font-weight: 700; margin-bottom: 4px; color: var(--positive-fg);">
             ${t('anti_double_count_title', '🛡️ Anti-Double-Counting Methodology & Reporting Governance')}
           </div>
@@ -141,7 +141,7 @@ export async function renderFacultyReport(root) {
             </div>
           </div>
 
-          <div class="card" style="padding: var(--sp-md); border-top: 3px solid var(--primary);">
+          <div class="card has-stripe" style="padding: var(--sp-md); --stripe: var(--accent);">
             <div class="muted" style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700;">
               ${t('metric_consolidated_sroi', 'Consolidated Portfolio SROI')}
             </div>

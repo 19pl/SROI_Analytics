@@ -9,7 +9,7 @@ export function renderAuth(root) {
 
   root.innerHTML = `
     <div style="max-width: 520px; margin: 40px auto;">
-      <div class="card" style="box-shadow: var(--shadow-card); border-top: 4px solid var(--primary);">
+      <div class="card has-stripe" style="box-shadow: var(--shadow-card); --stripe: var(--accent);">
         <div class="card-head">
           <div>
             <div style="font-size: 0.75rem; font-weight: 700; color: var(--primary); text-transform: uppercase; margin-bottom: 2px;">
@@ -26,7 +26,7 @@ export function renderAuth(root) {
           user
             ? `
           <div class="stack" style="gap: var(--sp-md);">
-            <div class="alert alert-success" style="background: rgba(34, 197, 94, 0.08); border-left: 4px solid var(--positive);">
+            <div class="alert alert-success has-stripe" style="background: rgba(34, 197, 94, 0.08); --stripe: var(--positive);">
               <div>
                 <strong>${t('auth_signed_in_as', 'Signed in as:')}</strong>
                 <div style="font-size: 0.9375rem; font-weight: 700; margin-top: 2px; color: var(--on-background);">

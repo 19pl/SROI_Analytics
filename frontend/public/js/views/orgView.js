@@ -23,7 +23,7 @@ export async function renderOrg(root) {
       </div>
 
       <!-- Institutional Banner & Quick Overview -->
-      <div class="card" style="background: linear-gradient(180deg, var(--surface-card) 0%, var(--surface-soft) 100%); border-left: 4px solid var(--primary); padding: var(--sp-lg);">
+      <div class="card has-stripe" style="background: linear-gradient(180deg, var(--surface-card) 0%, var(--surface-soft) 100%); padding: var(--sp-lg); --stripe: var(--accent);">
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: var(--sp-md);">
           <div style="display: flex; align-items: center; gap: var(--sp-md);">
             <div style="width: 44px; height: 44px; border-radius: var(--radius-md); background: var(--primary-soft); color: var(--primary); display: grid; place-items: center; font-size: 1.5rem; flex-shrink: 0;">
@@ -239,7 +239,7 @@ export async function renderOrg(root) {
         ${faculties
           .map(
             (f) => `
-          <div class="card" style="padding: var(--sp-md); border-left: 4px solid var(--primary); transition: box-shadow 150ms var(--ease);">
+          <div class="card has-stripe" style="padding: var(--sp-md); transition: box-shadow 150ms var(--ease); --stripe: var(--accent);">
             <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: var(--sp-sm); gap: var(--sp-sm); flex-wrap: wrap;">
               <div>
                 <h3 style="font-size: 1.0625rem; font-weight: 700; margin-bottom: 2px; color: var(--on-background);">

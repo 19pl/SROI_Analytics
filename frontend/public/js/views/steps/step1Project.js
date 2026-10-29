@@ -29,7 +29,7 @@ export function renderStep1(container) {
   container.innerHTML = `
     <div class="stack" style="gap: var(--sp-xl);">
       <!-- Live Investment Summary Card -->
-      <div class="card" style="background: linear-gradient(180deg, var(--surface-card) 0%, var(--surface-soft) 100%); border-left: 4px solid var(--primary);">
+      <div class="card has-stripe" style="background: linear-gradient(180deg, var(--surface-card) 0%, var(--surface-soft) 100%); --stripe: var(--accent);">
         <div class="card-head">
           <div>
             <h2 class="card-title">${t('live_inv_baseline', 'Live Investment Baseline')}</h2>

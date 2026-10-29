@@ -26,7 +26,7 @@ export function renderStep5(container) {
   container.innerHTML = `
     <div class="stack" style="gap: var(--sp-xl);">
       <!-- Calculation Readiness Banner -->
-      <div class="card" style="border-left: 6px solid ${isReady ? 'var(--positive)' : 'var(--negative)'};">
+      <div class="card has-stripe" style="--stripe: ${isReady ? 'var(--positive)' : 'var(--negative)'};">
         <div class="card-head" style="margin-bottom: var(--sp-sm);">
           <div>
             <h2 class="card-title">
