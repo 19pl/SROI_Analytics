@@ -137,24 +137,34 @@
 .brand {
   display: flex;
   align-items: center;
-  gap: 10px;
-  height: 88px;
-  min-height: 88px;
+  gap: 12px;
+  height: 76px;
+  min-height: 76px;
+  padding: 0 18px;
   margin-bottom: 12px;
   font-weight: 700;
   font-size: 1.125rem;
   white-space: nowrap;
+  overflow: hidden;
 }
 
 .brand-logo {
   display: block;
-  flex: 0 0 88px;
-  width: 88px;
-  height: 88px;
+  flex: 0 0 48px;
+  width: 48px;
+  height: 48px;
   object-fit: contain;
-  background: #fff;
-  border-radius: 50%;
-  padding: 1px;
+  object-position: center;
+  border-radius: 10px;
+  transition:
+  width 0.2s ease,
+  height 0.2s ease,
+  flex-basis 0.2s ease;
+}
+
+.brand span {
+overflow: hidden;
+text-overflow: ellipsis;
 }
 
 .nav {
@@ -206,12 +216,18 @@
 .app.is-collapsed .brand {
   justify-content: center;
   gap: 0;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.app.is-collapsed .brand span {
+  display: none;
 }
 
 .app.is-collapsed .brand-logo {
-  flex-basis: 40px;
-  width: 40px;
-  height: 40px;
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
 }
 
 /* ---------- พื้นที่เนื้อหา ---------- */
@@ -252,17 +268,19 @@
   }
 
   .nav-item span,
-  .brand span:last-child {
+  .brand span {
     display: none;
   }
 
   .brand {
     justify-content: center;
     gap: 0;
+    padding-left: 0;
+    padding-right: 0;
   }
 
   .brand-logo {
-    flex-basis: 40px;
+    flex: 0 0 40px;
     width: 40px;
     height: 40px;
   }
