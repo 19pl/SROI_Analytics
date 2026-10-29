@@ -1,0 +1,228 @@
+/*
+ * โครงหลักของแอป: Sidebar + Header + พื้นที่เนื้อหา
+ * ความกว้าง Sidebar ที่ใช้งานอยู่ควบคุมด้วยตัวแปร --sw (ย่อ/ขยายด้วยคลาส .is-collapsed)
+ */
+
+/* ---------- App ---------- */
+.app {
+  --sw: var(--sidebar-w);
+  min-height: 100vh;
+  /* พื้นหลังเข้ม ตกแต่งด้วยแสงไล่ระดับสีส้มมุมซ้ายบน */
+  background:
+    radial-gradient(900px 500px at 0% 0%, rgba(243, 112, 33, 0.28), transparent 70%),
+    var(--dark-background);
+}
+
+.app.is-collapsed {
+  --sw: var(--sidebar-w-collapsed);
+}
+
+/* ---------- Sidebar + Header (ส่วนที่ใช้ร่วมกัน) ---------- */
+/* position: fixed ให้แถบอยู่กับที่ / z-index ให้อยู่เหนือเนื้อหา / backdrop-filter ทำพื้นหลังเบลอ */
+.shell-sidebar,
+.shell-header {
+  position: fixed;
+  z-index: 10;
+  background: var(--shell-bg);
+  backdrop-filter: blur(var(--shell-blur));
+  -webkit-backdrop-filter: blur(var(--shell-blur));
+  border: 0 solid var(--shell-border);
+  color: #fff;
+}
+
+/* Sidebar: ยึดด้านซ้ายเต็มความสูง มีแอนิเมชันตอนย่อ-ขยาย */
+.shell-sidebar {
+  inset: 0 auto 0 0;
+  width: var(--sw);
+  padding: var(--sp-lg);
+  border-right-width: 1px;
+  transition: width 300ms var(--ease);
+}
+
+/* Header: เริ่มถัดจาก Sidebar และขยายไปทางขวาจนสุดหน้าจอ */
+.shell-header {
+  top: 0;
+  right: 0;
+  left: var(--sw);
+  height: var(--header-h);
+  padding: 0 var(--sp-lg);
+  border-bottom-width: 1px;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-md);
+  transition: left 300ms var(--ease);
+}
+
+/* ชื่อหน้าใน Header ใช้พื้นที่ว่างที่เหลือ */
+.header-title {
+  flex: 1;
+  color: var(--shell-text-muted);
+  font-weight: 500;
+}
+
+/* ปุ่มโปร่งใสในแถบหลัก เช่น ปุ่มย่อ/ขยาย Sidebar */
+.btn-ghost-shell {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--shell-text-muted);
+  transition: background 150ms var(--ease);
+}
+
+.btn-ghost-shell:hover {
+  background: var(--primary);
+  color: #fff;
+}
+
+/* ---------- Sidebar: แบรนด์ + เมนู ---------- */
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 88px;
+  min-height: 88px;
+  margin-bottom: 12px;
+  font-weight: 700;
+  font-size: 1.125rem;
+  white-space: nowrap;
+}
+
+.brand-logo {
+  display: block;
+  flex: 0 0 88px;
+  width: 88px;
+  height: 88px;
+  object-fit: contain;
+  background: #fff;
+  border-radius: 50%;
+  padding: 1px;
+}
+
+.nav {
+  display: grid;
+  gap: var(--sp-xs);
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-md);
+  min-height: 36px;
+  padding: 6px 12px;
+  border-radius: var(--radius-md);
+  color: var(--shell-text-muted);
+  text-decoration: none;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  transition:
+    background 150ms var(--ease),
+    color 150ms var(--ease);
+}
+
+.nav-item svg {
+  flex: none;
+  width: 18px;
+  height: 18px;
+}
+
+.nav-item:hover,
+.nav-item.is-active {
+  background: var(--primary);
+  color: var(--on-primary);
+}
+
+/* Sidebar ที่ถูกย่อ: ซ่อนข้อความ เหลือแต่ไอคอน */
+.is-collapsed .brand span:last-child,
+.is-collapsed .nav-item span {
+  display: none;
+}
+
+.app.is-collapsed .shell-sidebar {
+  padding-left: 12px;
+  padding-right: 12px;
+}
+
+.app.is-collapsed .brand {
+  justify-content: center;
+  gap: 0;
+}
+
+.app.is-collapsed .brand-logo {
+  flex-basis: 40px;
+  width: 40px;
+  height: 40px;
+}
+
+/* ---------- พื้นที่เนื้อหา ---------- */
+/* เว้นด้านบนให้ Header และด้านซ้ายให้ Sidebar (ใช้ % ของ parent ไม่ใช้ 100vw) */
+.workspace {
+  margin-top: var(--header-h);
+  margin-left: var(--sw);
+  width: calc(100% - var(--sw));
+  min-height: calc(100vh - var(--header-h));
+  background: var(--background);
+  transition: margin 300ms var(--ease);
+  overflow-x: clip; /* กันล้นแนวนอนโดยไม่ตัดเงาการ์ดและไม่ทำให้ sticky พัง */
+}
+
+/* กล่องครอบเนื้อหาแต่ละหน้า: จำกัดความกว้าง จัดกลาง */
+.container {
+  width: 100%;
+  max-width: var(--container-max);
+  margin: 0 auto;
+  padding: var(--sp-xl) var(--sp-lg) var(--sp-2xl);
+}
+
+.page-title {
+  font-size: 1.5rem;
+  line-height: 2rem;
+  font-weight: 700;
+}
+
+.page-sub {
+  margin-bottom: var(--sp-xl);
+}
+
+/* ---------- Responsive ---------- */
+/* จอแท็บเล็ต/มือถือ: บังคับใช้ Sidebar แบบย่อเสมอ */
+@media (max-width: 768px) {
+  .app {
+    --sw: var(--sidebar-w-collapsed);
+  }
+
+  .nav-item span,
+  .brand span:last-child {
+    display: none;
+  }
+
+  .brand {
+    justify-content: center;
+    gap: 0;
+  }
+
+  .brand-logo {
+    flex-basis: 40px;
+    width: 40px;
+    height: 40px;
+  }
+
+  .container {
+    padding: var(--sp-md);
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding: var(--sp-sm);
+  }
+
+  .shell-header {
+    padding: 0 var(--sp-sm);
+  }
+}

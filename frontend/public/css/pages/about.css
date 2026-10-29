@@ -1,0 +1,405 @@
+/* หน้าแนะนำ SROI ("SROI คืออะไร") */
+
+.about-page {
+  display: grid;
+  gap: var(--sp-lg);
+}
+
+.about-page > .badge {
+  justify-self: start;
+}
+
+/* ใช้ร่วมกันในส่วน Hero และส่วนสูตร */
+.about-eyebrow {
+  margin: 0 0 6px;
+  color: var(--primary-strong);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+/* ---------- Hero ---------- */
+.about-hero {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  gap: var(--sp-lg);
+  align-items: start;
+  padding: clamp(20px, 3vw, 32px);
+  border: 1px solid rgba(243, 112, 33, 0.22);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(120deg, rgba(243, 112, 33, 0.11), rgba(255, 255, 255, 0.7));
+}
+
+.about-hero-icon {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  background: var(--primary);
+  color: white;
+}
+
+.about-hero-icon svg {
+  width: 28px;
+  height: 28px;
+}
+
+.about-hero h2 {
+  margin: 0 0 10px;
+  font-size: clamp(1.2rem, 2vw, 1.65rem);
+}
+
+.about-hero p:last-child {
+  max-width: 850px;
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.8;
+}
+
+/* ---------- การ์ด "SROI ช่วยให้เราเข้าใจอะไร" + "อ่านค่า SROI" ---------- */
+.about-content-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--sp-lg);
+}
+
+.about-list {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding-left: 20px;
+  line-height: 1.7;
+}
+
+.about-list li::marker {
+  color: var(--primary);
+}
+
+.about-ratio {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 12px;
+}
+
+.about-ratio strong {
+  color: var(--primary-strong);
+  font-size: 2.3rem;
+  line-height: 1;
+}
+
+.about-ratio span {
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.about-note {
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-soft);
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.6;
+}
+
+/* ---------- ขั้นตอนการประเมิน ---------- */
+.about-steps-card .card-head {
+  margin-bottom: 20px;
+}
+
+.about-steps {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.about-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.about-step > span {
+  display: grid;
+  place-items: center;
+  flex: 0 0 32px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(243, 112, 33, 0.13);
+  color: var(--primary-strong);
+  font-weight: 800;
+}
+
+.about-step h3 {
+  margin: 2px 0 5px;
+  font-size: 0.95rem;
+}
+
+.about-step p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.875rem;
+  line-height: 1.7;
+}
+
+/* ---------- คำศัพท์สำคัญ ---------- */
+.about-terms-card .card-head {
+  margin-bottom: 18px;
+}
+
+.about-terms-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.about-term {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  align-items: start;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--outline);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+}
+
+.about-term-symbol {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: var(--primary-soft);
+  color: var(--primary-strong);
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.about-term h3 {
+  margin: 1px 0 8px;
+  font-size: 0.98rem;
+}
+
+.about-term h3 span {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 500;
+}
+
+.about-term p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.86rem;
+  line-height: 1.75;
+}
+
+.about-term .about-term-example {
+  margin-top: 10px;
+  padding-top: 9px;
+  border-top: 1px solid var(--outline);
+  font-size: 0.82rem;
+}
+
+.about-term-example strong {
+  color: var(--primary-strong);
+}
+
+.about-terms-note {
+  margin: 16px 0 0;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-soft);
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.7;
+}
+
+/* ---------- แผงสูตรคำนวณ SROI (พื้นหลังเข้ม เข้ากับธีมส้ม-น้ำตาล) ---------- */
+.about-formula {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(280px, 0.8fr);
+  align-items: center;
+  gap: clamp(20px, 4vw, 48px);
+  padding: clamp(24px, 3vw, 36px);
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  background: radial-gradient(circle at 0% 0%, rgba(243, 112, 33, 0.15), transparent 42%), #211b18;
+  color: #fff;
+  box-shadow: 0 12px 28px rgba(33, 27, 24, 0.12);
+}
+
+/* แถบสีส้มแนวตั้งที่ขอบซ้าย */
+.about-formula::before {
+  content: '';
+  position: absolute;
+  inset: 20px auto 20px 0;
+  width: 4px;
+  border-radius: 0 4px 4px 0;
+  background: var(--primary);
+}
+
+.about-formula > div:first-child {
+  min-width: 0;
+}
+
+.about-formula .about-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 10px;
+  color: #ff9a59;
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+/* เส้นสั้นนำหน้า eyebrow */
+.about-formula .about-eyebrow::before {
+  content: '';
+  display: inline-block;
+  width: 20px;
+  height: 2px;
+  border-radius: 2px;
+  background: currentColor;
+}
+
+.about-formula h2 {
+  margin: 0 0 10px;
+  font-size: clamp(1.25rem, 2vw, 1.6rem);
+  letter-spacing: -0.02em;
+  line-height: 1.3;
+}
+
+.about-formula p:last-child {
+  max-width: 560px;
+  margin: 0;
+  color: rgba(255, 255, 255, 0.76);
+  font-size: 0.92rem;
+  line-height: 1.75;
+}
+
+/* กล่องสมการ: "SROI =" ทางซ้าย และเศษส่วนทางขวา */
+.about-formula-equation {
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  justify-items: stretch;
+  justify-self: end;
+  gap: clamp(14px, 2vw, 24px);
+  width: 100%;
+  max-width: 460px;
+  min-width: 0;
+  padding: clamp(20px, 2.5vw, 28px);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 18px;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.085), rgba(255, 255, 255, 0.035));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 8px 20px rgba(0, 0, 0, 0.08);
+  backdrop-filter: blur(6px);
+  color: #ffb37e;
+  font-size: 1.05rem;
+  font-weight: 800;
+  text-align: left;
+}
+
+.about-formula-label {
+  display: flex;
+  justify-content: flex-start;
+  align-items: baseline;
+  gap: 7px;
+  color: #fff;
+  font-size: clamp(1.1rem, 1.8vw, 1.4rem);
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.about-formula-label span {
+  color: #ffad78;
+  line-height: 1.6;
+}
+
+.about-formula-fraction {
+  display: grid;
+  grid-template-rows: auto 1px auto;
+  justify-items: center;
+  gap: 10px;
+  width: 100%;
+  min-width: 0;
+  text-align: center;
+}
+
+.about-formula-fraction span {
+  display: block;
+  max-width: 100%;
+  color: #fff5ed;
+  font-size: clamp(0.78rem, 1vw, 0.92rem);
+  font-weight: 600;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
+.about-formula-fraction .about-formula-numerator {
+  color: #ffd0ad;
+}
+
+/* เส้นคั่นเศษส่วน */
+.about-formula-fraction i {
+  display: block;
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.72), transparent);
+}
+
+.about-disclaimer {
+  margin: 0;
+  padding: 12px 16px;
+  border-left: 3px solid rgba(243, 112, 33, 0.65);
+  border-radius: 0 10px 10px 0;
+  background: rgba(243, 112, 33, 0.055);
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.8;
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 800px) {
+  .about-content-grid,
+  .about-steps,
+  .about-terms-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .about-formula {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 22px;
+  }
+
+  .about-formula-equation {
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: center;
+    justify-self: stretch;
+    gap: 14px;
+    max-width: none;
+    text-align: center;
+  }
+
+  .about-formula-label {
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .about-hero {
+    grid-template-columns: 1fr;
+  }
+}

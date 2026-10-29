@@ -1,0 +1,21 @@
+# Dependencies
+node_modules/
+vendor/
+
+# Electron build output (exe, installer, unpacked app, builder-debug.yml)
+dist/
+out/
+release/
+
+# Logs / OS / editor
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Env & local data
+.env
+*.local
+
