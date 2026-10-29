@@ -5,8 +5,13 @@ import { escapeHtml } from '../utils/html.js';
 import { formatBaht } from '../utils/format.js';
 import { icons } from '../components/icons.js';
 import { t } from '../i18n.js';
+import { isGuest, renderGuestPage } from '../components/guestNotice.js';
 
 export async function renderReports(root) {
+  if (isGuest()) {
+    renderGuestPage(root, 'reports');
+    return;
+  }
   const { project } = getState();
 
   if (!project) {

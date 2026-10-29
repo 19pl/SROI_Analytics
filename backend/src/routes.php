@@ -34,10 +34,9 @@ return function (Router $r, App $app): void {
     $faculties   = new FacultyController($app);
     $departments = new DepartmentController($app);
 
-    // public
+    // public (there is deliberately no self-registration: accounts are created with `php bin/user.php add`)
     $r->add('GET', '/health', [$meta, 'health'], true);
     $r->add('GET', '/meta', [$meta, 'meta'], true);
-    $r->add('POST', '/auth/register', [$auth, 'register'], true);
     $r->add('POST', '/auth/login', [$auth, 'login'], true);
     $r->add('GET', '/shared/{token}', [$reports, 'shared'], true);
 

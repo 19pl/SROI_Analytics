@@ -9,14 +9,15 @@ const API_BASE =
   'http://localhost:8000/api/v1';
 
 let authToken = localStorage.getItem('sroi_auth_token') || null;
+// The signed-in user is only ever set from a backend response (login or /auth/me), never from localStorage,
+// so the UI cannot show someone as signed in on the strength of a stale or forged browser value.
 let currentUser = null;
+let sessionExpired = false;
+const authListeners = new Set();
 
 try {
-  const savedUser = localStorage.getItem('sroi_user');
-  if (savedUser) currentUser = JSON.parse(savedUser);
-} catch (e) {
-  currentUser = null;
-}
+  localStorage.removeItem('sroi_user'); // legacy cached user from older versions
+} catch (e) {}
 
 export function getAuthToken() {
   return authToken;
@@ -26,23 +27,50 @@ export function getCurrentUser() {
   return currentUser;
 }
 
+/** Call fn(user | null) whenever the person signs in or out (including a token expiring). */
+export function subscribeAuth(fn) {
+  authListeners.add(fn);
+  return () => authListeners.delete(fn);
+}
+
+function notifyAuth() {
+  authListeners.forEach((fn) => {
+    try {
+      fn(currentUser);
+    } catch (e) {
+      console.error('Auth subscriber error:', e);
+    }
+  });
+}
+
+/** Add the person's highest role (from their organizations) to the user object, for the header. */
+export function userWithRole(user, organizations = []) {
+  const rank = { viewer: 1, editor: 2, owner: 3 };
+  const role = organizations.reduce((best, o) => (rank[o.role] > (rank[best] || 0) ? o.role : best), null);
+  return { ...user, role };
+}
+
 export function setSession(token, user) {
   authToken = token;
   currentUser = user;
   if (token) {
     localStorage.setItem('sroi_auth_token', token);
+    sessionExpired = false;
   } else {
     localStorage.removeItem('sroi_auth_token');
   }
-  if (user) {
-    localStorage.setItem('sroi_user', JSON.stringify(user));
-  } else {
-    localStorage.removeItem('sroi_user');
-  }
+  notifyAuth();
 }
 
 export function clearSession() {
   setSession(null, null);
+}
+
+/** True once if the last sign-out was caused by an expired/revoked token (so the login page can say so). */
+export function consumeSessionExpired() {
+  const v = sessionExpired;
+  sessionExpired = false;
+  return v;
 }
 
 /**
@@ -76,6 +104,10 @@ async function request(path, options = {}) {
   // Handle blob responses (e.g. PDF/CSV exports)
   if (options.responseType === 'blob') {
     if (!response.ok) {
+      if (response.status === 401 && authToken) {
+        sessionExpired = true;
+        clearSession();
+      }
       const errText = await response.text();
       let msg = 'Failed to export document';
       try {
@@ -95,6 +127,12 @@ async function request(path, options = {}) {
   const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
+    // A 401 while we were holding a token means it expired or was revoked: drop back to guest mode.
+    // (A failed sign-in has no token yet, so it never lands here.)
+    if (response.status === 401 && authToken) {
+      sessionExpired = true;
+      clearSession();
+    }
     const error = new Error(data.error?.message || `Request failed with status ${response.status}`);
     error.code = data.error?.code;
     error.details = data.error?.details || {};
@@ -117,35 +155,41 @@ export const api = {
   health: () => request('/health'),
   meta: () => request('/meta'),
 
-  // Auth
-  register: (email, name, password) =>
-    request('/auth/register', { method: 'POST', body: { email, name, password } }),
+  // Auth (there is no register: accounts are created by an administrator with `php bin/user.php add`)
   login: (email, password) =>
     request('/auth/login', { method: 'POST', body: { email, password } }),
-  logout: () => request('/auth/logout', { method: 'POST' }),
   me: () => request('/auth/me'),
+  /** Sign out. Always ends up signed out locally, even if the server could not be reached. */
+  logout: async () => {
+    try {
+      await request('/auth/logout', { method: 'POST' });
+    } catch (e) {
+      // token already invalid or backend unreachable: nothing more to revoke from here
+    } finally {
+      sessionExpired = false;
+      if (authToken) clearSession(); // a 401 above may already have done it
+    }
+  },
 
   /**
-   * Restore an existing authenticated session from localStorage.
-   * If no valid token is found, returns null — the caller should redirect to login.
-   * No credentials are ever stored in or read from source code.
+   * Restore the session on page load by asking the backend who the stored token belongs to.
+   * Returns the user, or null for a guest (no token, or the token is expired/revoked).
+   * Throws only if the backend cannot be reached; the token is kept so a reload works once it is back.
+   * Note /auth/me answers { user, organizations } (there is no "data" wrapper).
    */
-  ensureDemoSession: async () => {
-    if (!authToken) {
-      return null;
-    }
+  restoreSession: async () => {
+    if (!authToken) return null;
     try {
-      const me = await api.me();
-      if (me?.data) {
-        currentUser = me.data;
-        setSession(authToken, currentUser);
-        return me.data;
+      const me = await request('/auth/me');
+      if (me?.user) {
+        currentUser = userWithRole(me.user, me.organizations);
+        return currentUser;
       }
-    } catch (e) {
-      // Token expired or invalid — clear and let caller redirect to login
-      clearSession();
+      return null;
+    } catch (err) {
+      if (err.status === 401) return null; // expired/revoked: request() already cleared the token
+      throw err;
     }
-    return null;
   },
 
   // Organizations

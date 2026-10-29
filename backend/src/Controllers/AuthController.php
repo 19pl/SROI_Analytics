@@ -13,38 +13,11 @@ use App\Core\Validator;
 final class AuthController
 {
     private const MAX_FAILED_LOGINS = 10; // per email+ip per 15 minutes
+    /** A well-formed bcrypt hash (of a throw-away string) so unknown emails cost the same time as known ones. */
+    private const DUMMY_HASH = '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi';
 
     public function __construct(private App $app)
     {
-    }
-
-    public function register(Request $req): Response
-    {
-        $d = Validator::validate($req->body(), [
-            'email' => ['type' => 'email', 'required' => true],
-            'name' => ['type' => 'string', 'required' => true, 'max' => 120],
-            'password' => ['type' => 'string', 'required' => true, 'min' => 10, 'max' => 200],
-            'organization_name' => ['type' => 'string', 'max' => 200, 'nullable' => true],
-        ]);
-        $db = $this->app->db;
-        if ($db->val('SELECT 1 FROM users WHERE email = ?', [$d['email']]) !== null) {
-            throw HttpException::conflict('An account with this email already exists');
-        }
-        $result = $db->transaction(function () use ($db, $d) {
-            $uid = $db->insert('users', ['email' => $d['email'], 'name' => $d['name'], 'password_hash' => password_hash($d['password'], PASSWORD_DEFAULT)]);
-            $orgName = ($d['organization_name'] ?? null) ?: $d['name'] . "'s workspace";
-            $oid = $db->insert('organizations', ['name' => $orgName, 'created_by' => $uid]);
-            $db->insert('memberships', ['organization_id' => $oid, 'user_id' => $uid, 'role' => 'owner']);
-            return [$uid, $oid, $orgName];
-        });
-        [$uid, $oid, $orgName] = $result;
-        $tok = Auth::issueToken($this->app, $uid);
-        return Response::json([
-            'user' => ['id' => $uid, 'email' => $d['email'], 'name' => $d['name']],
-            'organizations' => [['id' => $oid, 'name' => $orgName, 'role' => 'owner']],
-            'token' => $tok['token'],
-            'token_expires_at' => $tok['expires_at'],
-        ], 201);
     }
 
     public function login(Request $req): Response
@@ -63,7 +36,7 @@ final class AuthController
         }
         $u = $db->one('SELECT * FROM users WHERE email = ?', [$d['email']]);
         // always run a hash verification so timing does not reveal whether the account exists
-        $hash = $u['password_hash'] ?? '$2y$10$usesomesillystringforsaltzOq1Gm1Z7xYkXfM3Yp2eN6r5eFZ0hHy';
+        $hash = $u['password_hash'] ?? self::DUMMY_HASH;
         $ok = password_verify($d['password'], $hash) && $u !== null;
         if (!$ok) {
             $db->insert('login_attempts', ['email' => $d['email'], 'ip' => $req->ip]);

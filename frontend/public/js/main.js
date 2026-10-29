@@ -1,7 +1,8 @@
 import { APP_TITLE } from './config/constants.js';
 import { routes } from './routes.js';
-import { api, getCurrentUser } from './api.js';
-import { loadProject, getState, subscribe } from './store.js';
+import { api, getCurrentUser, subscribeAuth } from './api.js';
+import { loadProject, getState, subscribe, resetStore } from './store.js';
+import { signInHref } from './components/guestNotice.js';
 import { escapeHtml } from './utils/html.js';
 import { t, getLanguage, setLanguage, subscribeLanguage } from './i18n.js';
 import { getTheme, setTheme, toggleTheme, subscribeTheme, initTheme } from './theme.js';
@@ -36,7 +37,9 @@ function renderNav() {
   if (navEl) {
     navEl.innerHTML =
       '<span class="nav-indicator" aria-hidden="true"></span>' +
-      routes.filter((r) => !r.hidden).map(navItemHtml).join('');
+      routes
+        .filter((r) => !r.hidden && !(r.path === '#/auth' && !getCurrentUser())) // account page is for signed-in users
+        .map(navItemHtml).join('');
     navEl.classList.add('has-indicator');
   }
 }
@@ -116,25 +119,70 @@ function updateHeader() {
     }
   }
 
-  const badgeEl = $('headerBadge');
-  if (badgeEl && user) {
-    badgeEl.textContent = user.name || 'Analyst';
-    badgeEl.className = 'badge badge-integrated';
-    badgeEl.style.cursor = 'pointer';
-    badgeEl.title = t('view_account', 'View Account');
-    badgeEl.onclick = () => (window.location.hash = '#/auth');
+  // Header account button: "Sign in" for guests, name + role for signed-in users
+  const accountBtn = $('headerBadge');
+  if (accountBtn) {
+    const userIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>';
+    if (user) {
+      const role = user.role ? ` · ${escapeHtml(t('role_short_' + user.role, user.role))}` : '';
+      accountBtn.innerHTML = `${userIcon}<span>${escapeHtml(user.name || 'Analyst')}${role}</span>`;
+      accountBtn.title = t('view_account', 'View Account');
+      accountBtn.onclick = () => (window.location.hash = '#/auth');
+    } else {
+      accountBtn.innerHTML = `${userIcon}<span>${t('nav_sign_in', 'Sign In')}</span>`;
+      accountBtn.title = t('nav_sign_in', 'Sign In');
+      accountBtn.onclick = () => (window.location.hash = signInHref());
+    }
   }
 
   updateControls();
 }
 
+// false until the stored session has been checked, so we never flash a guest page at someone who is signed in
+let ready = false;
+
 async function navigate() {
+  if (!ready) return;
   const currentHash = location.hash || '#/projects';
   const route = findRoute(currentHash);
 
+  // the sign-in page is stand-alone: no sidebar or header around it
+  $('app')?.classList.toggle('is-login', route.path === '#/login');
   await route.render($('view'));
   highlightActiveNav(route);
   updateHeader();
+}
+
+/** Open the project the person last used (or their first one) so the calculator pages have data. */
+async function loadInitialProject() {
+  const savedProjectId = localStorage.getItem('sroi_active_project_id');
+  if (savedProjectId) {
+    await loadProject(Number(savedProjectId));
+    if (getState().project) return;
+    localStorage.removeItem('sroi_active_project_id'); // deleted or no longer accessible
+  }
+  const projRes = await api.getProjects();
+  const list = projRes?.data || [];
+  if (list.length > 0) {
+    await loadProject(list[0].id);
+  }
+}
+
+// Signing in loads that person's data; signing out (or an expired token) wipes it. Either way the page is redrawn.
+async function onAuthChange(user) {
+  if (!ready) return;
+  if (user) {
+    try {
+      await loadInitialProject();
+    } catch (err) {
+      console.warn('Could not load projects after sign-in:', err.message);
+    }
+  } else {
+    resetStore();
+  }
+  renderNav();
+  updateHeader();
+  navigate();
 }
 
 async function init() {
@@ -177,31 +225,22 @@ async function init() {
 
   // Subscribe header updates to store changes
   subscribe(updateHeader);
+  subscribeAuth(onAuthChange);
 
-  // Restore existing session; redirect to login if none found
+  // Restore an existing session. No token / expired token = guest: the app still opens normally and
+  // every page is viewable; pages that need data show a "sign in to see data" notice.
   try {
-    const user = await api.ensureDemoSession();
-    if (!user) {
-      // No valid session — go to login page unless already there
-      if (location.hash !== '#/auth') {
-        window.location.hash = '#/auth';
-      }
-    } else {
-      const savedProjectId = localStorage.getItem('sroi_active_project_id');
-      if (savedProjectId) {
-        await loadProject(Number(savedProjectId));
-      } else {
-        const projRes = await api.getProjects();
-        const list = projRes?.data || [];
-        if (list.length > 0) {
-          await loadProject(list[0].id);
-        }
-      }
+    const user = await api.restoreSession();
+    if (user) {
+      await loadInitialProject();
     }
   } catch (err) {
+    // backend unreachable: stay in guest mode (the stored token is kept for the next reload)
     console.warn('Backend connection note:', err.message);
   }
 
+  ready = true;
+  renderNav(); // the account entry only appears once someone is signed in
   navigate();
 }
 

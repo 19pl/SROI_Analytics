@@ -9,8 +9,13 @@ import { escapeHtml } from '../utils/html.js';
 import { formatCurrency, formatNumber } from '../utils/format.js';
 import { card } from '../components/ui.js';
 import { t } from '../i18n.js';
+import { isGuest, renderGuestPage } from '../components/guestNotice.js';
 
 export async function renderFacultyReport(root) {
+  if (isGuest()) {
+    renderGuestPage(root, 'facultyReport');
+    return;
+  }
   const hash = window.location.hash || '';
   const urlParams = new URLSearchParams(hash.includes('?') ? hash.split('?')[1] : '');
   const facultyId = Number(urlParams.get('id'));

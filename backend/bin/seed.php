@@ -10,27 +10,17 @@ $db = $app->db;
 
 echo "Seeding database...\n";
 
-// 1. Create or get demo user
-$user = $db->one('SELECT * FROM users WHERE email = ?', ['demo@impactvalue.local']);
-if (!$user) {
-    $db->run(
-        'INSERT INTO users (email, name, password_hash) VALUES (?, ?, ?)',
-        ['demo@impactvalue.local', 'Social Impact Analyst', password_hash('DemoPassword123!', PASSWORD_DEFAULT)]
-    );
-    $user = $db->one('SELECT * FROM users WHERE email = ?', ['demo@impactvalue.local']);
-}
+// 1. No users are created here. Accounts are added by hand: `php bin/user.php add --email=... --name=...`
+//    Seeded rows therefore have created_by = NULL (the column is nullable).
+$ownerId = null;
 
-// 2. Create organization
-$org = $db->one('SELECT * FROM organizations WHERE created_by = ?', [$user['id']]);
+// 2. Create (or find) the Naresuan University organization
+$org = $db->one('SELECT * FROM organizations WHERE name = ?', ['มหาวิทยาลัยนเรศวร (Naresuan University)']);
 if (!$org) {
     $orgId = $db->insert('organizations', [
         'name' => 'มหาวิทยาลัยนเรศวร (Naresuan University)',
-        'created_by' => $user['id'],
+        'created_by' => $ownerId,
     ]);
-    $db->run(
-        'INSERT OR IGNORE INTO memberships (organization_id, user_id, role) VALUES (?, ?, ?)',
-        [$orgId, $user['id'], 'owner']
-    );
     $org = $db->one('SELECT * FROM organizations WHERE id = ?', [$orgId]);
 }
 
@@ -129,7 +119,7 @@ if (!$proj) {
         'investment_basis' => 'nominal',
         'include_in_kind' => 1,
         'status' => 'ready',
-        'created_by' => $user['id'],
+        'created_by' => $ownerId,
     ]);
 
     // Costs (matching PRD Section 1.2: Equipment 20,000, Staff 50,000, Materials 10,000, Admin 10,000 = 90,000)
@@ -322,7 +312,7 @@ if (!$fac) {
         'organization_id' => $org['id'],
         'name'            => 'คณะสหเวชศาสตร์',
         'description'     => 'Faculty of Allied Health Sciences, Naresuan University',
-        'created_by'      => $user['id'],
+        'created_by'      => $ownerId,
     ]);
     echo "Faculty created: คณะสหเวชศาสตร์ (#$facId)\n";
 
@@ -331,7 +321,7 @@ if (!$fac) {
         'faculty_id'  => $facId,
         'name'        => 'ภาควิชากายภาพบำบัด',
         'description' => 'Department of Physical Therapy',
-        'created_by'  => $user['id'],
+        'created_by'  => $ownerId,
     ]);
     echo "Department created: ภาควิชากายภาพบำบัด (#$deptId)\n";
 
@@ -354,7 +344,7 @@ if (!$fac) {
         'investment_basis'      => 'nominal',
         'include_in_kind'       => 1,
         'status'                => 'ready',
-        'created_by'            => $user['id'],
+        'created_by'            => $ownerId,
     ]);
     $db->insert('scenarios', ['project_id' => $pEyeId, 'name' => 'Base case', 'kind' => 'base', 'is_base' => 1, 'assumptions' => '{}']);
     $db->insert('project_costs', [
@@ -393,7 +383,7 @@ if (!$fac) {
         'investment_basis'      => 'nominal',
         'include_in_kind'       => 1,
         'status'                => 'ready',
-        'created_by'            => $user['id'],
+        'created_by'            => $ownerId,
     ]);
     $db->insert('scenarios', ['project_id' => $pHydroId, 'name' => 'Base case', 'kind' => 'base', 'is_base' => 1, 'assumptions' => '{}']);
     $db->insert('project_costs', [

@@ -11,8 +11,13 @@ import { card } from '../components/ui.js';
 import { icons } from '../components/icons.js';
 import { escapeHtml } from '../utils/html.js';
 import { t } from '../i18n.js';
+import { isGuest, renderGuestPage } from '../components/guestNotice.js';
 
 export async function renderProjects(root) {
+  if (isGuest()) {
+    renderGuestPage(root, 'projects');
+    return;
+  }
   root.innerHTML = `
     <div class="stack" style="gap: var(--sp-lg);">
       <!-- Header with Action -->

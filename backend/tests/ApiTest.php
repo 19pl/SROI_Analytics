@@ -27,24 +27,56 @@ $call = function (string $method, string $path, ?array $body = null, ?string $to
     return [$res->status, $json, $res];
 };
 
+/**
+ * Test fixture: there is no registration endpoint any more, so create a user (+ their own organization as owner)
+ * straight in the database, then sign in through the real /auth/login endpoint.
+ * Returns [status, json] shaped like the old register response: token, user, organizations.
+ * @return array{0:int,1:mixed}
+ */
+$register = function (array $d) use ($app, $call): array {
+    $db = $app->db;
+    $uid = $db->insert('users', ['email' => $d['email'], 'name' => $d['name'], 'password_hash' => password_hash($d['password'], PASSWORD_DEFAULT)]);
+    $orgName = $d['organization_name'] ?? ($d['name'] . "'s workspace");
+    $oid = $db->insert('organizations', ['name' => $orgName, 'created_by' => $uid]);
+    $db->insert('memberships', ['organization_id' => $oid, 'user_id' => $uid, 'role' => 'owner']);
+    [$s, $j] = $call('POST', '/auth/login', ['email' => $d['email'], 'password' => $d['password']]);
+    return [$s === 200 ? 201 : $s, $j];
+};
+
 // ---- auth ----------------------------------------------------------------------------------------
-T::test('api: register, login, me, bad credentials, weak password, duplicate email', function () use ($call) {
-    [$s, $j] = $call('POST', '/auth/register', ['email' => 'a@x.org', 'name' => 'Alice', 'password' => 'correct-horse-9']);
-    T::eq(201, $s);
-    [$s] = $call('POST', '/auth/register', ['email' => 'A@x.org', 'name' => 'Alice', 'password' => 'correct-horse-9']);
-    T::eq(409, $s, 'duplicate email (case-insensitive)');
-    [$s] = $call('POST', '/auth/register', ['email' => 'b@x.org', 'name' => 'B', 'password' => 'short']);
-    T::eq(422, $s);
+T::test('api: login, me, bad credentials, logout (no self-registration)', function () use ($call, $register) {
+    [$s] = $call('POST', '/auth/register', ['email' => 'x@x.org', 'name' => 'X', 'password' => 'correct-horse-9']);
+    T::eq(404, $s, 'registration endpoint is gone');
+    $register(['email' => 'a@x.org', 'name' => 'Alice', 'password' => 'correct-horse-9']);
     [$s] = $call('POST', '/auth/login', ['email' => 'a@x.org', 'password' => 'wrong-password']);
     T::eq(401, $s);
-    [$s, $j] = $call('POST', '/auth/login', ['email' => 'a@x.org', 'password' => 'correct-horse-9']);
-    T::eq(200, $s);
+    [$s] = $call('POST', '/auth/login', ['email' => 'nobody@x.org', 'password' => 'whatever-123']);
+    T::eq(401, $s, 'unknown email gets the same answer as a wrong password');
+    [$s, $j] = $call('POST', '/auth/login', ['email' => 'A@x.org', 'password' => 'correct-horse-9']);
+    T::eq(200, $s, 'email is case-insensitive');
     [$s, $me] = $call('GET', '/auth/me', null, $j['token']);
+    T::eq(200, $s);
     T::eq('Alice', $me['user']['name']);
+    T::eq('owner', $me['organizations'][0]['role']);
     [$s] = $call('GET', '/auth/me');
     T::eq(401, $s);
     [$s] = $call('GET', '/auth/me', null, 'deadbeef');
     T::eq(401, $s);
+    [$s] = $call('POST', '/auth/logout', null, $j['token']);
+    T::eq(204, $s);
+    [$s] = $call('GET', '/auth/me', null, $j['token']);
+    T::eq(401, $s, 'token is dead after logout');
+});
+
+T::test('api: guests (no token) get 401 on every data route but can reach health/meta', function () use ($call) {
+    foreach (['/projects', '/organizations', '/proxies', '/projects/1', '/faculties/1', '/departments/1', '/reports/1'] as $path) {
+        [$s] = $call('GET', $path);
+        T::eq(401, $s, "GET $path without a token");
+    }
+    [$s] = $call('GET', '/health');
+    T::eq(200, $s);
+    [$s] = $call('GET', '/meta');
+    T::eq(200, $s);
 });
 
 T::test('api: login is rate limited after repeated failures', function () use ($call) {
@@ -56,8 +88,8 @@ T::test('api: login is rate limited after repeated failures', function () use ($
 });
 
 // ---- full workflow ---------------------------------------------------------------------------------
-T::test('api: full SROI workflow reproduces the spec example and exports', function () use ($call, $app, $tmp) {
-    [, $reg] = $call('POST', '/auth/register', ['email' => 'owner@x.org', 'name' => 'Owner', 'password' => 'correct-horse-9', 'organization_name' => 'Uni']);
+T::test('api: full SROI workflow reproduces the spec example and exports', function () use ($call, $app, $tmp, $register) {
+    [, $reg] = $register(['email' => 'owner@x.org', 'name' => 'Owner', 'password' => 'correct-horse-9', 'organization_name' => 'Uni']);
     $tok = $reg['token'];
 
     [$s, $p] = $call('POST', '/projects', ['name' => 'Tutoring', 'currency' => 'thb', 'analysis_period_years' => 1, 'discount_rate' => 0.03,
@@ -230,9 +262,9 @@ T::test('api: full SROI workflow reproduces the spec example and exports', funct
 });
 
 // ---- authorisation -----------------------------------------------------------------------------------
-T::test('api: tenant isolation and role-based permissions', function () use ($call) {
-    [, $a] = $call('POST', '/auth/register', ['email' => 'iso-a@x.org', 'name' => 'A', 'password' => 'correct-horse-9']);
-    [, $b] = $call('POST', '/auth/register', ['email' => 'iso-b@x.org', 'name' => 'B', 'password' => 'correct-horse-9']);
+T::test('api: tenant isolation and role-based permissions', function () use ($call, $register) {
+    [, $a] = $register(['email' => 'iso-a@x.org', 'name' => 'A', 'password' => 'correct-horse-9']);
+    [, $b] = $register(['email' => 'iso-b@x.org', 'name' => 'B', 'password' => 'correct-horse-9']);
     [, $p] = $call('POST', '/projects', ['name' => 'Private', 'currency' => 'USD'], $a['token']);
     $pid = $p['data']['id'];
     foreach (['GET', 'PATCH', 'DELETE'] as $m) {
@@ -261,8 +293,8 @@ T::test('api: tenant isolation and role-based permissions', function () use ($ca
     T::eq(403, $s, 'viewer cannot promote self');
 });
 
-T::test('api: incomplete project gives 422 with actionable codes, dashboard reports incomplete', function () use ($call) {
-    [, $a] = $call('POST', '/auth/register', ['email' => 'inc@x.org', 'name' => 'I', 'password' => 'correct-horse-9']);
+T::test('api: incomplete project gives 422 with actionable codes, dashboard reports incomplete', function () use ($call, $register) {
+    [, $a] = $register(['email' => 'inc@x.org', 'name' => 'I', 'password' => 'correct-horse-9']);
     [, $p] = $call('POST', '/projects', ['name' => 'Draft', 'currency' => 'THB'], $a['token']);
     $pid = $p['data']['id'];
     [$s, $j] = $call('POST', "/projects/$pid/calculate", [], $a['token']);
@@ -275,8 +307,8 @@ T::test('api: incomplete project gives 422 with actionable codes, dashboard repo
     T::eq(422, $s);
 });
 
-T::test('api: stateless preview, malformed bodies, unknown routes, CORS, security headers', function () use ($call, $kernel) {
-    [, $a] = $call('POST', '/auth/register', ['email' => 'pv@x.org', 'name' => 'P', 'password' => 'correct-horse-9']);
+T::test('api: stateless preview, malformed bodies, unknown routes, CORS, security headers', function () use ($call, $kernel, $register) {
+    [, $a] = $register(['email' => 'pv@x.org', 'name' => 'P', 'password' => 'correct-horse-9']);
     $snap = ['project' => ['currency' => 'THB', 'analysis_period_years' => 1, 'discount_rate' => 0, 'investment_basis' => 'nominal'],
         'costs' => [['category' => 'opex', 'description' => 'c', 'amount' => 100, 'year' => 0]], 'stakeholders' => [['id' => 1, 'name' => 's']],
         'outcomes' => [['id' => 1, 'stakeholder_id' => 1, 'name' => 'o', 'quantity' => 1, 'proxy_value' => 350, 'evidence_quality' => 'measured']]];
@@ -301,8 +333,8 @@ T::test('api: stateless preview, malformed bodies, unknown routes, CORS, securit
     T::eq('nosniff', $res->headers['X-Content-Type-Options']);
 });
 
-T::test('api: SQL-injection style input is treated as data', function () use ($call) {
-    [, $a] = $call('POST', '/auth/register', ['email' => 'sqli@x.org', 'name' => "Robert'); DROP TABLE users;--", 'password' => 'correct-horse-9']);
+T::test('api: SQL-injection style input is treated as data', function () use ($call, $register) {
+    [, $a] = $register(['email' => 'sqli@x.org', 'name' => "Robert'); DROP TABLE users;--", 'password' => 'correct-horse-9']);
     T::true(isset($a['token']));
     [$s, $l] = $call('GET', '/proxies', null, $a['token'], ['q' => "' OR 1=1 --"]);
     T::eq(200, $s);
@@ -311,9 +343,9 @@ T::test('api: SQL-injection style input is treated as data', function () use ($c
     T::eq(200, $s);
 });
 
-T::test('api: proxy library is organisation scoped, searchable, requires a source', function () use ($call) {
-    [, $a] = $call('POST', '/auth/register', ['email' => 'px-a@x.org', 'name' => 'A', 'password' => 'correct-horse-9']);
-    [, $b] = $call('POST', '/auth/register', ['email' => 'px-b@x.org', 'name' => 'B', 'password' => 'correct-horse-9']);
+T::test('api: proxy library is organisation scoped, searchable, requires a source', function () use ($call, $register) {
+    [, $a] = $register(['email' => 'px-a@x.org', 'name' => 'A', 'password' => 'correct-horse-9']);
+    [, $b] = $register(['email' => 'px-b@x.org', 'name' => 'B', 'password' => 'correct-horse-9']);
     $org = $a['organizations'][0]['id'];
     [$s] = $call('POST', "/organizations/$org/proxies", ['name' => 'Hour of tutoring', 'category' => 'Education', 'unit' => 'hour', 'currency' => 'thb', 'value' => 300], $a['token']);
     T::eq(422, $s, 'source required');
@@ -329,8 +361,8 @@ T::test('api: proxy library is organisation scoped, searchable, requires a sourc
 });
 
 // ---- faculty & department hierarchy -------------------------------------------------------------------------
-T::test('api: faculty CRUD, department CRUD, plan ownership, consolidated report', function () use ($call) {
-    [, $a] = $call('POST', '/auth/register', ['email' => 'fac@x.org', 'name' => 'FacOwner', 'password' => 'correct-horse-9']);
+T::test('api: faculty CRUD, department CRUD, plan ownership, consolidated report', function () use ($call, $register) {
+    [, $a] = $register(['email' => 'fac@x.org', 'name' => 'FacOwner', 'password' => 'correct-horse-9']);
     $tok  = $a['token'];
     $oid  = $a['organizations'][0]['id'];
 
@@ -420,8 +452,8 @@ T::test('api: faculty CRUD, department CRUD, plan ownership, consolidated report
     T::eq(409, $s, 'faculty with plans cannot be deleted');
 });
 
-T::test('api: stakeholder group fields are stored and retrieved', function () use ($call) {
-    [, $a] = $call('POST', '/auth/register', ['email' => 'stkg@x.org', 'name' => 'G', 'password' => 'correct-horse-9']);
+T::test('api: stakeholder group fields are stored and retrieved', function () use ($call, $register) {
+    [, $a] = $register(['email' => 'stkg@x.org', 'name' => 'G', 'password' => 'correct-horse-9']);
     $tok = $a['token'];
     [, $p] = $call('POST', '/projects', ['name' => 'Grp', 'currency' => 'THB'], $tok);
     $pid = $p['data']['id'];

@@ -5,6 +5,7 @@
 import { getState, subscribe } from '../store.js';
 import { stepperHtml } from '../components/stepper.js';
 import { renderHelpPanel } from '../components/helpPanel.js';
+import { isGuest, guestStepHtml } from '../components/guestNotice.js';
 import { renderStep1 } from './steps/step1Project.js';
 import { renderStep2 } from './steps/step2Stakeholders.js';
 import { renderStep3 } from './steps/step3Outcomes.js';
@@ -39,6 +40,12 @@ export function renderCalculator(root) {
   const helpContainer = document.getElementById('wizardHelpPanel');
 
   renderHelpPanel(helpContainer, stepNum);
+
+  // Guests see the stepper, help text and a description of the step; the forms need project data
+  if (isGuest()) {
+    contentContainer.innerHTML = guestStepHtml(stepNum);
+    return;
+  }
 
   // Render Step View
   switch (stepNum) {

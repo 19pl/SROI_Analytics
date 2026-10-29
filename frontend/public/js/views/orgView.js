@@ -3,8 +3,13 @@ import { openModal, closeModal, confirmModal } from '../components/modal.js';
 import { escapeHtml } from '../utils/html.js';
 import { icons } from '../components/icons.js';
 import { t } from '../i18n.js';
+import { isGuest, renderGuestPage } from '../components/guestNotice.js';
 
 export async function renderOrg(root) {
+  if (isGuest()) {
+    renderGuestPage(root, 'org');
+    return;
+  }
   const user = getCurrentUser();
 
   root.innerHTML = `
