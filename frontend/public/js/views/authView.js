@@ -36,8 +36,8 @@ export function renderAuth(root) {
 
             <div style="border-top: 1px solid var(--outline); padding-top: var(--sp-md); margin-top: var(--sp-sm);">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--sp-sm);">
-                <h3 style="font-size: 0.9375rem;">${t('filter_org', 'Organizations')}</h3>
-                <button class="btn btn-secondary" id="btnCreateOrg" style="height: 28px; font-size: 0.75rem;">+ New Org</button>
+                <h3 style="font-size: 0.9375rem;">${t('filter_org', 'Organization')}</h3>
+                <span class="badge badge-planned" style="font-size: 0.6875rem;">${t('fixed_nu_only', 'Fixed: NU Only')}</span>
               </div>
               <div id="orgListContainer" class="stack" style="gap: var(--sp-xs);">
                 <div class="muted">${t('loading', 'Loading organizations...')}</div>

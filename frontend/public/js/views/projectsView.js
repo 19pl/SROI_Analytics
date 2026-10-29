@@ -29,8 +29,11 @@ export async function renderProjects(root) {
       <div class="card" style="padding: var(--sp-md); margin-bottom: var(--sp-lg);">
         <div style="display: flex; gap: var(--sp-md); flex-wrap: wrap; align-items: flex-end;">
           <div style="flex: 1; min-width: 200px;">
-            <label class="field-label" style="font-size: 0.75rem; text-transform: uppercase;">${t('filter_org', 'Organization')}</label>
-            <select id="filterOrg" class="input" style="height: 36px;"></select>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+              <label class="field-label" style="font-size: 0.75rem; text-transform: uppercase; margin-bottom: 0;">${t('filter_org', 'Organization')}</label>
+              <span class="badge badge-planned" style="font-size: 0.6875rem; padding: 1px 6px;">${t('fixed_nu_only', 'Fixed: NU Only')}</span>
+            </div>
+            <select id="filterOrg" class="input" style="height: 36px; background: var(--surface-soft); color: var(--on-background); cursor: default;" disabled title="Fixed to Naresuan University (NU) only"></select>
           </div>
           <div style="flex: 1; min-width: 200px;">
             <label class="field-label" style="font-size: 0.75rem; text-transform: uppercase;">${t('filter_faculty', 'Faculty Filter')}</label>
@@ -61,18 +64,20 @@ export async function renderProjects(root) {
   let organizations = [];
   let faculties = [];
   let departments = [];
+  let nuOrgId = 1;
 
-  // Load filter options
+  // Load filter options - Fixed to NU only
   try {
     const orgRes = await api.getOrganizations();
     organizations = orgRes.data || [];
-    filterOrg.innerHTML = organizations
-      .map((o) => `<option value="${o.id}">${escapeHtml(o.name)}</option>`)
-      .join('');
+    const nuOrg = organizations.find((o) =>
+      o.name.toLowerCase().includes('naresuan') || o.name.includes('นเรศวร')
+    ) || organizations[0] || { id: 1, name: 'มหาวิทยาลัยนเรศวร (Naresuan University)' };
 
-    if (organizations.length > 0) {
-      await loadFacultiesForOrg(Number(filterOrg.value));
-    }
+    nuOrgId = nuOrg.id;
+    filterOrg.innerHTML = `<option value="${nuOrg.id}" selected>${escapeHtml(nuOrg.name)}</option>`;
+
+    await loadFacultiesForOrg(Number(nuOrg.id));
   } catch (e) {
     console.warn('Could not load orgs:', e);
   }
@@ -257,6 +262,11 @@ export async function renderProjects(root) {
 function openCreateProjectModal({ currentOrgId, faculties, onCreated }) {
   const formHtml = `
     <form id="createProjectForm" class="stack" style="gap: var(--sp-md);">
+      <div class="field" style="display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; background: var(--surface-soft); border-radius: var(--radius-sm); border: 1px solid var(--outline);">
+        <span style="font-size: 0.75rem; color: var(--muted);">${t('filter_org', 'Organization')}:</span>
+        <strong style="font-size: 0.8125rem;">${t('org_nu_title', 'มหาวิทยาลัยนเรศวร (Naresuan University)')}</strong>
+      </div>
+
       <div class="field">
         <label class="field-label">${t('field_plan_name', 'Plan / Project Name')} *</label>
         <input type="text" name="name" class="input" required placeholder="${t('field_plan_name_placeholder', 'e.g. Hydrotherapy Building Rehabilitation SROI')}" />

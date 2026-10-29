@@ -61,6 +61,8 @@ export const translations = {
     no_data: 'ยังไม่มีข้อมูล',
 
     // Projects Workspace
+    fixed_nu_only: 'เฉพาะ ม.นเรศวร (NU Only)',
+    org_nu_title: 'มหาวิทยาลัยนเรศวร (Naresuan University)',
     projects_title: 'พื้นที่ทำงานโครงการ (Projects)',
     projects_subtitle: 'จัดการการประเมินผลกระทบทางสังคมและเลือกแผนงานเพื่อประเมิน SROI',
     btn_new_plan: 'สร้างแผนงาน SROI ใหม่',
@@ -281,6 +283,8 @@ export const translations = {
     no_data: 'No data available',
 
     // Projects Workspace
+    fixed_nu_only: 'Fixed: NU Only',
+    org_nu_title: 'Naresuan University (NU)',
     projects_title: 'Projects Workspace',
     projects_subtitle: 'Manage social impact assessments and select a plan to evaluate SROI',
     btn_new_plan: 'New SROI Plan',

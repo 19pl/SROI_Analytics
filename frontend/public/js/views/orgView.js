@@ -18,14 +18,16 @@ export async function renderOrg(root) {
           </p>
         </div>
         <div style="display: flex; gap: var(--sp-sm);">
-          <button class="btn btn-secondary" id="btnNewOrg">+ New Organization</button>
           <button class="btn btn-primary" id="btnNewFaculty">${icons.plus} ${t('btn_add_faculty', 'New Faculty')}</button>
         </div>
       </div>
 
       <div style="margin-bottom: var(--sp-md);">
-        <label class="field-label" style="font-weight: 600;">${t('filter_org', 'Active Organization')}:</label>
-        <select id="orgSelector" class="input" style="max-width: 360px;"></select>
+        <div style="display: flex; align-items: center; gap: var(--sp-sm);">
+          <label class="field-label" style="font-weight: 600; margin-bottom: 0;">${t('filter_org', 'Active Organization')}:</label>
+          <span class="badge badge-planned">${t('fixed_nu_only', 'Fixed: NU Only')}</span>
+        </div>
+        <select id="orgSelector" class="input" style="max-width: 380px; margin-top: 6px; background: var(--surface-soft); color: var(--on-background); cursor: default;" disabled></select>
       </div>
 
       <div id="orgContentArea">
@@ -38,27 +40,19 @@ export async function renderOrg(root) {
   const contentArea = document.getElementById('orgContentArea');
 
   let organizations = [];
-  let currentOrgId = null;
+  let currentOrgId = 1;
 
   async function loadOrgs() {
     try {
       const res = await api.getOrganizations();
       organizations = res.data || [];
-      if (organizations.length === 0) {
-        contentArea.innerHTML = `
-          <div class="card" style="text-align: center; padding: var(--sp-2xl);">
-            <h3>No Organization Found</h3>
-            <p class="muted">You must belong to at least one organization to manage faculties and departments.</p>
-          </div>
-        `;
-        return;
-      }
+      const nuOrg = organizations.find((o) =>
+        o.name.toLowerCase().includes('naresuan') || o.name.includes('นเรศวร')
+      ) || organizations[0] || { id: 1, name: 'มหาวิทยาลัยนเรศวร (Naresuan University)' };
 
-      orgSelector.innerHTML = organizations
-        .map((o) => `<option value="${o.id}">${escapeHtml(o.name)} (${escapeHtml(o.role)})</option>`)
-        .join('');
+      orgSelector.innerHTML = `<option value="${nuOrg.id}" selected>${escapeHtml(nuOrg.name)}</option>`;
 
-      currentOrgId = Number(orgSelector.value);
+      currentOrgId = Number(nuOrg.id);
       await loadOrgStructure(currentOrgId);
     } catch (err) {
       contentArea.innerHTML = `<div class="alert alert-danger">${escapeHtml(err.message)}</div>`;

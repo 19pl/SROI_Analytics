@@ -24,7 +24,7 @@ if (!$user) {
 $org = $db->one('SELECT * FROM organizations WHERE created_by = ?', [$user['id']]);
 if (!$org) {
     $orgId = $db->insert('organizations', [
-        'name' => 'Naresuan University Social Value Center',
+        'name' => 'มหาวิทยาลัยนเรศวร (Naresuan University)',
         'created_by' => $user['id'],
     ]);
     $db->run(
