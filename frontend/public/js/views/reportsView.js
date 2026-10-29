@@ -1,13 +1,10 @@
-/**
- * Reports & Audit Archive View
- */
-
 import { getState, loadReports, loadRuns } from '../store.js';
 import { api } from '../api.js';
 import { card } from '../components/ui.js';
 import { escapeHtml } from '../utils/html.js';
 import { formatBaht } from '../utils/format.js';
 import { icons } from '../components/icons.js';
+import { t } from '../i18n.js';
 
 export async function renderReports(root) {
   const { project } = getState();
@@ -25,9 +22,9 @@ export async function renderReports(root) {
     <div class="stack" style="gap: var(--sp-xl);">
       <div style="display: flex; justify-content: space-between; align-items: center;">
         <div>
-          <h1 class="page-title" style="margin-bottom: 2px;">Report Archive & Audit Trail</h1>
+          <h1 class="page-title" style="margin-bottom: 2px;">${t('reports_title', 'Report Archive & Audit Trail')}</h1>
           <p class="muted page-sub" style="margin-bottom: 0;">
-            Project: ${escapeHtml(project.name)} | Reproducible snapshots preserved with input hashes
+            Project: ${escapeHtml(project.name)} | ${t('reports_subtitle', 'Reproducible snapshots preserved with input hashes')}
           </p>
         </div>
         <a class="btn btn-primary" href="#/wizard/step-6">Open Calculator Dashboard →</a>
@@ -39,7 +36,7 @@ export async function renderReports(root) {
           <h2 class="card-title">Published Impact Reports</h2>
         </div>
         <div id="reportsListTable">
-          <div class="muted">Loading reports...</div>
+          <div class="muted">${t('loading', 'Loading reports...')}</div>
         </div>
       </div>
 

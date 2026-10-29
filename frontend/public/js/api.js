@@ -125,36 +125,27 @@ export const api = {
   logout: () => request('/auth/logout', { method: 'POST' }),
   me: () => request('/auth/me'),
 
-  // Quick Demo Login / Auto Register for smooth paired experience
+  /**
+   * Restore an existing authenticated session from localStorage.
+   * If no valid token is found, returns null — the caller should redirect to login.
+   * No credentials are ever stored in or read from source code.
+   */
   ensureDemoSession: async () => {
-    if (authToken) {
-      try {
-        const me = await api.me();
-        if (me?.data) {
-          currentUser = me.data;
-          setSession(authToken, currentUser);
-          return me.data;
-        }
-      } catch (e) {
-        // Token expired or invalid, reset and recreate
-        clearSession();
-      }
+    if (!authToken) {
+      return null;
     }
-
-    const demoEmail = 'demo@impactvalue.local';
-    const demoPass = 'DemoPassword123!';
-    const demoName = 'Social Impact Analyst';
-
     try {
-      const loginRes = await api.login(demoEmail, demoPass);
-      setSession(loginRes.token, loginRes.user);
-      return loginRes.user;
+      const me = await api.me();
+      if (me?.data) {
+        currentUser = me.data;
+        setSession(authToken, currentUser);
+        return me.data;
+      }
     } catch (e) {
-      // User doesn't exist yet, register
-      const regRes = await api.register(demoEmail, demoName, demoPass);
-      setSession(regRes.token, regRes.user);
-      return regRes.user;
+      // Token expired or invalid — clear and let caller redirect to login
+      clearSession();
     }
+    return null;
   },
 
   // Organizations
@@ -163,6 +154,27 @@ export const api = {
   getOrgMembers: (orgId) => request(`/organizations/${orgId}/members`),
   createOrgProxy: (orgId, proxyData) =>
     request(`/organizations/${orgId}/proxies`, { method: 'POST', body: proxyData }),
+
+  // Faculties
+  getFaculties: (orgId) => request(`/organizations/${orgId}/faculties`),
+  createFaculty: (orgId, data) =>
+    request(`/organizations/${orgId}/faculties`, { method: 'POST', body: data }),
+  getFaculty: (facultyId) => request(`/faculties/${facultyId}`),
+  updateFaculty: (facultyId, data) =>
+    request(`/faculties/${facultyId}`, { method: 'PATCH', body: data }),
+  deleteFaculty: (facultyId) =>
+    request(`/faculties/${facultyId}`, { method: 'DELETE' }),
+  getFacultyDepartments: (facultyId) => request(`/faculties/${facultyId}/departments`),
+  getFacultyReport: (facultyId) => request(`/faculties/${facultyId}/report`),
+
+  // Departments
+  createDepartment: (facultyId, data) =>
+    request(`/faculties/${facultyId}/departments`, { method: 'POST', body: data }),
+  getDepartment: (departmentId) => request(`/departments/${departmentId}`),
+  updateDepartment: (departmentId, data) =>
+    request(`/departments/${departmentId}`, { method: 'PATCH', body: data }),
+  deleteDepartment: (departmentId) =>
+    request(`/departments/${departmentId}`, { method: 'DELETE' }),
 
   // Financial Proxies Library
   getProxies: (category = '', query = '') => {
@@ -173,7 +185,15 @@ export const api = {
   },
 
   // Projects CRUD
-  getProjects: () => request('/projects'),
+  getProjects: (filters = {}) => {
+    const params = new URLSearchParams();
+    if (filters.organization_id) params.set('organization_id', filters.organization_id);
+    if (filters.faculty_id) params.set('faculty_id', filters.faculty_id);
+    if (filters.department_id) params.set('department_id', filters.department_id);
+    if (filters.deleted) params.set('deleted', '1');
+    const qs = params.toString();
+    return request(`/projects${qs ? '?' + qs : ''}`);
+  },
   getProject: (id) => request(`/projects/${id}`),
   createProject: (data) => request('/projects', { method: 'POST', body: data }),
   updateProject: (id, data, changeReason = null) => {

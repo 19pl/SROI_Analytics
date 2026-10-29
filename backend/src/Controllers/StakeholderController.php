@@ -28,6 +28,8 @@ final class StakeholderController extends ProjectResource
             'expected_negative' => ['type' => 'string', 'max' => 2000, 'nullable' => true],
             'evidence_source' => ['type' => 'string', 'max' => 1000, 'nullable' => true],
             'overlap_notes' => ['type' => 'string', 'max' => 2000, 'nullable' => true],
+            'stakeholder_group' => ['type' => 'enum', 'in' => ['primary_beneficiary', 'project_operator', 'project_supporter', 'other_agency'], 'nullable' => true],
+            'group_code' => ['type' => 'string', 'max' => 50, 'nullable' => true],
         ];
     }
 

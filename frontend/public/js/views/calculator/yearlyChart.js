@@ -1,15 +1,17 @@
 import { card } from '../../components/ui.js';
 import { formatBaht, formatBahtCompact } from '../../utils/format.js';
+import { t } from '../../i18n.js';
 
 /** แท่งกราฟ 1 ปี — ปีที่สูงสุดจะเน้นสีเข้ม */
 function chartColumn(value, index, max) {
   const isPeak = value === max;
+  const yearText = `${t('year', 'Year')} ${index + 1}`;
 
   return `<div class="chart-col">
     <span class="chart-value" title="${formatBaht(value)}">${formatBahtCompact(value)}</span>
     <div class="chart-bar ${isPeak ? 'is-peak' : ''}" style="height:${(value / max) * 100}%"
-      title="ปี ${index + 1}: ${formatBaht(value)}"></div>
-    <span class="chart-label ${isPeak ? 'strong' : ''}">ปี ${index + 1}</span>
+      title="${yearText}: ${formatBaht(value)}"></div>
+    <span class="chart-label ${isPeak ? 'strong' : ''}">${yearText}</span>
   </div>`;
 }
 
@@ -20,9 +22,9 @@ export function yearlyChartCard({ yearlyPV }) {
   const columns = yearlyPV.map((value, i) => chartColumn(value, i, max)).join('');
 
   return card({
-    title: 'มูลค่าปัจจุบันรายปี',
-    description: 'หลังหัก Deadweight, Attribution, Drop-off และคิดลดแล้ว',
-    body: `<div class="chart chart-nu" role="img" aria-label="กราฟแท่งมูลค่าปัจจุบันรายปี">
+    title: t('yearly_pv_title', 'มูลค่าปัจจุบันรายปี'),
+    description: t('yearly_pv_desc', 'หลังหัก Deadweight, Attribution, Drop-off และคิดลดแล้ว'),
+    body: `<div class="chart chart-nu" role="img" aria-label="${t('yearly_pv_title', 'มูลค่าปัจจุบันรายปี')}">
       ${columns}
     </div>`,
   });

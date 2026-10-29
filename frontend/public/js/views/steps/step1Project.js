@@ -27,7 +27,7 @@ export function renderStep1(container) {
   container.innerHTML = `
     <div class="stack" style="gap: var(--sp-xl);">
       <!-- Live Investment Summary Card -->
-      <div class="card" style="background: linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%);">
+      <div class="card" style="background: linear-gradient(180deg, var(--surface-card) 0%, var(--surface-soft) 100%);">
         <div class="card-head">
           <div>
             <h2 class="card-title">Live Investment Baseline</h2>
@@ -106,7 +106,16 @@ export function renderStep1(container) {
             </div>
             <div class="field">
               <label class="field-label">Discount Rate (%) *</label>
-              <input type="number" name="discount_rate" step="0.1" min="0" max="100" class="input" value="${project.discount_rate !== null ? (project.discount_rate * 100).toFixed(1) : '3.5'}" required />
+              <input type="number" name="discount_rate" step="0.1" min="0" max="100" class="input" value="${project.discount_rate !== null ? (project.discount_rate * 100).toFixed(1) : ''}" placeholder="0.0 or 3.5" required />
+            </div>
+            <div class="field">
+              <label class="field-label">Assessment Scope (Months)</label>
+              <select name="assessment_months" class="input">
+                <option value="" ${!project.assessment_months ? 'selected' : ''}>Full Year (12 months / standard)</option>
+                <option value="6" ${project.assessment_months === 6 ? 'selected' : ''}>6 Months (Interim)</option>
+                <option value="9" ${project.assessment_months === 9 ? 'selected' : ''}>9 Months (Interim)</option>
+                <option value="12" ${project.assessment_months === 12 ? 'selected' : ''}>12 Months (Fiscal Year)</option>
+              </select>
             </div>
             <div class="field">
               <label class="field-label">Discount Rate Basis</label>
@@ -176,7 +185,10 @@ export function renderStep1(container) {
                         (c) => `
                 <tr data-id="${c.id}">
                   <td><span class="badge badge-planned">${escapeHtml(c.category)}</span></td>
-                  <td class="strong">${escapeHtml(c.description)}</td>
+                  <td class="strong">
+                    ${escapeHtml(c.description)}
+                    ${c.period_label ? `<span class="badge badge-integrated" style="font-size: 0.6875rem; margin-left: 6px;">${escapeHtml(c.period_label)}</span>` : ''}
+                  </td>
                   <td>${c.is_cash ? 'Cash' : '<span class="muted">In-Kind</span>'}</td>
                   <td class="num">Year ${c.year}</td>
                   <td class="num strong">${formatBaht(c.amount * (c.exchange_rate || 1))}</td>
@@ -208,7 +220,8 @@ export function renderStep1(container) {
       country: form.country.value.trim(),
       evaluation_type: form.evaluation_type.value,
       analysis_period_years: parseInt(form.analysis_period_years.value, 10),
-      discount_rate: parseFloat(form.discount_rate.value) / 100,
+      assessment_months: form.assessment_months.value ? parseInt(form.assessment_months.value, 10) : null,
+      discount_rate: form.discount_rate.value !== '' ? parseFloat(form.discount_rate.value) / 100 : null,
       discount_rate_basis: form.discount_rate_basis.value,
       investment_basis: form.investment_basis.value,
       include_in_kind: form.include_in_kind.value === '1',
@@ -286,6 +299,10 @@ function openAddCostModal({ project, onAdded }) {
           <label class="field-label">Evidence / Source Citation</label>
           <input type="text" name="evidence_source" class="input" placeholder="e.g. Institutional budget FY2026" />
         </div>
+        <div class="field">
+          <label class="field-label">Period Label (Optional)</label>
+          <input type="text" name="period_label" class="input" placeholder="e.g. Y0, Y1, 6 months" />
+        </div>
       </div>
       <div id="costModalError" class="alert alert-danger" style="display: none;"></div>
     </form>
@@ -315,6 +332,7 @@ function openAddCostModal({ project, onAdded }) {
       year: parseInt(form.year.value, 10),
       is_cash: form.is_cash.value === '1',
       evidence_source: form.evidence_source.value.trim(),
+      period_label: form.period_label.value.trim() || null,
     };
 
     if (!data.description || isNaN(data.amount)) {

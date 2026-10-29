@@ -200,3 +200,89 @@ T::test('sensitivity ranks drivers and leaves base untouched', function () use (
     $disc = array_values(array_filter($sens['rows'], fn($r) => $r['parameter'] === 'discount_rate'))[0];
     T::true($disc['present_value_low'] > 0.0);
 });
+
+// ---- Excel Reference Workbooks Verification ----------------------------------------------------
+T::test('workbook 1: Eye Project 68 reference calculation (undiscounted single-year SROI)', function () use ($engine) {
+    // Total Investment: G19 = SUM(G9:G14) = 37,230 THB
+    // Total Outcome: N19 = SUM(N3:N16) = 216,500 THB
+    // SROI Ratio: N21 = N19/G19 = 216,500 / 37,230 = 5.8152
+    $snap = [
+        'project' => [
+            'currency' => 'THB',
+            'analysis_period_years' => 1,
+            'discount_rate' => 0.0,
+            'discount_base_year' => 0,
+            'investment_basis' => 'nominal',
+            'include_in_kind' => true,
+        ],
+        'costs' => [
+            ['id' => 1, 'category' => 'delivery', 'description' => 'Medical screening & materials', 'amount' => 37230, 'currency' => 'THB', 'year' => 0],
+        ],
+        'stakeholders' => [
+            ['id' => 1, 'name' => 'Elderly / Patients', 'stakeholder_group' => 'primary_beneficiary', 'group_code' => 'S1'],
+        ],
+        'outcomes' => [
+            [
+                'id' => 1,
+                'name' => 'Visual impairment prevention & quality of life',
+                'stakeholder_id' => 1,
+                'quantity' => 1,
+                'proxy_value' => 216500,
+                'start_year' => 1,
+                'duration_years' => 1,
+                'evidence_quality' => 'measured',
+                'proxy_source' => 'Project report',
+                'adjustment' => ['deadweight' => 0.0, 'attribution' => 0.0, 'displacement' => 0.0, 'drop_off' => 0.0],
+            ],
+        ],
+        'scenario' => ['id' => 1, 'name' => 'Base case', 'kind' => 'base', 'assumptions' => []],
+    ];
+
+    $r = $engine->calculate($snap);
+    T::eq(37230.0, $r['summary']['total_investment_nominal']);
+    T::eq(216500.0, $r['summary']['present_value_of_impact']);
+    T::eq(5.8152, $r['summary']['sroi_ratio']);
+    T::eq(179270.0, $r['summary']['net_social_value']);
+});
+
+T::test('workbook 2: Hydrotherapy Building 6-month scenario reference calculation', function () use ($engine) {
+    // 6-month sheet: Total Investment L92 = 2,827,766 THB, Total Outcome U92 = 434,167 THB
+    // SROI Ratio: O94 = 434,167 / 2,827,766 = 0.1535
+    $snap = [
+        'project' => [
+            'currency' => 'THB',
+            'analysis_period_years' => 1,
+            'discount_rate' => 0.0,
+            'discount_base_year' => 0,
+            'investment_basis' => 'nominal',
+            'include_in_kind' => true,
+            'assessment_months' => 6,
+        ],
+        'costs' => [
+            ['id' => 1, 'category' => 'capex', 'description' => 'Facility & equipment', 'amount' => 2827766, 'currency' => 'THB', 'year' => 0, 'period_label' => '6 months'],
+        ],
+        'stakeholders' => [
+            ['id' => 1, 'name' => 'Hydrotherapy patients', 'stakeholder_group' => 'primary_beneficiary', 'group_code' => 'S1'],
+        ],
+        'outcomes' => [
+            [
+                'id' => 1,
+                'name' => 'Physical rehabilitation outcomes (6-month evaluation)',
+                'stakeholder_id' => 1,
+                'quantity' => 1,
+                'proxy_value' => 434167,
+                'start_year' => 1,
+                'duration_years' => 1,
+                'evidence_quality' => 'measured',
+                'proxy_source' => 'Hydrotherapy center records',
+                'adjustment' => ['deadweight' => 0.0, 'attribution' => 0.0, 'displacement' => 0.0, 'drop_off' => 0.0],
+            ],
+        ],
+        'scenario' => ['id' => 1, 'name' => 'Base case', 'kind' => 'base', 'assumptions' => []],
+    ];
+
+    $r = $engine->calculate($snap);
+    T::eq(2827766.0, $r['summary']['total_investment_nominal']);
+    T::eq(434167.0, $r['summary']['present_value_of_impact']);
+    T::eq(0.1535, $r['summary']['sroi_ratio']);
+});

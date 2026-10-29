@@ -1,5 +1,5 @@
 import { card, numberField, textField } from '../../components/ui.js';
-import { PROJECT_LIMITS, YEARS_INPUT_MAX } from '../../config/constants.js';
+import { PROJECT_LIMITS } from '../../config/constants.js';
 
 /** การ์ด "ข้อมูลโครงการ": ชื่อ เงินลงทุน ระยะเวลา และอัตราคิดลด */
 export function projectFormCard(scenario) {
@@ -18,11 +18,11 @@ export function projectFormCard(scenario) {
       })}
       ${numberField({
         key: 'years',
-        label: 'ระยะเวลาวัดผล (ไม่เกิน 5 ปี)',
+        label: 'ระยะเวลาวัดผล (ปี)',
         suffix: 'ปี',
         value: scenario.years,
         min: PROJECT_LIMITS.years.min,
-        max: YEARS_INPUT_MAX,
+        max: PROJECT_LIMITS.years.max,
       })}
       ${numberField({
         key: 'discountRate',

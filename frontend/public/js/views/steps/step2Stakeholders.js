@@ -46,8 +46,12 @@ export function renderStep2(container) {
               <div class="stakeholder-card" data-id="${s.id}">
                 <div class="stakeholder-card-header">
                   <div>
-                    <span class="stakeholder-card-title">${escapeHtml(s.name)}</span>
-                    <div style="margin-top: 2px;">
+                    <span class="stakeholder-card-title">
+                      ${s.group_code ? `<span class="badge badge-integrated" style="margin-right: 4px;">${escapeHtml(s.group_code)}</span>` : ''}
+                      ${escapeHtml(s.name)}
+                    </span>
+                    <div style="margin-top: 4px; display: flex; gap: 4px; flex-wrap: wrap;">
+                      ${s.stakeholder_group ? `<span class="badge badge-production" style="font-size: 0.6875rem;">${escapeHtml(s.stakeholder_group.replace(/_/g, ' '))}</span>` : ''}
                       <span class="badge badge-planned" style="font-size: 0.6875rem;">${escapeHtml(s.category || 'Stakeholder')}</span>
                     </div>
                   </div>
@@ -172,6 +176,22 @@ function openStakeholderModal({ initialData = null, onSaved }) {
       </div>
       <div class="form-grid">
         <div class="field">
+          <label class="field-label">Stakeholder Classification (Excel S1–S4 Structure)</label>
+          <select name="stakeholder_group" class="input">
+            <option value="" ${!initialData?.stakeholder_group ? 'selected' : ''}>Unspecified Group</option>
+            <option value="primary_beneficiary" ${initialData?.stakeholder_group === 'primary_beneficiary' ? 'selected' : ''}>S1: Primary Beneficiary (ผู้รับประโยชน์หลัก)</option>
+            <option value="project_operator" ${initialData?.stakeholder_group === 'project_operator' ? 'selected' : ''}>S2: Project Operator / Faculty (ผู้ดำเนินโครงการ)</option>
+            <option value="project_supporter" ${initialData?.stakeholder_group === 'project_supporter' ? 'selected' : ''}>S3: Project Supporter / Funder (ผู้สนับสนุนโครงการ)</option>
+            <option value="other_agency" ${initialData?.stakeholder_group === 'other_agency' ? 'selected' : ''}>S4: Other External Agency (หน่วยงานอื่นๆ)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label class="field-label">Group / Sub-group Code</label>
+          <input type="text" name="group_code" class="input" value="${escapeHtml(initialData?.group_code || '')}" placeholder="e.g. S1, S1.1, S2, S3" />
+        </div>
+      </div>
+      <div class="form-grid">
+        <div class="field">
           <label class="field-label">Category</label>
           <select name="category" class="input">
             ${categories
@@ -236,6 +256,8 @@ function openStakeholderModal({ initialData = null, onSaved }) {
 
     const data = {
       name: form.name.value.trim(),
+      stakeholder_group: form.stakeholder_group.value || null,
+      group_code: form.group_code.value.trim() || null,
       category: form.category.value,
       estimated_count: form.estimated_count.value ? parseInt(form.estimated_count.value, 10) : null,
       role_in_project: form.role_in_project.value.trim(),

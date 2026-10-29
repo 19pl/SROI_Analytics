@@ -510,7 +510,7 @@ input[type='number'] {
 
 .stat-card.is-highlight {
   border-color: var(--primary);
-  background: linear-gradient(180deg, #FFFFFF 0%, rgba(37, 99, 235, 0.03) 100%);
+  background: linear-gradient(180deg, var(--surface-card) 0%, var(--primary-soft) 100%);
 }
 
 .stat-label {

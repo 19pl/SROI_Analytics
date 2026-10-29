@@ -15,3 +15,16 @@ export function formatBahtCompact(value) {
 }
 
 export const formatRatio = (value) => `${value.toFixed(2)} : 1`;
+
+export const formatNumber = (value, fractionDigits = 0) =>
+  new Intl.NumberFormat('th-TH', {
+    maximumFractionDigits: fractionDigits,
+    minimumFractionDigits: fractionDigits,
+  }).format(Number(value) || 0);
+
+export const formatCurrency = (value, currency = 'THB') =>
+  new Intl.NumberFormat('th-TH', {
+    style: 'currency',
+    currency,
+    maximumFractionDigits: 0,
+  }).format(Number(value) || 0);

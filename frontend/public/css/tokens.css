@@ -1,5 +1,6 @@
 /* ImpactValue SROI Design Tokens — Aligned with PRD Section 4.2 */
-:root {
+:root,
+[data-theme="light"] {
   /* PRD Section 4.2 Color Palette */
   --background: #F8FAFC;
   --surface: #FFFFFF;
@@ -35,6 +36,7 @@
   --shell-bg: #0F172A;
   --shell-border: #1E293B;
   --shell-text-muted: #94A3B8;
+  --shell-text: #FFFFFF;
   --dark-background: #0F172A;
 
   /* Status Badges */
@@ -76,4 +78,57 @@
   --shadow-subtle: 0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
   --shadow-card: 0 4px 6px -1px rgba(15, 23, 42, 0.07), 0 2px 4px -2px rgba(15, 23, 42, 0.05);
   --shadow-modal: 0 20px 25px -5px rgba(15, 23, 42, 0.12), 0 8px 10px -6px rgba(15, 23, 42, 0.08);
+}
+
+[data-theme="black"] {
+  /* High-Contrast Pure Black Theme */
+  --background: #000000;
+  --surface: #0a0a0c;
+  --surface-card: #111114;
+  --surface-soft: #1a1a1f;
+  --surface-elevated: #141418;
+  --on-background: #F4F4F5;
+  --muted: #A1A1AA;
+  --outline: #27272A;
+  --outline-strong: #3F3F46;
+
+  /* Primary Action */
+  --primary: #3B82F6;
+  --primary-strong: #60A5FA;
+  --primary-soft: rgba(59, 130, 246, 0.2);
+  --on-primary: #FFFFFF;
+
+  /* Impact & Semantic Colors */
+  --positive: #22C55E;
+  --positive-bg: rgba(34, 197, 94, 0.2);
+  --positive-fg: #4ADE80;
+  --negative: #EF4444;
+  --negative-bg: rgba(239, 68, 68, 0.2);
+  --negative-fg: #F87171;
+  --warning: #F59E0B;
+  --warning-bg: rgba(245, 158, 11, 0.2);
+  --warning-fg: #FBBF24;
+  --info: #38BDF8;
+  --info-bg: rgba(56, 189, 248, 0.2);
+  --info-fg: #38BDF8;
+
+  /* Shell / Navigation */
+  --shell-bg: #000000;
+  --shell-border: #222225;
+  --shell-text-muted: #9CA3AF;
+  --shell-text: #F3F4F6;
+  --dark-background: #000000;
+
+  /* Status Badges */
+  --status-draft-bg: #27272A;
+  --status-draft-fg: #D4D4D8;
+  --status-ready-bg: rgba(34, 197, 94, 0.25);
+  --status-ready-fg: #4ADE80;
+  --status-archived-bg: rgba(239, 68, 68, 0.25);
+  --status-archived-fg: #F87171;
+
+  /* Shadows for Black Theme */
+  --shadow-subtle: 0 1px 3px rgba(0, 0, 0, 0.7);
+  --shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.85);
+  --shadow-modal: 0 20px 25px -5px rgba(0, 0, 0, 0.95);
 }

@@ -60,6 +60,24 @@ final class SnapshotBuilder
             ];
         }
 
+        // Faculty and department names for audit/report context
+        $facultyName = null;
+        $deptName    = null;
+        if (!empty($project['faculty_id'])) {
+            $fac = $db->one('SELECT name FROM faculties WHERE id = ?', [(int)$project['faculty_id']]);
+            $facultyName = $fac['name'] ?? null;
+        }
+        if (!empty($project['department_id'])) {
+            $dept = $db->one(
+                'SELECT d.name AS dept_name, f.name AS faculty_name FROM departments d JOIN faculties f ON f.id = d.faculty_id WHERE d.id = ?',
+                [(int)$project['department_id']]
+            );
+            $deptName    = $dept['dept_name'] ?? null;
+            if ($facultyName === null) {
+                $facultyName = $dept['faculty_name'] ?? null;
+            }
+        }
+
         $assumptions = json_decode((string)$scenario['assumptions'], true) ?: [];
         return [
             'project' => [
@@ -68,22 +86,27 @@ final class SnapshotBuilder
                 'discount_rate' => $project['discount_rate'], 'discount_rate_basis' => $project['discount_rate_basis'],
                 'discount_rate_source' => $project['discount_rate_source'], 'discount_base_year' => (int)$project['discount_base_year'],
                 'investment_basis' => $project['investment_basis'], 'include_in_kind' => (bool)$project['include_in_kind'],
+                'assessment_months' => $project['assessment_months'] === null ? null : (int)$project['assessment_months'],
             ],
             'meta' => [
                 'project_id' => $pid, 'name' => $project['name'], 'organization_name' => $project['organization_name'],
                 'description' => $project['description'], 'category' => $project['category'], 'country' => $project['country'],
                 'start_date' => $project['start_date'], 'end_date' => $project['end_date'], 'evaluation_type' => $project['evaluation_type'],
+                'faculty_name' => $facultyName, 'department_name' => $deptName,
             ],
             'costs' => array_map(fn($c) => [
                 'id' => (int)$c['id'], 'category' => $c['category'], 'description' => $c['description'], 'amount' => $c['amount'],
                 'currency' => $c['currency'], 'exchange_rate' => $c['exchange_rate'], 'year' => (int)$c['year'],
                 'is_cash' => (bool)$c['is_cash'], 'include_in_calculation' => (bool)$c['include_in_calculation'],
                 'evidence_source' => $c['evidence_source'],
+                'period_label' => $c['period_label'] ?? null,
             ], $db->all('SELECT * FROM project_costs WHERE project_id = ? ORDER BY year, id', [$pid])),
             'stakeholders' => array_map(fn($s) => [
                 'id' => (int)$s['id'], 'name' => $s['name'], 'description' => $s['description'], 'category' => $s['category'],
                 'role_in_project' => $s['role_in_project'], 'estimated_count' => $s['estimated_count'],
                 'expected_positive' => $s['expected_positive'], 'expected_negative' => $s['expected_negative'],
+                'stakeholder_group' => $s['stakeholder_group'] ?? null,
+                'group_code' => $s['group_code'] ?? null,
             ], $db->all('SELECT * FROM stakeholders WHERE project_id = ? ORDER BY id', [$pid])),
             'outcomes' => $outcomes,
             'evidence' => $db->all('SELECT entity_type, entity_id, kind, title, reference FROM evidence_sources WHERE project_id = ? ORDER BY id', [$pid]),

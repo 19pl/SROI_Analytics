@@ -41,6 +41,9 @@ final class ProjectController
             'include_in_kind' => ['type' => 'bool', 'default' => true],
             'wizard_step' => ['type' => 'int', 'min' => 1, 'max' => 6, 'default' => 1],
             'status' => ['type' => 'enum', 'in' => ['draft', 'ready', 'archived'], 'default' => 'draft'],
+            'faculty_id'    => ['type' => 'int', 'min' => 1, 'nullable' => true],
+            'department_id' => ['type' => 'int', 'min' => 1, 'nullable' => true],
+            'assessment_months' => ['type' => 'int', 'min' => 1, 'nullable' => true],
         ];
     }
 
@@ -54,6 +57,16 @@ final class ProjectController
         if ($orgId !== null) {
             $sql .= ' AND p.organization_id = ?';
             $params[] = $orgId;
+        }
+        $facultyId = $req->queryInt('faculty_id');
+        $deptId    = $req->queryInt('department_id');
+        if ($facultyId !== null) {
+            $sql .= ' AND p.faculty_id = ?';
+            $params[] = $facultyId;
+        }
+        if ($deptId !== null) {
+            $sql .= ' AND p.department_id = ?';
+            $params[] = $deptId;
         }
         $rows = $this->app->db->all($sql . ' ORDER BY p.updated_at DESC', $params);
         foreach ($rows as &$r) {
@@ -75,6 +88,8 @@ final class ProjectController
         unset($d['organization_id']);
         Access::requireOrg($this->app, $req, $orgId, 'editor');
         $d['currency'] = strtoupper($d['currency']);
+        // Validate ownership: at most one of faculty_id / department_id may be set
+        $this->validateOwnership($d);
         $db = $this->app->db;
         $id = $db->transaction(function () use ($db, $d, $orgId, $req) {
             $id = $db->insert('projects', $d + ['organization_id' => $orgId, 'created_by' => $req->user['id']]);
@@ -104,6 +119,13 @@ final class ProjectController
         $this->checkDates($d + $p);
         if (isset($d['currency'])) {
             $d['currency'] = strtoupper($d['currency']);
+        }
+        if (isset($d['faculty_id']) || isset($d['department_id'])) {
+            $merged = array_merge(
+                ['faculty_id' => $p['faculty_id'], 'department_id' => $p['department_id']],
+                $d
+            );
+            $this->validateOwnership($merged);
         }
         if (isset($d['analysis_period_years'])) {
             $T = $d['analysis_period_years'];
@@ -168,6 +190,39 @@ final class ProjectController
         return Response::json(['data' => $rows, 'limit' => $limit, 'offset' => $offset]);
     }
 
+    /**
+     * Enforce the ownership rule: a project must not be simultaneously assigned
+     * to both a faculty (directly) and a department.
+     * @param array<string,mixed> $d
+     */
+    private function validateOwnership(array $d): void
+    {
+        $hasFaculty = isset($d['faculty_id']) && $d['faculty_id'] !== null;
+        $hasDept    = isset($d['department_id']) && $d['department_id'] !== null;
+        if ($hasFaculty && $hasDept) {
+            throw HttpException::unprocessable('Validation failed', [
+                'ownership' => 'A plan may be owned by a faculty or a department, not both simultaneously.',
+            ]);
+        }
+        // Verify faculty exists and user has access (will be checked by existing org check, but verify FK)
+        if ($hasFaculty) {
+            $fac = $this->app->db->one('SELECT organization_id FROM faculties WHERE id = ?', [(int)$d['faculty_id']]);
+            if ($fac === null) {
+                throw HttpException::unprocessable('Validation failed', ['faculty_id' => 'Faculty not found.']);
+            }
+        }
+        // Verify department exists
+        if ($hasDept) {
+            $dept = $this->app->db->one(
+                'SELECT d.id, f.organization_id FROM departments d JOIN faculties f ON f.id = d.faculty_id WHERE d.id = ?',
+                [(int)$d['department_id']]
+            );
+            if ($dept === null) {
+                throw HttpException::unprocessable('Validation failed', ['department_id' => 'Department not found.']);
+            }
+        }
+    }
+
     /** @param array<string,mixed> $d */
     private function checkDates(array $d): void
     {
@@ -195,6 +250,9 @@ final class ProjectController
     private function present(array $p): array
     {
         $p['include_in_kind'] = (bool)$p['include_in_kind'];
+        $p['faculty_id']      = $p['faculty_id'] !== null ? (int)$p['faculty_id'] : null;
+        $p['department_id']   = $p['department_id'] !== null ? (int)$p['department_id'] : null;
+        $p['assessment_months'] = $p['assessment_months'] !== null ? (int)$p['assessment_months'] : null;
         return $p;
     }
 }

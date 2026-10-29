@@ -18,7 +18,7 @@ export function renderStep4(container) {
   container.innerHTML = `
     <div class="stack" style="gap: var(--sp-xl);">
       <!-- Formula Explanation Card -->
-      <div class="card" style="background: linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%);">
+      <div class="card" style="background: linear-gradient(180deg, var(--surface-card) 0%, var(--surface-soft) 100%);">
         <div class="card-head">
           <div>
             <h2 class="card-title">Impact Deductions & Additionality</h2>

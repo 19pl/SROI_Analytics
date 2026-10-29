@@ -327,3 +327,113 @@ T::test('api: proxy library is organisation scoped, searchable, requires a sourc
     [$s] = $call('GET', '/proxies/' . $px['data']['id'], null, $b['token']);
     T::eq(404, $s);
 });
+
+// ---- faculty & department hierarchy -------------------------------------------------------------------------
+T::test('api: faculty CRUD, department CRUD, plan ownership, consolidated report', function () use ($call) {
+    [, $a] = $call('POST', '/auth/register', ['email' => 'fac@x.org', 'name' => 'FacOwner', 'password' => 'correct-horse-9']);
+    $tok  = $a['token'];
+    $oid  = $a['organizations'][0]['id'];
+
+    // Create faculty
+    [$s, $fac] = $call('POST', "/organizations/$oid/faculties", ['name' => 'คณะสหเวชศาสตร์', 'description' => 'Allied Health Sciences'], $tok);
+    T::eq(201, $s);
+    $fid = $fac['data']['id'];
+    T::eq('คณะสหเวชศาสตร์', $fac['data']['name']);
+
+    // List faculties
+    [$s, $list] = $call('GET', "/organizations/$oid/faculties", null, $tok);
+    T::eq(200, $s);
+    T::eq(1, count($list['data']));
+
+    // Show faculty
+    [$s, $shown] = $call('GET', "/faculties/$fid", null, $tok);
+    T::eq(200, $s);
+    T::eq($fid, $shown['data']['id']);
+
+    // Rename faculty
+    [$s, $upd] = $call('PATCH', "/faculties/$fid", ['name' => 'Allied Health'], $tok);
+    T::eq(200, $s);
+    T::eq('Allied Health', $upd['data']['name']);
+
+    // Create department under faculty
+    [$s, $dept] = $call('POST', "/faculties/$fid/departments", ['name' => 'กายภาพบำบัด'], $tok);
+    T::eq(201, $s);
+    $did = $dept['data']['id'];
+
+    // List departments of faculty
+    [$s, $dlist] = $call('GET', "/faculties/$fid/departments", null, $tok);
+    T::eq(200, $s);
+    T::eq(1, count($dlist['data']));
+
+    // Show and update department
+    [$s, $ds] = $call('GET', "/departments/$did", null, $tok);
+    T::eq(200, $s);
+    [$s, $du] = $call('PATCH', "/departments/$did", ['name' => 'Physical Therapy'], $tok);
+    T::eq(200, $s);
+    T::eq('Physical Therapy', $du['data']['name']);
+
+    // Create a faculty-owned plan (no department)
+    [$s, $fp] = $call('POST', '/projects', ['name' => 'Faculty Plan', 'currency' => 'THB', 'faculty_id' => $fid], $tok);
+    T::eq(201, $s, 'faculty-owned plan created');
+    $fpid = $fp['data']['id'];
+    T::eq($fid, $fp['data']['faculty_id']);
+    T::eq(null, $fp['data']['department_id']);
+
+    // Create a department-owned plan
+    [$s, $dp] = $call('POST', '/projects', ['name' => 'Dept Plan', 'currency' => 'THB', 'department_id' => $did], $tok);
+    T::eq(201, $s, 'department-owned plan created');
+    $dpid = $dp['data']['id'];
+    T::eq($did, $dp['data']['department_id']);
+    T::eq(null, $dp['data']['faculty_id']);
+
+    // Reject plan with both faculty_id and department_id
+    [$s] = $call('POST', '/projects', ['name' => 'Bad', 'currency' => 'THB', 'faculty_id' => $fid, 'department_id' => $did], $tok);
+    T::eq(422, $s, 'dual ownership rejected');
+
+    // Filter projects by faculty
+    [$s, $fl] = $call('GET', '/projects', null, $tok, ['faculty_id' => (string)$fid]);
+    T::eq(200, $s);
+    T::eq(1, count($fl['data']), 'only faculty-owned plan returned');
+
+    // Filter projects by department
+    [$s, $dl2] = $call('GET', '/projects', null, $tok, ['department_id' => (string)$did]);
+    T::eq(200, $s);
+    T::eq(1, count($dl2['data']), 'only dept-owned plan returned');
+
+    // Faculty consolidated report
+    [$s, $rpt] = $call('GET', "/faculties/$fid/report", null, $tok);
+    T::eq(200, $s);
+    T::eq(2, count($rpt['data']['plans']), 'faculty report includes both owned and dept plans');
+    $directPlan = array_values(array_filter($rpt['data']['plans'], fn($p) => $p['id'] === $fpid))[0];
+    T::eq(true, $directPlan['owned_by_faculty']);
+    $deptPlan = array_values(array_filter($rpt['data']['plans'], fn($p) => $p['id'] === $dpid))[0];
+    T::eq(false, $deptPlan['owned_by_faculty']);
+    T::eq($did, $deptPlan['department_id']);
+    T::true(isset($rpt['data']['note']));
+
+    // Cannot delete department with active plans
+    [$s] = $call('DELETE', "/departments/$did", null, $tok);
+    T::eq(409, $s, 'dept with plans cannot be deleted');
+
+    // Cannot delete faculty with plans
+    [$s] = $call('DELETE', "/faculties/$fid", null, $tok);
+    T::eq(409, $s, 'faculty with plans cannot be deleted');
+});
+
+T::test('api: stakeholder group fields are stored and retrieved', function () use ($call) {
+    [, $a] = $call('POST', '/auth/register', ['email' => 'stkg@x.org', 'name' => 'G', 'password' => 'correct-horse-9']);
+    $tok = $a['token'];
+    [, $p] = $call('POST', '/projects', ['name' => 'Grp', 'currency' => 'THB'], $tok);
+    $pid = $p['data']['id'];
+
+    [$s, $s1] = $call('POST', "/projects/$pid/stakeholders",
+        ['name' => 'Patients', 'stakeholder_group' => 'primary_beneficiary', 'group_code' => 'S1'], $tok);
+    T::eq(201, $s);
+    T::eq('primary_beneficiary', $s1['data']['stakeholder_group']);
+    T::eq('S1', $s1['data']['group_code']);
+
+    // Invalid group rejected
+    [$s] = $call('POST', "/projects/$pid/stakeholders",
+        ['name' => 'X', 'stakeholder_group' => 'invalid_group'], $tok);
+    T::eq(422, $s, 'invalid stakeholder_group rejected');
+});

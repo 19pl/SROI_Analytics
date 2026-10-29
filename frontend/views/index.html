@@ -11,6 +11,16 @@
     <link rel="stylesheet" href="/css/components.css" />
     <link rel="stylesheet" href="/css/pages/calculator.css" />
     <link rel="stylesheet" href="/css/pages/about.css" />
+    <script>
+      (function() {
+        try {
+          var savedTheme = localStorage.getItem('sroi_theme') || 'light';
+          document.documentElement.setAttribute('data-theme', savedTheme);
+          var savedLang = localStorage.getItem('sroi_lang') || 'th';
+          document.documentElement.setAttribute('lang', savedLang);
+        } catch (e) {}
+      })();
+    </script>
   </head>
 
   <body>
@@ -41,7 +51,23 @@
           </svg>
         </button>
         <span class="header-title" id="headerTitle"></span>
-        <span class="badge badge-mock">มหาวิทยาลัยนเรศวร</span>
+        <div class="header-actions">
+          <button class="btn-header-control" id="btnToggleLang" title="Change Language / เปลี่ยนภาษา" aria-label="Change Language">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="2" y1="12" x2="22" y2="12"></line>
+              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+            </svg>
+            <span id="langLabel">TH</span>
+          </button>
+
+          <button class="btn-header-control" id="btnToggleTheme" title="Toggle Light/Black Theme / เปลี่ยนธีม" aria-label="Toggle Theme">
+            <span id="themeIcon"></span>
+            <span id="themeLabel">Light</span>
+          </button>
+
+          <span class="badge badge-mock" id="headerBadge"></span>
+        </div>
       </header>
 
       <!-- พื้นที่เนื้อหา: แต่ละหน้า (views/*.js) จะวาดลงใน #view -->
