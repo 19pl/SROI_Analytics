@@ -1,5 +1,6 @@
 /**
  * Step 4: Impact Adjustments: How Much Change Can We Claim?
+ * Fully bilingual (Thai & English)
  */
 
 import { getState, saveAdjustment, saveYearProjections } from '../../store.js';
@@ -7,31 +8,32 @@ import { openModal, closeModal } from '../../components/modal.js';
 import { formatBaht } from '../../utils/format.js';
 import { escapeHtml } from '../../utils/html.js';
 import { api } from '../../api.js';
+import { t } from '../../i18n.js';
 
 export function renderStep4(container) {
   const { project, outcomes } = getState();
   if (!project) {
-    container.innerHTML = `<div class="alert alert-info">Please select or create a project first.</div>`;
+    container.innerHTML = `<div class="alert alert-info">${t('alert_select_project_first', 'Please select or create a project first.')}</div>`;
     return;
   }
 
   container.innerHTML = `
     <div class="stack" style="gap: var(--sp-xl);">
       <!-- Formula Explanation Card -->
-      <div class="card" style="background: linear-gradient(180deg, var(--surface-card) 0%, var(--surface-soft) 100%);">
+      <div class="card" style="background: linear-gradient(180deg, var(--surface-card) 0%, var(--surface-soft) 100%); border-left: 4px solid var(--primary);">
         <div class="card-head">
           <div>
-            <h2 class="card-title">Impact Deductions & Additionality</h2>
+            <h2 class="card-title">${t('adj_card_title', 'Impact Deductions & Additionality')}</h2>
             <p class="muted" style="font-size: 0.8125rem;">
-              Do not claim all observed change. Deduct deadweight, attribution, and displacement multiplicatively.
+              ${t('adj_card_desc', 'Do not claim all observed change. Deduct deadweight, attribution, and displacement multiplicatively.')}
             </p>
           </div>
         </div>
-        <div class="formula-box">
-          Adjusted Impact = Gross Value × (1 − Deadweight) × (1 − Attribution) × (1 − Displacement)
+        <div class="formula-box" style="font-weight: 600; font-size: 0.875rem;">
+          ${t('adj_formula', 'Adjusted Impact = Gross Value × (1 − Deadweight) × (1 − Attribution) × (1 − Displacement)')}
         </div>
         <div class="muted" style="font-size: 0.8125rem; margin-top: var(--sp-xs);">
-          * Note: Percentages are entered as integers (e.g. 20 for 20%), converted to fractions for calculation. Unassessed adjustments default to 0% and trigger audit warnings.
+          ${t('adj_note', '* Note: Percentages are entered as integers (e.g. 20 for 20%), converted to fractions for calculation.')}
         </div>
       </div>
 
@@ -39,9 +41,9 @@ export function renderStep4(container) {
       <div class="card">
         <div class="card-head">
           <div>
-            <h2 class="card-title">Outcome Adjustment Matrix</h2>
+            <h2 class="card-title">${t('adj_matrix_title', 'Outcome Adjustment Matrix')}</h2>
             <p class="muted" style="font-size: 0.8125rem;">
-              Configure Deadweight, Attribution, Displacement, and Annual Drop-off for each outcome
+              ${t('adj_matrix_desc', 'Configure Deadweight, Attribution, Displacement, and Annual Drop-off for each outcome')}
             </p>
           </div>
         </div>
@@ -50,20 +52,20 @@ export function renderStep4(container) {
           <table class="table">
             <thead>
               <tr>
-                <th>Outcome</th>
-                <th class="num">Deadweight %</th>
-                <th class="num">Attribution %</th>
-                <th class="num">Displacement %</th>
-                <th class="num">Annual Drop-off %</th>
-                <th class="num">Net Retained Factor</th>
-                <th>Justification</th>
-                <th>Actions</th>
+                <th>${t('col_outcome_name', 'Outcome')}</th>
+                <th class="num">${t('field_deadweight', 'Deadweight %')}</th>
+                <th class="num">${t('field_attribution', 'Attribution %')}</th>
+                <th class="num">${t('field_displacement', 'Displacement %')}</th>
+                <th class="num">${t('field_dropoff', 'Annual Drop-off %')}</th>
+                <th class="num">${t('col_net_retained', 'Net Retained Factor')}</th>
+                <th>${t('col_justification', 'Justification')}</th>
+                <th>${t('col_actions', 'Actions')}</th>
               </tr>
             </thead>
             <tbody>
               ${
                 outcomes.length === 0
-                  ? `<tr><td colspan="8" class="empty">No outcomes to adjust. Please add outcomes in Step 3.</td></tr>`
+                  ? `<tr><td colspan="8" class="empty">${t('no_outcomes_yet', 'No outcomes to adjust. Please add outcomes in Step 3.')}</td></tr>`
                   : outcomes
                       .map((o) => {
                         const adj = o.adjustment || {};
@@ -78,8 +80,8 @@ export function renderStep4(container) {
                         return `
                   <tr data-outcome-id="${o.id}">
                     <td class="strong">
-                      ${escapeHtml(o.name)}
-                      <div class="muted" style="font-size: 0.75rem;">Model: ${escapeHtml(o.projection_model)} | ${o.duration_years} yrs</div>
+                      <div style="color: var(--on-background);">${escapeHtml(o.name)}</div>
+                      <div class="muted" style="font-size: 0.75rem;">${escapeHtml(o.projection_model)} | ${o.duration_years} ${t('years', 'yrs')}</div>
                     </td>
                     <td class="num">
                       <span class="badge ${dw > 0 ? 'badge-planned' : 'badge-mock'}">${dw}%</span>
@@ -100,16 +102,16 @@ export function renderStep4(container) {
                       ${
                         adj.justification
                           ? escapeHtml(adj.justification)
-                          : '<span class="muted" style="color: var(--warning);">⚠️ No justification cited</span>'
+                          : `<span class="muted" style="color: var(--warning);">⚠️ ${t('stat_unset', 'No justification cited')}</span>`
                       }
                     </td>
                     <td>
                       <div style="display: flex; gap: 4px;">
                         <button class="btn btn-secondary" data-edit-adj="${o.id}" style="height: 30px; font-size: 0.75rem; padding: 0 8px;">
-                          Adjust
+                          ${t('btn_edit_adj', 'Adjust')}
                         </button>
-                        <button class="btn btn-secondary" data-year-projections="${o.id}" style="height: 30px; font-size: 0.75rem; padding: 0 8px;" title="Annual Projections Override">
-                          Annual
+                        <button class="btn btn-secondary" data-year-projections="${o.id}" style="height: 30px; font-size: 0.75rem; padding: 0 8px;" title="${t('btn_multi_year', 'Annual Projections Override')}">
+                          ${t('btn_multi_year', 'Annual')}
                         </button>
                       </div>
                     </td>
@@ -164,48 +166,48 @@ function openAdjustmentModal({ project, outcome, onSaved }) {
   const formHtml = `
     <form id="adjustmentForm" class="stack" style="gap: var(--sp-md);">
       <p class="muted" style="font-size: 0.8125rem;">
-        Adjusting outcome: <strong>${escapeHtml(outcome.name)}</strong>
+        ${t('col_outcome_name', 'Adjusting outcome')}: <strong>${escapeHtml(outcome.name)}</strong>
       </p>
 
       <div class="form-grid">
         <div class="field">
-          <label class="field-label">A. Deadweight (%) *</label>
+          <label class="field-label">${t('field_deadweight', 'A. Deadweight (%)')} *</label>
           <input type="number" name="deadweight" min="0" max="100" step="0.5" class="input" value="${dwVal}" required />
           <span class="muted" style="font-size: 0.6875rem;">What would have happened anyway?</span>
         </div>
         <div class="field">
-          <label class="field-label">B. Attribution (%) *</label>
+          <label class="field-label">${t('field_attribution', 'B. Attribution (%)')} *</label>
           <input type="number" name="attribution" min="0" max="100" step="0.5" class="input" value="${atVal}" required />
-          <span class="muted" style="font-size: 0.6875rem;">Caused by other organizations?</span>
+          <span class="muted" style="font-size: 0.6875rem;">Caused by other contributors?</span>
         </div>
       </div>
 
       <div class="form-grid">
         <div class="field">
-          <label class="field-label">C. Displacement (%) *</label>
+          <label class="field-label">${t('field_displacement', 'C. Displacement (%)')} *</label>
           <input type="number" name="displacement" min="0" max="100" step="0.5" class="input" value="${dpVal}" required />
           <span class="muted" style="font-size: 0.6875rem;">Displaced benefits from elsewhere?</span>
         </div>
         <div class="field">
-          <label class="field-label">D. Annual Drop-off (%) *</label>
+          <label class="field-label">${t('field_dropoff', 'D. Annual Drop-off (%)')} *</label>
           <input type="number" name="drop_off" min="0" max="100" step="0.5" class="input" value="${doVal}" required />
           <span class="muted" style="font-size: 0.6875rem;">Annual decline in persistence?</span>
         </div>
       </div>
 
       <div class="field">
-        <label class="field-label">Evidence Source / Citation *</label>
-        <input type="text" name="source" class="input" value="${escapeHtml(adj.source || '')}" required placeholder="e.g. Comparison group assessment, Historical dropout benchmark" />
+        <label class="field-label">${t('field_rationale', 'Evidence Source / Citation')} *</label>
+        <input type="text" name="source" class="input" value="${escapeHtml(adj.source || '')}" required placeholder="${t('ph_evidence_source', 'e.g. Comparison group benchmark, Historical dropout rate')}" />
       </div>
 
       <div class="field">
-        <label class="field-label">Methodological Justification *</label>
-        <textarea name="justification" class="input" rows="2" required placeholder="Explain why these specific percentages represent plausible additionality">${escapeHtml(adj.justification || '')}</textarea>
+        <label class="field-label">${t('col_justification', 'Methodological Justification')} *</label>
+        <textarea name="justification" class="input" rows="2" required placeholder="${t('ph_adj_justification', 'Explain why these specific percentages represent plausible additionality')}">${escapeHtml(adj.justification || '')}</textarea>
       </div>
 
       <div class="field">
-        <label class="field-label">Reason for Change (Audit Trail)</label>
-        <input type="text" name="change_reason" class="input" placeholder="e.g. Updated based on Q3 cohort evaluation data" />
+        <label class="field-label">${t('field_change_reason', 'Reason for Change (Audit Trail)')}</label>
+        <input type="text" name="change_reason" class="input" placeholder="${t('ph_change_reason', 'e.g. Updated based on Q3 cohort evaluation data')}" />
       </div>
 
       <div id="adjModalError" class="alert alert-danger" style="display: none;"></div>
@@ -213,12 +215,12 @@ function openAdjustmentModal({ project, outcome, onSaved }) {
   `;
 
   const footer = `
-    <button class="btn btn-secondary" data-modal-close>Cancel</button>
-    <button class="btn btn-primary" id="btnSaveAdjustment">Save Adjustments</button>
+    <button class="btn btn-secondary" data-modal-close>${t('cancel', 'Cancel')}</button>
+    <button class="btn btn-primary" id="btnSaveAdjustment">${t('save', 'Save Adjustments')}</button>
   `;
 
   openModal({
-    title: `Impact Adjustments — ${outcome.name}`,
+    title: `${t('modal_edit_adj_title', 'Impact Adjustments')} — ${outcome.name}`,
     body: formHtml,
     size: 'lg',
     footer,
@@ -238,11 +240,9 @@ function openAdjustmentModal({ project, outcome, onSaved }) {
       justification: form.justification.value.trim(),
     };
 
-    const reason = form.change_reason.value.trim() || null;
-
     if (isNaN(data.deadweight) || isNaN(data.attribution) || isNaN(data.displacement) || isNaN(data.drop_off)) {
       if (errBox) {
-        errBox.textContent = 'Please enter valid percentage values between 0 and 100.';
+        errBox.textContent = t('required', 'Please enter valid percentage values between 0 and 100.');
         errBox.style.display = 'block';
       }
       return;
@@ -268,12 +268,12 @@ function openYearProjectionsModal({ project, outcome, onSaved }) {
   for (let y = 1; y <= years; y++) {
     rows.push(`
       <tr>
-        <td class="strong">Year ${y}</td>
+        <td class="strong">${t('year', 'Year')} ${y}</td>
         <td>
-          <input type="number" step="1" min="0" class="input input-cell" name="qty_${y}" placeholder="Cohort default (${outcome.quantity})" />
+          <input type="number" step="1" min="0" class="input input-cell" name="qty_${y}" placeholder="${t('ph_qty_default', 'Default')} (${outcome.quantity})" />
         </td>
         <td>
-          <input type="number" step="0.5" min="0" max="100" class="input input-cell" name="dropoff_${y}" placeholder="Default %" />
+          <input type="number" step="0.5" min="0" max="100" class="input input-cell" name="dropoff_${y}" placeholder="${t('ph_dropoff_default', 'Default %')}" />
         </td>
       </tr>
     `);
@@ -282,7 +282,7 @@ function openYearProjectionsModal({ project, outcome, onSaved }) {
   const modalHtml = `
     <div class="stack" style="gap: var(--sp-md);">
       <p class="muted" style="font-size: 0.8125rem;">
-        Define annual quantity overrides or specific drop-off rates per individual year for <strong>"${escapeHtml(outcome.name)}"</strong>.
+        ${t('modal_projections_title', 'Define annual quantity overrides or specific drop-off rates per individual year for')} <strong>"${escapeHtml(outcome.name)}"</strong>.
       </p>
 
       <form id="yearProjForm">
@@ -290,9 +290,9 @@ function openYearProjectionsModal({ project, outcome, onSaved }) {
           <table class="table">
             <thead>
               <tr>
-                <th>Year</th>
-                <th>Quantity Override</th>
-                <th>Drop-off Override (%)</th>
+                <th>${t('year', 'Year')}</th>
+                <th>${t('col_quantity', 'Quantity Override')}</th>
+                <th>${t('field_dropoff', 'Drop-off Override (%)')}</th>
               </tr>
             </thead>
             <tbody>
@@ -306,11 +306,11 @@ function openYearProjectionsModal({ project, outcome, onSaved }) {
   `;
 
   openModal({
-    title: `Annual Projections Overrides — ${outcome.name}`,
+    title: `${t('modal_projections_title', 'Annual Projections Override')} — ${outcome.name}`,
     body: modalHtml,
     footer: `
-      <button class="btn btn-secondary" data-modal-close>Cancel</button>
-      <button class="btn btn-primary" id="btnSaveYearProj">Save Overrides</button>
+      <button class="btn btn-secondary" data-modal-close>${t('cancel', 'Cancel')}</button>
+      <button class="btn btn-primary" id="btnSaveYearProj">${t('save', 'Save Overrides')}</button>
     `,
   });
 

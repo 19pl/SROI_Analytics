@@ -12,7 +12,7 @@ export async function renderReports(root) {
   if (!project) {
     root.innerHTML = `
       <div class="alert alert-info">
-        Please select a project from the <a href="#/projects" style="text-decoration: underline; font-weight: 600;">Projects Workspace</a> to view its reports.
+        ${t('alert_select_project_first', 'Please select a project from the <a href="#/projects" style="text-decoration: underline; font-weight: 600;">Projects Workspace</a> to view its reports.')}
       </div>
     `;
     return;
@@ -20,20 +20,22 @@ export async function renderReports(root) {
 
   root.innerHTML = `
     <div class="stack" style="gap: var(--sp-xl);">
-      <div style="display: flex; justify-content: space-between; align-items: center;">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: var(--sp-sm);">
         <div>
-          <h1 class="page-title" style="margin-bottom: 2px;">${t('reports_title', 'Report Archive & Audit Trail')}</h1>
+          <h1 class="page-title" style="margin-bottom: 2px;">${t('reports_title', 'Reports & Audit Log')}</h1>
           <p class="muted page-sub" style="margin-bottom: 0;">
-            Project: ${escapeHtml(project.name)} | ${t('reports_subtitle', 'Reproducible snapshots preserved with input hashes')}
+            ${escapeHtml(project.name)} | ${t('reports_subtitle', 'Audit trail of model snapshots, sensitivity checks, and formal export records')}
           </p>
         </div>
-        <a class="btn btn-primary" href="#/wizard/step-6">Open Calculator Dashboard →</a>
+        <a class="btn btn-primary" href="#/wizard/step-6">
+          ${t('btn_open_calc_dash', 'Open Calculator Dashboard →')}
+        </a>
       </div>
 
       <!-- Generated Reports Table -->
       <div class="card">
         <div class="card-head">
-          <h2 class="card-title">Published Impact Reports</h2>
+          <h2 class="card-title">${t('pub_reports_title', 'Published Impact Reports')}</h2>
         </div>
         <div id="reportsListTable">
           <div class="muted">${t('loading', 'Loading reports...')}</div>
@@ -43,10 +45,10 @@ export async function renderReports(root) {
       <!-- Calculation Runs Table -->
       <div class="card">
         <div class="card-head">
-          <h2 class="card-title">Auditable Calculation Runs</h2>
+          <h2 class="card-title">${t('audit_runs_title', 'Auditable Calculation Runs')}</h2>
         </div>
         <div id="runsListTable">
-          <div class="muted">Loading calculation runs...</div>
+          <div class="muted">${t('loading', 'Loading calculation runs...')}</div>
         </div>
       </div>
     </div>
@@ -58,7 +60,7 @@ export async function renderReports(root) {
     if (!box) return;
 
     if (!reports || reports.length === 0) {
-      box.innerHTML = `<div class="muted" style="padding: 16px;">No reports generated yet. Go to Step 6 Dashboard to generate a report.</div>`;
+      box.innerHTML = `<div class="muted" style="padding: 16px;">${t('no_reports_yet', 'No reports generated yet. Go to Step 6 Dashboard to generate a report.')}</div>`;
       return;
     }
 
@@ -67,10 +69,10 @@ export async function renderReports(root) {
         <table class="table">
           <thead>
             <tr>
-              <th>Report Title</th>
-              <th>Type</th>
-              <th>Created</th>
-              <th>Export Formats</th>
+              <th>${t('col_report_title', 'Report Title')}</th>
+              <th>${t('col_eval_type', 'Type')}</th>
+              <th>${t('col_created', 'Created')}</th>
+              <th>${t('col_export_formats', 'Export Formats')}</th>
             </tr>
           </thead>
           <tbody>
@@ -124,7 +126,7 @@ export async function renderReports(root) {
     if (!box) return;
 
     if (!runs || runs.length === 0) {
-      box.innerHTML = `<div class="muted" style="padding: 16px;">No saved calculation runs recorded yet.</div>`;
+      box.innerHTML = `<div class="muted" style="padding: 16px;">${t('no_runs_yet', 'No saved calculation runs recorded yet.')}</div>`;
       return;
     }
 
@@ -133,13 +135,13 @@ export async function renderReports(root) {
         <table class="table">
           <thead>
             <tr>
-              <th>Run ID</th>
-              <th>Scenario</th>
-              <th class="num">SROI Ratio</th>
-              <th class="num">Present Value</th>
-              <th class="num">Investment</th>
-              <th>Input SHA-256</th>
-              <th>Date</th>
+              <th>${t('col_run_id', 'Run ID')}</th>
+              <th>${t('col_scenario', 'Scenario')}</th>
+              <th class="num">${t('col_sroi_ratio', 'SROI Ratio')}</th>
+              <th class="num">${t('col_present_value', 'Present Value')}</th>
+              <th class="num">${t('col_investment', 'Investment')}</th>
+              <th>${t('col_hash', 'Input SHA-256')}</th>
+              <th>${t('col_date', 'Date')}</th>
             </tr>
           </thead>
           <tbody>

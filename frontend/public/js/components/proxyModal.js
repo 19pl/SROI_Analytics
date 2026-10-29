@@ -1,11 +1,13 @@
 /**
  * Financial Proxy Library Search & Custom Proxy Modal
+ * Fully bilingual (Thai & English)
  */
 
 import { api } from '../api.js';
 import { openModal, closeModal } from './modal.js';
 import { formatBaht } from '../utils/format.js';
 import { escapeHtml } from '../utils/html.js';
+import { t } from '../i18n.js';
 
 export function openProxyLibraryModal({ onSelectProxy, orgId = null }) {
   let categories = [
@@ -22,25 +24,27 @@ export function openProxyLibraryModal({ onSelectProxy, orgId = null }) {
   ];
 
   const modalHtml = `
-    <div style="display: flex; gap: var(--sp-md); margin-bottom: var(--sp-md);">
-      <input type="text" class="input" id="proxySearchInput" placeholder="Search proxies (e.g. tutoring, health, waste)..." style="flex: 1;" />
+    <div style="display: flex; gap: var(--sp-md); margin-bottom: var(--sp-md); flex-wrap: wrap;">
+      <input type="text" class="input" id="proxySearchInput" placeholder="${t('proxy_search_ph', 'Search proxies (e.g. tutoring, health, waste, energy)...')}" style="flex: 1; min-width: 220px;" />
       <select class="input" id="proxyCategorySelect" style="width: 200px;">
-        ${categories.map((c) => `<option value="${c === 'All Categories' ? '' : c}">${c}</option>`).join('')}
+        ${categories.map((c) => `<option value="${c === 'All Categories' ? '' : c}">${c === 'All Categories' ? t('proxy_all_cats', 'All Categories') : c}</option>`).join('')}
       </select>
     </div>
 
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--sp-sm);">
-      <span class="muted" style="font-size: 0.8125rem;" id="proxyCountLabel">Loading library...</span>
-      <button class="btn btn-secondary" id="btnOpenCustomProxy" style="height: 32px; font-size: 0.75rem;">+ Create Custom Proxy</button>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--sp-sm); flex-wrap: wrap; gap: var(--sp-xs);">
+      <span class="muted" style="font-size: 0.8125rem;" id="proxyCountLabel">${t('loading', 'Loading library...')}</span>
+      <button class="btn btn-secondary" id="btnOpenCustomProxy" style="height: 32px; font-size: 0.75rem;">
+        ${t('btn_create_custom_proxy', '+ Create Custom Proxy')}
+      </button>
     </div>
 
     <div class="proxy-list" id="proxyListContainer">
-      <div class="muted" style="padding: var(--sp-xl); text-align: center;">Loading proxies...</div>
+      <div class="muted" style="padding: var(--sp-xl); text-align: center;">${t('loading', 'Loading proxies...')}</div>
     </div>
   `;
 
   openModal({
-    title: 'Financial Proxy Library',
+    title: t('proxy_lib_title', 'Financial Proxy Library'),
     body: modalHtml,
     size: 'lg',
   });
@@ -60,12 +64,12 @@ export function openProxyLibraryModal({ onSelectProxy, orgId = null }) {
       const res = await api.getProxies(cat, q);
       currentProxies = res?.data || [];
 
-      countLabel.textContent = `${currentProxies.length} proxies available`;
+      countLabel.textContent = `${currentProxies.length} ${t('proxies_count_avail', 'proxies available')}`;
 
       if (currentProxies.length === 0) {
         listContainer.innerHTML = `
           <div style="padding: var(--sp-xl); text-align: center; color: var(--muted);">
-            No matching proxies found. You can create a custom proxy with your evidence.
+            ${t('no_data', 'No matching proxies found. You can create a custom proxy with your evidence.')}
           </div>
         `;
         return;
@@ -77,12 +81,12 @@ export function openProxyLibraryModal({ onSelectProxy, orgId = null }) {
         <div class="proxy-item" data-id="${p.id}">
           <div class="proxy-item-info">
             <span class="proxy-item-name">${escapeHtml(p.name)} <span class="badge badge-planned" style="font-size: 0.6875rem;">${escapeHtml(p.category)}</span></span>
-            <span class="proxy-item-source">Unit: ${escapeHtml(p.unit)} | Source: ${escapeHtml(p.source || 'Standard Reference')}</span>
+            <span class="proxy-item-source">${t('unit', 'Unit')}: ${escapeHtml(p.unit)} | Source: ${escapeHtml(p.source || 'Standard Reference')}</span>
             ${p.definition ? `<span class="muted" style="font-size: 0.75rem;">${escapeHtml(p.definition)}</span>` : ''}
           </div>
           <div style="text-align: right;">
             <div class="proxy-item-val">${p.currency} ${formatBaht(p.value)}</div>
-            <button class="btn btn-primary" style="height: 28px; font-size: 0.75rem; margin-top: 4px;">Select</button>
+            <button class="btn btn-primary" style="height: 28px; font-size: 0.75rem; margin-top: 4px;">${t('btn_select_proxy', 'Select')}</button>
           </div>
         </div>
       `,
@@ -128,11 +132,11 @@ export function openCustomProxyModal({ orgId, onCreated }) {
   const formHtml = `
     <form id="customProxyForm" class="stack" style="gap: var(--sp-md);">
       <div class="field">
-        <label class="field-label">Proxy Name *</label>
+        <label class="field-label">${t('field_proxy_name', 'Proxy Name')} *</label>
         <input type="text" name="name" class="input" required placeholder="e.g. Reduction in supplementary tutoring fees" />
       </div>
       <div class="field">
-        <label class="field-label">Category *</label>
+        <label class="field-label">${t('field_proxy_category', 'Category')} *</label>
         <select name="category" class="input" required>
           <option value="Education">Education</option>
           <option value="Employment and income">Employment and income</option>
@@ -146,24 +150,24 @@ export function openCustomProxyModal({ orgId, onCreated }) {
       </div>
       <div class="form-grid">
         <div class="field">
-          <label class="field-label">Monetary Value *</label>
+          <label class="field-label">${t('field_proxy_value', 'Monetary Value')} *</label>
           <input type="number" name="value" step="0.01" min="0" class="input" required placeholder="2000" />
         </div>
         <div class="field">
-          <label class="field-label">Unit of Measure *</label>
-          <input type="text" name="unit" class="input" required placeholder="household / year" />
+          <label class="field-label">${t('field_proxy_unit', 'Unit of Measure')} *</label>
+          <input type="text" name="unit" class="input" required placeholder="${t('field_proxy_unit_ph', 'e.g. THB/person/year')}" />
         </div>
         <div class="field">
-          <label class="field-label">Currency</label>
+          <label class="field-label">${t('field_currency', 'Currency')}</label>
           <input type="text" name="currency" class="input" value="THB" maxlength="3" required />
         </div>
       </div>
       <div class="field">
-        <label class="field-label">Evidence Source / Citation *</label>
+        <label class="field-label">${t('field_proxy_source', 'Evidence Source / Citation')} *</label>
         <input type="text" name="source" class="input" required placeholder="e.g. National Educational Survey, 2026" />
       </div>
       <div class="field">
-        <label class="field-label">Definition / Limitations</label>
+        <label class="field-label">${t('field_proxy_def', 'Definition / Limitations')}</label>
         <textarea name="definition" class="input" rows="2" placeholder="Explain what this monetary figure represents and its limits"></textarea>
       </div>
       <div id="customProxyError" style="display: none;" class="alert alert-danger"></div>
@@ -171,12 +175,12 @@ export function openCustomProxyModal({ orgId, onCreated }) {
   `;
 
   const footer = `
-    <button class="btn btn-secondary" data-modal-close>Cancel</button>
-    <button class="btn btn-primary" id="btnSaveCustomProxy">Save & Select Proxy</button>
+    <button class="btn btn-secondary" data-modal-close>${t('cancel', 'Cancel')}</button>
+    <button class="btn btn-primary" id="btnSaveCustomProxy">${t('save', 'Save & Select Proxy')}</button>
   `;
 
   openModal({
-    title: 'Create Custom Financial Proxy',
+    title: t('modal_custom_proxy_title', 'Create Custom Financial Proxy'),
     body: formHtml,
     footer,
   });
@@ -198,7 +202,7 @@ export function openCustomProxyModal({ orgId, onCreated }) {
 
     if (!data.name || isNaN(data.value) || !data.unit || !data.source) {
       if (errBox) {
-        errBox.textContent = 'Please fill in all required fields.';
+        errBox.textContent = t('required', 'Please fill in all required fields.');
         errBox.style.display = 'block';
       }
       return;
