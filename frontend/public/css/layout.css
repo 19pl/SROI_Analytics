@@ -133,101 +133,379 @@
   color: #fff;
 }
 
-/* ---------- Sidebar: แบรนด์ + เมนู ---------- */
+/* ---------- Sidebar: แบรนด์ + เมนู (modern, animated) ---------- */
+/* พื้นหลังกระจกโปร่ง + แสงไล่สีด้านบน + เส้นขอบเรืองแสงด้านขวา */
+.shell-sidebar {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background:
+    radial-gradient(240px 220px at 0% 0%, color-mix(in srgb, var(--primary) 32%, transparent), transparent 70%),
+    radial-gradient(200px 260px at 100% 100%, color-mix(in srgb, var(--primary) 14%, transparent), transparent 70%),
+    linear-gradient(180deg, color-mix(in srgb, var(--shell-bg) 96%, #fff 4%), var(--shell-bg));
+  box-shadow: 8px 0 32px -12px rgba(0, 0, 0, 0.45);
+}
+
+.shell-sidebar::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 1px;
+  pointer-events: none;
+  background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--primary) 70%, transparent) 30%, transparent 75%);
+  opacity: 0.55;
+}
+
+/* Brand */
 .brand {
   display: flex;
   align-items: center;
   gap: 12px;
-  height: 76px;
-  min-height: 76px;
-  padding: 0 18px;
-  margin-bottom: 12px;
-  font-weight: 700;
-  font-size: 1.125rem;
+  height: 64px;
+  min-height: 64px;
+  padding: 0 8px;
+  margin-bottom: 18px;
   white-space: nowrap;
   overflow: hidden;
+  animation: sbFadeDown 600ms var(--ease) both;
 }
 
 .brand-logo {
   display: block;
-  flex: 0 0 48px;
-  width: 48px;
-  height: 48px;
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
   object-fit: contain;
-  object-position: center;
-  border-radius: 10px;
+  padding: 4px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.1),
+    0 6px 18px -4px color-mix(in srgb, var(--primary) 60%, transparent);
   transition:
-  width 0.2s ease,
-  height 0.2s ease,
-  flex-basis 0.2s ease;
+    transform 400ms cubic-bezier(0.34, 1.56, 0.64, 1),
+    width 300ms var(--ease),
+    height 300ms var(--ease),
+    flex-basis 300ms var(--ease);
 }
 
-.brand span {
-overflow: hidden;
-text-overflow: ellipsis;
+.brand:hover .brand-logo {
+  transform: rotate(-6deg) scale(1.06);
 }
 
-.nav {
+.brand-text {
   display: grid;
-  gap: var(--sp-xs);
+  gap: 1px;
+  min-width: 0;
+  line-height: 1.15;
+  transition: opacity 200ms var(--ease), transform 300ms var(--ease);
+}
+
+.brand-name {
+  font-size: 1.125rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  background: linear-gradient(90deg, #fff 30%, color-mix(in srgb, var(--primary) 55%, #fff));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.brand-sub {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--shell-text-muted);
+}
+
+/* Section label */
+.nav-label {
+  margin: 0 8px 8px;
+  height: 14px;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--shell-text-muted);
+  opacity: 0.7;
+  white-space: nowrap;
+  overflow: hidden;
+  transition: opacity 200ms var(--ease);
+}
+
+/* Nav */
+.nav {
+  position: relative;
+  display: grid;
+  gap: 4px;
+}
+
+/* แถบไฮไลต์ที่เลื่อนไปหาเมนูที่ active (ตำแหน่งตั้งค่าจาก main.js) */
+.nav-indicator {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 0;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, var(--primary), color-mix(in srgb, var(--primary) 70%, #7c3aed));
+  box-shadow:
+    0 8px 20px -6px color-mix(in srgb, var(--primary) 70%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    transform 450ms cubic-bezier(0.34, 1.25, 0.64, 1),
+    height 300ms var(--ease),
+    opacity 250ms var(--ease);
+}
+
+.nav-indicator.is-visible {
+  opacity: 1;
+}
+
+/* ขีดสว่างด้านซ้ายของแถบ */
+.nav-indicator::before {
+  content: '';
+  position: absolute;
+  left: -16px;
+  top: 22%;
+  bottom: 22%;
+  width: 4px;
+  border-radius: 0 4px 4px 0;
+  background: #fff;
+  box-shadow: 0 0 12px 1px color-mix(in srgb, var(--primary) 80%, #fff);
 }
 
 .nav-item {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
   gap: var(--sp-md);
-  min-height: 36px;
-  padding: 6px 12px;
-  border-radius: var(--radius-md);
+  min-height: 44px;
+  padding: 0 14px;
+  border-radius: var(--radius-lg);
   color: var(--shell-text-muted);
   text-decoration: none;
-  font-size: 0.8125rem;
-  font-weight: 700;
+  font-size: 0.875rem;
+  font-weight: 600;
   white-space: nowrap;
-  overflow: hidden;
   transition:
-    background 150ms var(--ease),
-    color 150ms var(--ease);
+    background 200ms var(--ease),
+    color 200ms var(--ease),
+    gap 300ms var(--ease),
+    transform 200ms var(--ease);
+  animation: sbSlideIn 500ms var(--ease) both;
+  animation-delay: calc(var(--i, 0) * 60ms + 120ms);
 }
 
 .nav-item svg {
   flex: none;
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
+  transition: transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-.nav-item:hover,
-.nav-item.is-active {
-  background: var(--primary);
+.nav-item span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+  transition: opacity 200ms var(--ease), max-width 300ms var(--ease), transform 300ms var(--ease);
+}
+
+.nav-item:hover {
+  background: rgba(255, 255, 255, 0.07);
+  color: #fff;
+  transform: translateX(3px);
+}
+
+.nav-item:hover svg {
+  transform: scale(1.18) rotate(-5deg);
+}
+
+.nav-item:active {
+  transform: translateX(3px) scale(0.98);
+}
+
+.nav-item:focus-visible,
+.btn-ghost-shell:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--primary) 70%, #fff);
+  outline-offset: 2px;
+}
+
+.nav-item.is-active,
+.nav-item.is-active:hover {
+  background: transparent; /* พื้นหลังมาจาก .nav-indicator */
   color: var(--on-primary);
+  transform: none;
 }
 
-/* Sidebar ที่ถูกย่อ: ซ่อนข้อความ เหลือแต่ไอคอน */
-.is-collapsed .brand span:last-child,
-.is-collapsed .nav-item span {
-  display: none;
+/* ถ้ายังไม่มีตัวบ่งชี้ (JS ยังไม่ทำงาน) ให้ active มีพื้นหลังของตัวเอง */
+.nav:not(.has-indicator) .nav-item.is-active {
+  background: var(--primary);
 }
 
+/* Footer */
+.sidebar-footer {
+  margin-top: auto;
+  padding: 12px;
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.02));
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  white-space: nowrap;
+  overflow: hidden;
+  animation: sbFadeUp 600ms var(--ease) 500ms both;
+}
+
+.sidebar-footer-dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  margin: 0 6px;
+  border-radius: 50%;
+  background: #22c55e;
+  box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.6);
+  animation: sbPulse 2.2s ease-out infinite;
+}
+
+.sidebar-footer-text {
+  display: grid;
+  line-height: 1.25;
+  min-width: 0;
+  transition: opacity 200ms var(--ease);
+}
+
+.sidebar-footer-text strong {
+  font-size: 0.75rem;
+  color: var(--shell-text);
+}
+
+.sidebar-footer-text small {
+  font-size: 0.6875rem;
+  color: var(--shell-text-muted);
+}
+
+/* Toggle button */
+.btn-ghost-shell svg {
+  transition: transform 300ms var(--ease);
+}
+
+.app.is-collapsed .btn-ghost-shell svg {
+  transform: scaleX(-1);
+}
+
+/* ---------- Sidebar ที่ถูกย่อ: เหลือแต่ไอคอน + tooltip ---------- */
 .app.is-collapsed .shell-sidebar {
   padding-left: 12px;
   padding-right: 12px;
+  overflow: visible; /* ให้ tooltip โผล่พ้นขอบ */
 }
 
 .app.is-collapsed .brand {
   justify-content: center;
   gap: 0;
-  padding-left: 0;
-  padding-right: 0;
+  padding: 0;
 }
 
-.app.is-collapsed .brand span {
+.app.is-collapsed .brand-text,
+.app.is-collapsed .nav-label,
+.app.is-collapsed .sidebar-footer-text,
+.app.is-collapsed .nav-item span {
+  opacity: 0;
+  max-width: 0;
+  transform: translateX(-6px);
+  pointer-events: none;
+}
+
+.app.is-collapsed .nav-item {
+  gap: 0;
+  padding: 0;
+  justify-content: center;
+}
+
+.app.is-collapsed .nav-item:hover {
+  transform: none;
+}
+
+.app.is-collapsed .nav-indicator::before {
+  left: -12px;
+}
+
+.app.is-collapsed .sidebar-footer {
+  justify-content: center;
+  padding: 12px 0;
+}
+
+.app.is-collapsed .sidebar-footer-dot {
+  margin: 0;
+}
+
+/* Tooltip (แสดงเฉพาะตอนย่อ) */
+.nav-item::after {
+  content: attr(data-label);
+  position: absolute;
+  left: calc(100% + 14px);
+  top: 50%;
+  padding: 6px 10px;
+  border-radius: var(--radius-md);
+  background: var(--surface-elevated, #fff);
+  color: var(--on-background, #0f172a);
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+  box-shadow: var(--shadow-modal);
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-6px, -50%);
+  transition: opacity 150ms var(--ease), transform 200ms var(--ease);
   display: none;
 }
 
-.app.is-collapsed .brand-logo {
-  flex: 0 0 44px;
-  width: 44px;
-  height: 44px;
+.app.is-collapsed .nav-item::after {
+  display: block;
+}
+
+.app.is-collapsed .nav-item:hover::after,
+.app.is-collapsed .nav-item:focus-visible::after {
+  opacity: 1;
+  transform: translate(0, -50%);
+}
+
+/* ---------- Keyframes ---------- */
+@keyframes sbSlideIn {
+  from { opacity: 0; transform: translateX(-16px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes sbFadeDown {
+  from { opacity: 0; transform: translateY(-12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes sbFadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes sbPulse {
+  0%   { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.55); }
+  70%  { box-shadow: 0 0 0 8px rgba(34, 197, 94, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shell-sidebar *,
+  .shell-sidebar {
+    animation: none !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 /* ---------- พื้นที่เนื้อหา ---------- */
@@ -267,22 +545,58 @@ text-overflow: ellipsis;
     --sw: var(--sidebar-w-collapsed);
   }
 
-  .nav-item span,
-  .brand span {
-    display: none;
+  /* บังคับใช้สไตล์แบบย่อเหมือน .app.is-collapsed */
+  .shell-sidebar {
+    padding-left: 12px;
+    padding-right: 12px;
+    overflow: visible;
   }
 
   .brand {
     justify-content: center;
     gap: 0;
-    padding-left: 0;
-    padding-right: 0;
+    padding: 0;
   }
 
-  .brand-logo {
-    flex: 0 0 40px;
-    width: 40px;
-    height: 40px;
+  .brand-text,
+  .nav-label,
+  .sidebar-footer-text,
+  .nav-item span {
+    opacity: 0;
+    max-width: 0;
+    pointer-events: none;
+  }
+
+  .nav-item {
+    gap: 0;
+    padding: 0;
+    justify-content: center;
+  }
+
+  .nav-item:hover {
+    transform: none;
+  }
+
+  .nav-item::after {
+    display: block;
+  }
+
+  .nav-item:hover::after {
+    opacity: 1;
+    transform: translate(0, -50%);
+  }
+
+  .nav-indicator::before {
+    left: -12px;
+  }
+
+  .sidebar-footer {
+    justify-content: center;
+    padding: 12px 0;
+  }
+
+  .sidebar-footer-dot {
+    margin: 0;
   }
 
   .container {

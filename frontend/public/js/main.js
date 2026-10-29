@@ -11,9 +11,10 @@ const $ = (id) => document.getElementById(id);
 const sunIcon = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>`;
 const moonIcon = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>`;
 
-const navItemHtml = ({ path, labelKey, label, icon }) => {
+const navItemHtml = ({ path, labelKey, label, icon }, index) => {
   const displayLabel = labelKey ? t(labelKey, label) : label;
-  return `<a class="nav-item" href="${path}" title="${displayLabel}">${icon}<span>${displayLabel}</span></a>`;
+  // --i ใช้หน่วงแอนิเมชันเข้าทีละรายการ, data-label ใช้เป็น tooltip ตอนเมนูถูกย่อ
+  return `<a class="nav-item" href="${path}" data-label="${escapeHtml(displayLabel)}" style="--i:${index}">${icon}<span>${displayLabel}</span></a>`;
 };
 
 function findRoute(hash) {
@@ -33,8 +34,26 @@ function findRoute(hash) {
 function renderNav() {
   const navEl = $('nav');
   if (navEl) {
-    navEl.innerHTML = routes.filter((r) => !r.hidden).map(navItemHtml).join('');
+    navEl.innerHTML =
+      '<span class="nav-indicator" aria-hidden="true"></span>' +
+      routes.filter((r) => !r.hidden).map(navItemHtml).join('');
+    navEl.classList.add('has-indicator');
   }
+}
+
+// เลื่อนแถบไฮไลต์ไปที่เมนูที่ active
+function moveNavIndicator() {
+  const navEl = $('nav');
+  const indicator = navEl?.querySelector('.nav-indicator');
+  const active = navEl?.querySelector('.nav-item.is-active');
+  if (!indicator) return;
+  if (!active) {
+    indicator.classList.remove('is-visible');
+    return;
+  }
+  indicator.style.height = `${active.offsetHeight}px`;
+  indicator.style.transform = `translateY(${active.offsetTop}px)`;
+  indicator.classList.add('is-visible');
 }
 
 function highlightActiveNav(route) {
@@ -43,6 +62,7 @@ function highlightActiveNav(route) {
     const isWizard = location.hash.startsWith('#/wizard/') && href === '#/wizard/step-1';
     link.classList.toggle('is-active', href === route.path || isWizard);
   });
+  moveNavIndicator();
 }
 
 function updateControls() {
@@ -122,7 +142,12 @@ async function init() {
   renderNav();
   updateControls();
 
-  $('toggleSidebar')?.addEventListener('click', () => $('app').classList.toggle('is-collapsed'));
+  $('toggleSidebar')?.addEventListener('click', () => {
+    $('app').classList.toggle('is-collapsed');
+    // รีคำนวณตำแหน่งแถบไฮไลต์หลังแอนิเมชันย่อ/ขยายจบ
+    setTimeout(moveNavIndicator, 320);
+  });
+  window.addEventListener('resize', moveNavIndicator);
 
   // Theme switcher button
   $('btnToggleTheme')?.addEventListener('click', () => {
