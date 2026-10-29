@@ -115,66 +115,116 @@ export async function renderOrg(root) {
               ${faculties
                 .map(
                   (f) => `
-                <div class="card" style="padding: var(--sp-md); border-left: 4px solid var(--accent);">
-                  <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: var(--sp-sm);">
-                    <div>
-                      <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 2px;">
-                        ${escapeHtml(f.name)}
-                      </h3>
-                      ${f.description ? `<p class="muted" style="font-size: 0.8125rem; margin-bottom: 0;">${escapeHtml(f.description)}</p>` : ''}
-                    </div>
-                    <div style="display: flex; gap: var(--sp-xs);">
-                      <a class="btn btn-secondary" href="#/faculty-report?id=${f.id}" style="font-size: 0.75rem; height: 28px;">
-                        Consolidated Report ↗
-                      </a>
-                      <button class="btn btn-secondary" data-add-dept="${f.id}" data-fac-name="${escapeHtml(f.name)}" style="font-size: 0.75rem; height: 28px;">
-                        + Department
-                      </button>
-                      <button class="btn btn-secondary" data-edit-fac="${f.id}" data-fac-name="${escapeHtml(f.name)}" data-fac-desc="${escapeHtml(f.description || '')}" style="font-size: 0.75rem; height: 28px;">
-                        Rename
-                      </button>
-                      <button class="btn-icon" data-delete-fac="${f.id}" title="Delete Faculty">
-                        ${icons.trash}
-                      </button>
-                    </div>
-                  </div>
+                    <div class="card" style="padding: var(--sp-md); border-left: 4px solid var(--primary);">
+                      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: var(--sp-sm); gap: var(--sp-sm);">
+                        <div>
+                          <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 2px; color: var(--on-background);">
+                            ${escapeHtml(f.name)}
+                          </h3>
+                          ${f.description ? `<p class="muted" style="font-size: 0.8125rem; margin-bottom: 0;">${escapeHtml(f.description)}</p>` : ''}
+                        </div>
 
-                  <!-- Departments under this faculty -->
-                  <div style="background: var(--surface-secondary, #f8fafc); border-radius: var(--radius-sm); padding: var(--sp-sm); margin-top: var(--sp-sm);">
-                    <div style="font-size: 0.75rem; font-weight: 600; color: var(--muted); text-transform: uppercase; margin-bottom: var(--sp-xs);">
-                      Departments (${f.departments.length})
-                    </div>
-                    ${
-                      f.departments.length === 0
-                        ? `<div class="muted" style="font-size: 0.8125rem;">No departments yet. SROI plans can be owned directly by this faculty.</div>`
-                        : `
-                      <div class="stack" style="gap: var(--sp-xs);">
-                        ${f.departments
-                          .map(
-                            (d) => `
-                          <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; background: white; border-radius: 4px; border: 1px solid var(--outline, #e2e8f0);">
-                            <div>
-                              <strong style="font-size: 0.875rem;">${escapeHtml(d.name)}</strong>
-                              ${d.description ? `<span class="muted" style="font-size: 0.75rem; margin-left: 8px;">${escapeHtml(d.description)}</span>` : ''}
-                            </div>
-                            <div style="display: flex; gap: var(--sp-xs);">
-                              <button class="btn btn-ghost" data-edit-dept="${d.id}" data-dept-name="${escapeHtml(d.name)}" data-dept-desc="${escapeHtml(d.description || '')}" style="font-size: 0.75rem; height: 24px; padding: 0 6px;">
-                                Rename
-                              </button>
-                              <button class="btn-icon" data-delete-dept="${d.id}" title="Delete Department" style="width: 24px; height: 24px;">
-                                ${icons.trash}
-                              </button>
-                            </div>
-                          </div>
-                        `,
-                          )
-                          .join('')}
+                        <div style="display: flex; gap: var(--sp-xs); flex-wrap: wrap;">
+                          <a class="btn btn-secondary" href="#/faculty-report?id=${f.id}" style="font-size: 0.75rem; height: 28px;">
+                            Consolidated Report ↗
+                          </a>
+
+                          <button class="btn btn-secondary" data-add-dept="${f.id}" data-fac-name="${escapeHtml(f.name)}" style="font-size: 0.75rem; height: 28px;">
+                            + Department
+                          </button>
+
+                          <button class="btn btn-secondary" data-edit-fac="${f.id}" data-fac-name="${escapeHtml(f.name)}" data-fac-desc="${escapeHtml(f.description || '')}" style="font-size: 0.75rem; height: 28px;">
+                            Rename
+                          </button>
+
+                          <button class="btn-icon" data-delete-fac="${f.id}" title="Delete Faculty">
+                            ${icons.trash}
+                          </button>
+                        </div>
                       </div>
-                    `
-                    }
-                  </div>
-                </div>
-              `,
+
+                      <!-- Departments under this faculty -->
+                      <div style="
+                        background: var(--surface-soft);
+                        border: 1px solid var(--outline);
+                        border-radius: var(--radius-sm);
+                        padding: var(--sp-sm);
+                        margin-top: var(--sp-sm);
+                      ">
+                        <div style="
+                          font-size: 0.75rem;
+                          font-weight: 600;
+                          color: var(--muted);
+                          text-transform: uppercase;
+                          margin-bottom: var(--sp-xs);
+                        ">
+                          Departments (${f.departments.length})
+                        </div>
+
+                        ${
+                          f.departments.length === 0
+                            ? `<div class="muted" style="font-size: 0.8125rem;">
+                                No departments yet. SROI plans can be owned directly by this faculty.
+                              </div>`
+                            : `
+                              <div class="stack" style="gap: var(--sp-xs);">
+                                ${f.departments
+                                  .map(
+                                    (d) => `
+                                      <div style="
+                                        display: flex;
+                                        justify-content: space-between;
+                                        align-items: center;
+                                        gap: var(--sp-sm);
+                                        flex-wrap: wrap;
+                                        padding: 6px 10px;
+                                        background: var(--surface-card);
+                                        color: var(--on-background);
+                                        border-radius: var(--radius-xs);
+                                        border: 1px solid var(--outline);
+                                      ">
+                                        <div>
+                                          <strong style="font-size: 0.875rem; color: var(--on-background);">
+                                            ${escapeHtml(d.name)}
+                                          </strong>
+
+                                          ${d.description
+                                            ? `<span class="muted" style="font-size: 0.75rem; margin-left: 8px;">
+                                                ${escapeHtml(d.description)}
+                                              </span>`
+                                            : ''}
+                                        </div>
+
+                                        <div style="display: flex; gap: var(--sp-xs);">
+                                          <button
+                                            class="btn btn-ghost"
+                                            data-edit-dept="${d.id}"
+                                            data-dept-name="${escapeHtml(d.name)}"
+                                            data-dept-desc="${escapeHtml(d.description || '')}"
+                                            style="font-size: 0.75rem; height: 24px; padding: 0 6px;"
+                                          >
+                                            Rename
+                                          </button>
+
+                                          <button
+                                            class="btn-icon"
+                                            data-delete-dept="${d.id}"
+                                            title="Delete Department"
+                                            style="width: 24px; height: 24px;"
+                                          >
+                                            ${icons.trash}
+                                          </button>
+                                        </div>
+                                      </div>
+                                    `,
+                                  )
+                                  .join('')}
+                              </div>
+                            `
+                        }
+                      </div>
+                    </div>
+                  `,
                 )
                 .join('')}
             </div>
