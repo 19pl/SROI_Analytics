@@ -1,0 +1,151 @@
+/*
+ * Decorative layer: เติมพื้นที่ว่างที่เป็นสีพื้นหลังล้วนในทุกหน้า
+ * - ใช้ ::before / ::after ของ .workspace เป็นฉากหลัง (ไม่แตะ markup ของหน้าใด ๆ)
+ * - position: fixed ทำให้ลวดลายเต็มทั้งหน้าจอ ไม่ว่าเนื้อหาจะสั้นหรือยาว
+ * - ทุกอย่างอ่านค่าสีจาก tokens จึงปรับตามธีม Light / Black อัตโนมัติ
+ */
+
+.workspace {
+  position: relative;
+  isolation: isolate; /* ให้ฉากหลังอยู่ใต้เนื้อหาแต่ไม่หลุดไปหลัง Sidebar */
+  background: transparent;
+}
+
+/* ชั้นที่ 1: แสงสีนุ่ม ๆ (gradient orbs) + พื้นฐานไล่ระดับ */
+.workspace::before {
+  content: '';
+  position: fixed;
+  z-index: -2;
+  top: var(--header-h);
+  right: 0;
+  bottom: 0;
+  left: var(--sw);
+  pointer-events: none;
+  background:
+    radial-gradient(640px 420px at 100% 0%, color-mix(in srgb, var(--primary) 24%, transparent), transparent 70%),
+    radial-gradient(560px 380px at 0% 100%, rgba(243, 112, 33, 0.18), transparent 70%),
+    radial-gradient(420px 300px at 55% 115%, color-mix(in srgb, var(--primary) 10%, transparent), transparent 70%),
+    linear-gradient(180deg, var(--background) 0%, color-mix(in srgb, var(--background) 92%, var(--primary)) 100%);
+  transition: left 300ms var(--ease);
+}
+
+/* ชั้นที่ 2: ลายจุด (dot grid) จางลงทางซ้ายล่าง เพื่อไม่ให้รบกวนการอ่าน */
+.workspace::after {
+  content: '';
+  position: fixed;
+  z-index: -1;
+  top: var(--header-h);
+  right: 0;
+  bottom: 0;
+  left: var(--sw);
+  pointer-events: none;
+  background-image: radial-gradient(color-mix(in srgb, var(--primary) 38%, transparent) 1.4px, transparent 1.7px);
+  background-size: 24px 24px;
+  -webkit-mask-image: radial-gradient(ellipse 120% 110% at 100% 0%, #000 0%, rgba(0, 0, 0, 0.55) 60%, rgba(0, 0, 0, 0.18) 100%);
+  mask-image: radial-gradient(ellipse 120% 110% at 100% 0%, #000 0%, rgba(0, 0, 0, 0.55) 60%, rgba(0, 0, 0, 0.18) 100%);
+  opacity: 0.7;
+  transition: left 300ms var(--ease);
+}
+
+/* วงแหวนตกแต่งมุมขวาล่าง — วางบน .container เพื่อไม่ต้องเพิ่ม element */
+.container {
+  position: relative;
+  min-height: calc(100vh - var(--header-h));
+}
+
+.container::after {
+  content: '';
+  position: fixed;
+  z-index: -1;
+  right: -120px;
+  bottom: -120px;
+  width: 420px;
+  height: 420px;
+  border-radius: 50%;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at center, transparent 54%, color-mix(in srgb, var(--primary) 22%, transparent) 55%, transparent 56%),
+    radial-gradient(circle at center, transparent 66%, color-mix(in srgb, var(--primary) 14%, transparent) 67%, transparent 68%),
+    radial-gradient(circle at center, transparent 78%, rgba(243, 112, 33, 0.14) 79%, transparent 80%);
+  animation: decorFloat 18s ease-in-out infinite alternate;
+}
+
+@keyframes decorFloat {
+  from { transform: translate(0, 0) rotate(0deg); }
+  to   { transform: translate(-24px, -18px) rotate(14deg); }
+}
+
+/* ---------- หัวข้อหน้า: แถบสีเล็ก ๆ ช่วยให้ส่วนบนไม่โล่ง ---------- */
+.page-title {
+  position: relative;
+  display: inline-block;
+  padding-bottom: 8px;
+}
+
+.page-title::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 44px;
+  height: 4px;
+  border-radius: var(--radius-pill);
+  background: linear-gradient(90deg, var(--primary), #F37021);
+}
+
+/* ---------- การ์ด: ให้ลอยเด่นขึ้นจากฉากหลัง ---------- */
+.card,
+.stat-card {
+  box-shadow: var(--shadow-card);
+  transition: transform 200ms var(--ease), box-shadow 200ms var(--ease), border-color 200ms var(--ease);
+}
+
+.card:hover,
+.stat-card:hover {
+  border-color: color-mix(in srgb, var(--primary) 35%, var(--outline));
+  box-shadow: var(--shadow-modal);
+}
+
+/* ---------- ข้อความ/สถานะว่าง (Empty / loading) ให้มีกรอบประ + ไอคอนจาง ---------- */
+.muted[style*='text-align: center'],
+.table td.empty {
+  border: 1.5px dashed var(--outline-strong);
+  border-radius: var(--radius-lg);
+  background:
+    radial-gradient(260px 120px at 50% 0%, var(--primary-soft), transparent 75%),
+    var(--surface-soft);
+}
+
+.table td.empty {
+  padding: var(--sp-2xl);
+  text-align: center;
+}
+
+/* ---------- Black theme: ปรับความเข้มให้เหมาะกับพื้นมืด ---------- */
+[data-theme='black'] .workspace::before {
+  background:
+    radial-gradient(640px 420px at 100% 0%, color-mix(in srgb, var(--primary) 24%, transparent), transparent 70%),
+    radial-gradient(560px 380px at 0% 100%, rgba(243, 112, 33, 0.14), transparent 70%),
+    radial-gradient(420px 300px at 55% 115%, color-mix(in srgb, var(--primary) 16%, transparent), transparent 70%),
+    #000;
+}
+
+[data-theme='black'] .workspace::after {
+  opacity: 0.4;
+}
+
+/* ---------- มือถือ: ลดลวดลายเพื่อประสิทธิภาพและความอ่านง่าย ---------- */
+@media (max-width: 768px) {
+  .container::after {
+    width: 260px;
+    height: 260px;
+    right: -90px;
+    bottom: -90px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .container::after {
+    animation: none;
+  }
+}

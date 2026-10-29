@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ImpactValue | SROI Web Calculator</title>
+    <title>NU SROI Analytics | มหาวิทยาลัยนเรศวร</title>
 
     <link rel="stylesheet" href="/css/tokens.css" />
     <link rel="stylesheet" href="/css/base.css" />
@@ -11,6 +11,18 @@
     <link rel="stylesheet" href="/css/components.css" />
     <link rel="stylesheet" href="/css/pages/calculator.css" />
     <link rel="stylesheet" href="/css/pages/about.css" />
+    <link rel="stylesheet" href="/css/decor.css" />
+    <link rel="stylesheet" href="/css/skin.css" />
+    <script>
+      (function() {
+        try {
+          var savedTheme = localStorage.getItem('sroi_theme') || 'light';
+          document.documentElement.setAttribute('data-theme', savedTheme);
+          var savedLang = localStorage.getItem('sroi_lang') || 'th';
+          document.documentElement.setAttribute('lang', savedLang);
+        } catch (e) {}
+      })();
+    </script>
   </head>
 
   <body>
@@ -18,10 +30,27 @@
       <!-- เมนูด้านข้าง: รายการเมนูถูกสร้างโดย public/js/main.js จาก routes.js -->
       <aside class="shell-sidebar">
         <div class="brand">
-          <img class="brand-logo" src="/images/logo.png" alt="ImpactValue Logo" />
-          <span>ImpactValue</span>
+          <img
+            class="brand-logo"
+            src="/images/logo.png"
+            alt="NU SROI Logo"
+          />
+          <div class="brand-text">
+            <span class="brand-name">NU SROI</span>
+            <span class="brand-sub">Analytics</span>
+          </div>
         </div>
+
+        <div class="nav-label" id="navLabel">Menu</div>
         <nav class="nav" id="nav"></nav>
+
+        <div class="sidebar-footer">
+          <span class="sidebar-footer-dot"></span>
+          <div class="sidebar-footer-text">
+            <strong>Naresuan University</strong>
+            <small>SROI Platform</small>
+          </div>
+        </div>
       </aside>
 
       <header class="shell-header">
@@ -41,7 +70,23 @@
           </svg>
         </button>
         <span class="header-title" id="headerTitle"></span>
-        <span class="badge badge-mock">มหาวิทยาลัยนเรศวร</span>
+        <div class="header-actions">
+          <button class="btn-header-control" id="btnToggleLang" title="Change Language / เปลี่ยนภาษา" aria-label="Change Language">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="2" y1="12" x2="22" y2="12"></line>
+              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+            </svg>
+            <span id="langLabel">TH</span>
+          </button>
+
+          <button class="btn-header-control" id="btnToggleTheme" title="Toggle Light/Black Theme / เปลี่ยนธีม" aria-label="Toggle Theme">
+            <span id="themeIcon" style="height: 16px; width: 16px;"></span>
+            <span id="themeLabel">Light</span>
+          </button>
+
+          <button type="button" class="btn-header-control" id="headerBadge"></button>
+        </div>
       </header>
 
       <!-- พื้นที่เนื้อหา: แต่ละหน้า (views/*.js) จะวาดลงใน #view -->

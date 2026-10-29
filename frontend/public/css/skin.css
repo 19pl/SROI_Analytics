@@ -1,0 +1,294 @@
+/*
+ * Skin: ปรับหน้าตา component ให้เข้ากับฉากหลังของ decor.css
+ * แนวคิด: "หมึกกรมท่า (ink navy) + ส้ม NU" — ปุ่มหลักใช้สีเดียวกับ Sidebar
+ * แล้วใช้ส้มเป็นจุดเน้นเล็ก ๆ (ขอบล่าง, focus, hover) แทนปุ่มสีน้ำเงินล้วน
+ * โหลดหลัง decor.css ลบไฟล์นี้/บรรทัด <link> ออกก็กลับเป็นหน้าตาเดิม
+ */
+
+:root,
+[data-theme='light'],
+[data-theme='black'] {
+  --accent: #F37021;
+  --accent-strong: #EA580C;
+  --accent-soft: rgba(243, 112, 33, 0.12);
+  --primary-focus: #F37021; /* เดิมไม่ได้ประกาศไว้ ทำให้ focus ring ไม่ทำงาน */
+  --primary-gradient: linear-gradient(135deg, #F97316 0%, #EA580C 100%);
+  --ink-1: #1E293B;
+  --ink-2: #0F172A;
+  --glass: color-mix(in srgb, var(--surface-elevated) 82%, transparent);
+  --glass-border: color-mix(in srgb, var(--surface-elevated) 60%, var(--outline));
+}
+
+/* ---------- Buttons ---------- */
+.btn {
+  height: 42px;
+  padding: 0 18px;
+  border-radius: 10px;
+  font-weight: 600;
+  letter-spacing: 0.005em;
+  transition: transform 160ms var(--ease), box-shadow 200ms var(--ease), background 200ms var(--ease),
+    border-color 200ms var(--ease), color 200ms var(--ease);
+}
+
+.btn:active {
+  transform: translateY(1px) scale(0.99);
+}
+
+.btn-primary {
+  position: relative;
+  color: #fff;
+  background: linear-gradient(160deg, var(--ink-1) 0%, var(--ink-2) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    inset 0 -2px 0 var(--accent),
+    0 8px 18px -10px rgba(15, 23, 42, 0.7);
+}
+
+.btn-primary:hover {
+  background: linear-gradient(160deg, #263449 0%, var(--ink-2) 100%);
+  transform: translateY(-1px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    inset 0 -2px 0 var(--accent),
+    0 12px 24px -10px rgba(243, 112, 33, 0.65);
+}
+
+.btn-secondary {
+  border-radius: 10px;
+  background: var(--glass);
+  border: 1px solid var(--outline-strong);
+  color: var(--on-background);
+}
+
+.btn-secondary:hover {
+  border-color: var(--accent);
+  color: var(--accent-strong);
+  background: var(--accent-soft);
+  transform: translateY(-1px);
+}
+
+.btn-secondary.is-active {
+  border-color: var(--ink-2);
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+
+.btn-danger,
+.btn-outline-danger {
+  border-radius: 10px;
+}
+
+/* Black theme: ปุ่มกรมท่าจะกลืนไปกับพื้นดำ จึงใช้ส้มเป็นปุ่มหลัก */
+[data-theme='black'] .btn-primary {
+  background: var(--primary-gradient);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    0 10px 24px -10px rgba(249, 115, 22, 0.8);
+}
+
+[data-theme='black'] .btn-primary:hover {
+  background: linear-gradient(135deg, #FB923C 0%, #F97316 100%);
+}
+
+/* ---------- Cards: กระจกฝ้า + เส้นส้มสั้น ๆ ที่ขอบบน ---------- */
+.card,
+.stat-card,
+.stepper {
+  border-radius: 16px;
+  border: 1px solid var(--glass-border);
+  background-color: var(--glass);
+  -webkit-backdrop-filter: blur(14px) saturate(1.2);
+  backdrop-filter: blur(14px) saturate(1.2);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    0 1px 2px rgba(15, 23, 42, 0.04),
+    0 14px 32px -18px rgba(15, 23, 42, 0.22);
+}
+
+.card:hover,
+.stat-card:hover {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    0 2px 4px rgba(15, 23, 42, 0.05),
+    0 22px 40px -20px rgba(15, 23, 42, 0.3);
+}
+
+.stat-card.is-highlight {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--outline));
+  background-color: var(--glass);
+  background-image: linear-gradient(180deg, transparent 0%, var(--accent-soft) 100%);
+}
+
+[data-theme='black'] .card,
+[data-theme='black'] .stat-card,
+[data-theme='black'] .stepper {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 18px 36px -20px rgba(0, 0, 0, 0.9);
+}
+
+.card-title {
+  letter-spacing: -0.01em;
+}
+
+.stat-val {
+  letter-spacing: -0.02em;
+}
+
+.stat-val.ratio {
+  color: var(--accent-strong);
+}
+
+/* ---------- Inputs ---------- */
+.input,
+.input-cell {
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--surface-elevated) 90%, transparent);
+}
+
+.input:hover {
+  border-color: color-mix(in srgb, var(--accent) 50%, var(--outline-strong));
+}
+
+.input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px var(--accent-soft);
+}
+
+.field-label {
+  font-weight: 600;
+}
+
+/* ---------- Table ---------- */
+.table-wrap {
+  border: 1px solid var(--outline);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--surface-elevated) 70%, transparent);
+}
+
+.table th {
+  height: 42px;
+  font-size: 0.6875rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  background: color-mix(in srgb, var(--ink-2) 5%, transparent);
+  border-bottom: 2px solid color-mix(in srgb, var(--accent) 55%, transparent);
+}
+
+[data-theme='black'] .table th {
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.table tbody tr {
+  transition: background 150ms var(--ease);
+}
+
+.table tbody tr:hover {
+  background: var(--accent-soft);
+}
+
+.table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+/* ---------- Badges / Alerts ---------- */
+.badge {
+  border: 1px solid color-mix(in srgb, currentColor 22%, transparent);
+}
+
+.alert {
+  border-radius: 12px;
+}
+
+/* ---------- Stepper (Calculator) ---------- */
+.step-item.is-active {
+  background: var(--accent-soft);
+  color: var(--on-background);
+}
+
+.step-item.is-active .step-num {
+  background: linear-gradient(160deg, var(--ink-1), var(--ink-2));
+  box-shadow: 0 0 0 3px var(--accent-soft), inset 0 -2px 0 var(--accent);
+}
+
+[data-theme='black'] .step-item.is-active .step-num {
+  background: var(--primary-gradient);
+}
+
+/* ---------- About page: ไอคอน/แถบเน้นเปลี่ยนจากน้ำเงินเป็นกรมท่า+ส้ม ---------- */
+.about-hero-icon {
+  background: linear-gradient(160deg, var(--ink-1), var(--ink-2));
+  box-shadow: inset 0 -3px 0 var(--accent), 0 12px 24px -12px rgba(15, 23, 42, 0.6);
+}
+
+.about-eyebrow {
+  color: var(--accent-strong);
+}
+
+/* ---------- Header: เส้นส้มบาง ๆ เชื่อม Sidebar กับเนื้อหา ---------- */
+.shell-header {
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--accent) 35%, transparent), 0 10px 30px -18px rgba(0, 0, 0, 0.6);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn,
+  .btn:hover,
+  .btn:active {
+    transform: none;
+  }
+}
+
+/* ---------- จุดเน้นที่ยังเป็นน้ำเงิน → ส้ม ---------- */
+.nav-indicator {
+  background: linear-gradient(135deg, #F97316, #EA580C);
+  box-shadow: 0 10px 22px -8px rgba(243, 112, 33, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.nav-indicator::before {
+  box-shadow: 0 0 12px 1px rgba(251, 146, 60, 0.9);
+}
+
+.nav:not(.has-indicator) .nav-item.is-active {
+  background: var(--accent-strong);
+}
+
+/*
+ * แถบสีด้านข้าง (.has-stripe): แทน border-left หนา ๆ ที่เมื่อรวมกับมุมโค้งแล้ว
+ * จะเป็นรูปเสี้ยวแหลมที่มุม ดูเหมือนบั๊ก — ใช้แท่งสั้นที่เว้นจากมุมแทน
+ * สีกำหนดผ่านตัวแปร --stripe ที่ตัว element
+ */
+.has-stripe {
+  position: relative;
+}
+
+.has-stripe::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 14px;
+  bottom: 14px;
+  width: 4px;
+  border-radius: 0 4px 4px 0;
+  background: var(--stripe, var(--accent));
+  pointer-events: none;
+}
+
+.alert.has-stripe::before {
+  top: 10px;
+  bottom: 10px;
+}
+
+.about-ratio strong,
+.about-ratio b {
+  color: var(--accent-strong);
+}
+
+.about-list li::marker {
+  color: var(--accent);
+}
+
+/* Black theme: hero ของหน้า About ไล่ไปเป็นสีขาวทำให้ข้อความอ่านไม่ออก */
+[data-theme='black'] .about-hero {
+  background: linear-gradient(120deg, rgba(243, 112, 33, 0.16), rgba(255, 255, 255, 0.03));
+}

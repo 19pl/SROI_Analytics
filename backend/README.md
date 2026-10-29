@@ -9,6 +9,8 @@ hosted separately from the frontend (CORS is configurable; auth is by bearer tok
 cd backend
 cp .env.example .env        # set CORS_ALLOWED_ORIGINS to your frontend's origin(s)
 php bin/migrate.php         # creates storage/sroi.sqlite
+php bin/seed.php            # optional: reference data + the Naresuan University organization (creates NO users)
+php bin/user.php add --email=you@nu.ac.th --name="Your Name" --role=owner   # prompts for the password
 php -S localhost:8000 -t public public/index.php
 php tests/run.php           # 181 assertions: engine + full API workflow
 ```
@@ -17,13 +19,28 @@ Requires PHP extensions `pdo_sqlite`, `mbstring`, `iconv`, `fileinfo`. In produc
 `backend/public` and rewrite all requests to `index.php`; keep `storage/` writable and outside the web root.
 All routes live under `/api/v1`.
 
+## Users
+
+Accounts are managed by hand with `bin/user.php` (it prompts for the password so it stays out of shell history):
+
+```bash
+php bin/user.php list
+php bin/user.php add    --email=a@nu.ac.th --name="Somchai J." --role=editor   # viewer (default) | editor | owner
+php bin/user.php passwd --email=a@nu.ac.th        # also signs that user out everywhere
+php bin/user.php remove --email=a@nu.ac.th        # their projects and audit history are kept
+```
+
+New users join the Naresuan University organization (or `--org=ID`). Passwords must be 8–200 characters.
+The old `demo@impactvalue.local` account is no longer created; if you have an older database that still contains it,
+run `php bin/user.php remove --email=demo@impactvalue.local`.
+
 ## Conventions
 
 - Percentages are **fractions** (`0.15` = 15%). Money is in the project currency.
 - Errors: `{"error":{"code","message","details"}}`. Validation → 422 with per-field `details`; calculation blockers → 422
   `calculation_inputs_invalid` with a list of `{code,message,path}`. Non-members get 404 (not 403) so project existence never leaks.
 - Material changes accept `change_reason` (body) or `X-Change-Reason` (header); it is stored in the audit trail with old/new values.
-- Auth: `POST /auth/register|login` → `token`; send `Authorization: Bearer <token>`.
+- Auth: `POST /auth/login` → `token`; send `Authorization: Bearer <token>`. There is **no self-registration**: accounts are created by an administrator (see "Users" below). Every route except `/health`, `/meta`, `/auth/login` and `/shared/{token}` requires a token, so a signed-out visitor can load the app but sees no data.
 
 ## Endpoints
 
@@ -32,7 +49,7 @@ All routes live under `/api/v1`.
 | Area | Endpoints |
 |---|---|
 | Public | `GET /health`, `GET /meta` (enums, formulas, glossary), `GET /shared/{token}[?format=pdf\|html\|csv\|json]` |
-| Account | `POST /auth/register`, `/auth/login`, `/auth/logout`, `GET /auth/me` |
+| Account | `POST /auth/login`, `/auth/logout`, `GET /auth/me` |
 | Orgs | `GET/POST /organizations`, `GET/POST /organizations/{id}/members`, `PATCH/DELETE …/members/{userId}` (roles owner/editor/viewer) |
 | Projects | `GET/POST /projects`, `GET/PATCH/DELETE /projects/{id}` (soft delete), `POST …/restore`, `GET …/audit` |
 | Step 1 | `…/costs` CRUD, `GET …/summary` (live investment summary) |

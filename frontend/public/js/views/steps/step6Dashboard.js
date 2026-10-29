@@ -1,5 +1,6 @@
 /**
  * Step 6: Results Dashboard & Report Generation
+ * Fully bilingual (Thai & English)
  */
 
 import { getState, runCalculation, createReport, loadReports } from '../../store.js';
@@ -9,11 +10,12 @@ import { formatBaht, formatRatio } from '../../utils/format.js';
 import { escapeHtml } from '../../utils/html.js';
 import { icons } from '../../components/icons.js';
 import { api } from '../../api.js';
+import { t } from '../../i18n.js';
 
 export function renderStep6(container) {
   const { project, dashboard, activeScenarioId, reports } = getState();
   if (!project) {
-    container.innerHTML = `<div class="alert alert-info">Please select or create a project first.</div>`;
+    container.innerHTML = `<div class="alert alert-info">${t('alert_select_project_first', 'Please select or create a project first.')}</div>`;
     return;
   }
 
@@ -29,15 +31,15 @@ export function renderStep6(container) {
       ${
         !isReady
           ? `
-        <div class="card" style="border-left: 6px solid var(--warning);">
+        <div class="card has-stripe" style="--stripe: var(--warning);">
           <div class="card-head">
             <div>
-              <h2 class="card-title">Incomplete Project Inputs</h2>
+              <h2 class="card-title">${t('blockers_identified', 'Incomplete Project Inputs')}</h2>
               <p class="muted" style="font-size: 0.8125rem;">
-                Baseline inputs are missing or unassessed. Complete earlier steps to generate full results.
+                ${t('blockers_desc', 'Baseline inputs are missing or unassessed. Complete earlier steps to generate full results.')}
               </p>
             </div>
-            <a class="btn btn-primary" href="#/wizard/step-5">Check Review Screen →</a>
+            <a class="btn btn-primary" href="#/wizard/step-5">${t('btn_proceed_dash', 'Check Review Screen →')}</a>
           </div>
         </div>
       `
@@ -45,17 +47,17 @@ export function renderStep6(container) {
         <!-- Top Action Bar -->
         <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: var(--sp-md);">
           <div>
-            <h1 class="page-title" style="margin-bottom: 2px;">Impact Analytics Dashboard</h1>
+            <h1 class="page-title" style="margin-bottom: 2px;">${t('dash_title', 'Impact Analytics Dashboard')}</h1>
             <p class="muted page-sub" style="margin-bottom: 0;">
-              Evaluation Period: ${project.analysis_period_years || 5} Years | Currency: ${project.currency}
+              ${t('field_analysis_period', 'Evaluation Period')}: ${project.analysis_period_years || 5} ${t('years', 'Years')} | ${t('field_currency', 'Currency')}: ${project.currency}
             </p>
           </div>
           <div style="display: flex; gap: var(--sp-sm);">
             <button class="btn btn-secondary" id="btnSaveRun">
-              💾 Save Auditable Run
+              ${t('btn_save_run', '💾 Save Auditable Run')}
             </button>
             <button class="btn btn-primary" id="btnExportMenu">
-              📥 Export Report
+              ${t('btn_export_report', '📥 Export Report')}
             </button>
           </div>
         </div>
@@ -64,40 +66,40 @@ export function renderStep6(container) {
         <div class="stat-grid-4">
           <!-- Card 1: SROI Ratio -->
           <div class="stat-card is-highlight">
-            <div class="stat-label">SROI Ratio</div>
+            <div class="stat-label">${t('card_sroi_ratio', 'SROI Ratio')}</div>
             <div class="stat-val ratio">
               ${summary.sroi_ratio !== null && summary.sroi_ratio !== undefined ? `${summary.sroi_ratio.toFixed(2)} : 1` : 'N/A'}
             </div>
-            <div class="stat-sub">Estimated monetized social value per 1 ${project.currency} invested.</div>
+            <div class="stat-sub">${t('stat_sroi_explain', 'Estimated monetized social value per 1 invested.')}</div>
           </div>
 
           <!-- Card 2: Present Value of Impact -->
           <div class="stat-card">
-            <div class="stat-label">Present Value of Social Impact</div>
+            <div class="stat-label">${t('card_pv_impact', 'Present Value of Social Impact')}</div>
             <div class="stat-val" style="color: var(--positive);">
               ${project.currency} ${formatBaht(summary.present_value_of_impact || 0)}
             </div>
             <div class="stat-sub">
-              Positive: ${formatBaht(summary.positive_present_value || 0)} | Harms: -${formatBaht(Math.abs(summary.negative_present_value || 0))}
+              ${t('polarity_positive', '+ Positive')}: ${formatBaht(summary.positive_present_value || 0)} | ${t('polarity_negative', '- Harms')}: -${formatBaht(Math.abs(summary.negative_present_value || 0))}
             </div>
           </div>
 
           <!-- Card 3: Total Investment -->
           <div class="stat-card">
-            <div class="stat-label">Total Investment</div>
+            <div class="stat-label">${t('card_total_investment', 'Total Investment')}</div>
             <div class="stat-val" style="color: var(--warning);">
               ${project.currency} ${formatBaht(summary.investment_used || 0)}
             </div>
-            <div class="stat-sub">Basis: ${project.investment_basis === 'present_value' ? 'Present Value' : 'Nominal Cash'}</div>
+            <div class="stat-sub">${t('inv_basis_label', 'Basis')}: ${project.investment_basis === 'present_value' ? t('inv_basis_pv', 'Present Value') : t('inv_basis_nominal', 'Nominal Cash')}</div>
           </div>
 
           <!-- Card 4: Net Social Value -->
           <div class="stat-card">
-            <div class="stat-label">Net Social Value</div>
+            <div class="stat-label">${t('card_net_social_value', 'Net Social Value')}</div>
             <div class="stat-val">
               ${(summary.net_social_value || 0) >= 0 ? '+' : ''}${project.currency} ${formatBaht(summary.net_social_value || 0)}
             </div>
-            <div class="stat-sub">Net Social Return: ${summary.net_return_pct !== null && summary.net_return_pct !== undefined ? summary.net_return_pct + '%' : '-'}</div>
+            <div class="stat-sub">${t('stat_net_return', 'Net Social Return:')} ${summary.net_return_pct !== null && summary.net_return_pct !== undefined ? summary.net_return_pct + '%' : '-'}</div>
           </div>
         </div>
 
@@ -105,14 +107,14 @@ export function renderStep6(container) {
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: var(--sp-lg);">
           <!-- A. Stakeholder Value Distribution -->
           <div class="chart-card">
-            <div class="chart-title">A. Social Value by Stakeholder Group</div>
+            <div class="chart-title">A. ${t('chart_stakeholder_dist', 'Social Value by Stakeholder Group')}</div>
             <div class="chart-subtitle">Distribution of positive present-value impact among affected beneficiaries</div>
             ${renderStakeholderChart(stakeholders)}
           </div>
 
           <!-- B. Outcome Valuation Breakdown -->
           <div class="chart-card">
-            <div class="chart-title">B. Outcome Valuation Breakdown</div>
+            <div class="chart-title">B. ${t('chart_outcome_breakdown', 'Outcome Valuation Breakdown')}</div>
             <div class="chart-subtitle">Net present value generated across individual social changes</div>
             ${renderOutcomeBarChart(outcomeLines)}
           </div>
@@ -120,8 +122,8 @@ export function renderStep6(container) {
 
         <!-- C. Annual Investment vs Social Value -->
         <div class="chart-card">
-          <div class="chart-title">C. Annual Investment versus Social Impact</div>
-          <div class="chart-subtitle">Comparison of annual financial outlays vs discounted social value generated over time</div>
+          <div class="chart-title">C. ${t('chart_annual_trend', 'Annual Investment versus Social Impact')}</div>
+          <div class="chart-subtitle">${t('yearly_pv_desc', 'Net discounted benefit values after deducting deadweight, attribution, and drop-off.')}</div>
           ${renderAnnualTrendChart(annual)}
         </div>
 
@@ -129,7 +131,7 @@ export function renderStep6(container) {
         <div class="card">
           <div class="card-head">
             <div>
-              <h2 class="card-title">E. Detailed Impact Composition Table</h2>
+              <h2 class="card-title">E. ${t('outcome_registry_title', 'Detailed Impact Composition Table')}</h2>
               <p class="muted" style="font-size: 0.8125rem;">
                 Outcome-by-outcome audit breakdown from Gross value to Discounted Present Value
               </p>
@@ -140,12 +142,12 @@ export function renderStep6(container) {
             <table class="table">
               <thead>
                 <tr>
-                  <th>Outcome</th>
-                  <th class="num">Gross Value</th>
-                  <th class="num">Adjustment Factor</th>
+                  <th>${t('col_outcome_name', 'Outcome')}</th>
+                  <th class="num">${t('col_gross_annual', 'Gross Value')}</th>
+                  <th class="num">${t('col_net_retained', 'Adjustment Factor')}</th>
                   <th class="num">Retained Value</th>
-                  <th class="num">Present Value</th>
-                  <th>Model</th>
+                  <th class="num">${t('col_present_value', 'Present Value')}</th>
+                  <th>${t('col_eval_type', 'Model')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -156,13 +158,13 @@ export function renderStep6(container) {
                     <td class="strong">
                       ${escapeHtml(l.name)}
                       <span class="polarity-badge ${l.polarity === 'negative' ? 'polarity-negative' : 'polarity-positive'}" style="margin-left: 6px;">
-                        ${l.polarity === 'negative' ? '- Harm' : '+ Benefit'}
+                        ${l.polarity === 'negative' ? t('polarity_negative', '- Harm') : t('polarity_positive', '+ Benefit')}
                       </span>
                     </td>
                     <td class="num">${project.currency} ${formatBaht(l.totals?.gross || 0)}</td>
                     <td class="num">${((l.adjustment_factor || 0) * 100).toFixed(1)}%</td>
                     <td class="num">${project.currency} ${formatBaht(l.totals?.retained || 0)}</td>
-                    <td class="num strong" style="color: ${(l.totals?.present_value || 0) < 0 ? 'var(--negative)' : 'var(--positive)'};">
+                    <td class="num strong" style="color: ${(l.totals?.present_value || 0) < 0 ? 'var(--negative)' : 'var(--positive)'}; font-size: 0.9375rem;">
                       ${project.currency} ${formatBaht(l.totals?.present_value || 0)}
                     </td>
                     <td><span class="badge badge-planned">${escapeHtml(l.projection_model)}</span></td>
@@ -199,16 +201,16 @@ function openExportReportModal({ project, activeScenarioId }) {
   const modalHtml = `
     <div class="stack" style="gap: var(--sp-md);">
       <p class="muted" style="font-size: 0.8125rem;">
-        Generate an official reproducible impact report snapshot for funders, university committees, or public stakeholders.
+        Generate an official reproducible impact report snapshot for university committees, funders, or public stakeholders.
       </p>
 
       <form id="reportGenForm" class="stack" style="gap: var(--sp-md);">
         <div class="field">
-          <label class="field-label">Report Title *</label>
+          <label class="field-label">${t('col_report_title', 'Report Title')} *</label>
           <input type="text" name="title" class="input" value="${escapeHtml(project.name)} — SROI Impact Assessment Report" required />
         </div>
         <div class="field">
-          <label class="field-label">Report Type</label>
+          <label class="field-label">${t('col_eval_type', 'Report Type')}</label>
           <select name="type" class="input">
             <option value="detailed" selected>Detailed Analysis Report (12-section audit trail)</option>
             <option value="executive">Executive Summary Report (Key metrics & findings)</option>
@@ -217,12 +219,12 @@ function openExportReportModal({ project, activeScenarioId }) {
       </form>
 
       <div style="display: flex; gap: var(--sp-sm); justify-content: flex-end; margin-top: var(--sp-sm);">
-        <button class="btn btn-secondary" data-modal-close>Cancel</button>
-        <button class="btn btn-primary" id="btnCreateAndExport">Generate Report Document</button>
+        <button class="btn btn-secondary" data-modal-close>${t('cancel', 'Cancel')}</button>
+        <button class="btn btn-primary" id="btnCreateAndExport">${t('btn_export_report', 'Generate Report Document')}</button>
       </div>
 
       <div id="exportDownloadSection" style="display: none; border-top: 1px solid var(--outline); padding-top: var(--sp-md);">
-        <h4 style="font-size: 0.875rem; margin-bottom: var(--sp-sm);">Download Formats:</h4>
+        <h4 style="font-size: 0.875rem; margin-bottom: var(--sp-sm);">${t('col_export_formats', 'Download Formats:')}</h4>
         <div style="display: flex; flex-wrap: wrap; gap: var(--sp-sm);">
           <button class="btn btn-secondary" id="btnDownloadHtml">🌐 HTML Print View</button>
           <button class="btn btn-secondary" id="btnDownloadPdf">📄 PDF Document</button>
@@ -236,7 +238,7 @@ function openExportReportModal({ project, activeScenarioId }) {
   `;
 
   openModal({
-    title: 'Generate & Export Impact Report',
+    title: t('modal_export_title', 'Generate & Export Impact Report'),
     body: modalHtml,
     size: 'lg',
   });

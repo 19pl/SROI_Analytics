@@ -10,27 +10,17 @@ $db = $app->db;
 
 echo "Seeding database...\n";
 
-// 1. Create or get demo user
-$user = $db->one('SELECT * FROM users WHERE email = ?', ['demo@impactvalue.local']);
-if (!$user) {
-    $db->run(
-        'INSERT INTO users (email, name, password_hash) VALUES (?, ?, ?)',
-        ['demo@impactvalue.local', 'Social Impact Analyst', password_hash('DemoPassword123!', PASSWORD_DEFAULT)]
-    );
-    $user = $db->one('SELECT * FROM users WHERE email = ?', ['demo@impactvalue.local']);
-}
+// 1. No users are created here. Accounts are added by hand: `php bin/user.php add --email=... --name=...`
+//    Seeded rows therefore have created_by = NULL (the column is nullable).
+$ownerId = null;
 
-// 2. Create organization
-$org = $db->one('SELECT * FROM organizations WHERE created_by = ?', [$user['id']]);
+// 2. Create (or find) the Naresuan University organization
+$org = $db->one('SELECT * FROM organizations WHERE name = ?', ['มหาวิทยาลัยนเรศวร (Naresuan University)']);
 if (!$org) {
     $orgId = $db->insert('organizations', [
-        'name' => 'Naresuan University Social Value Center',
-        'created_by' => $user['id'],
+        'name' => 'มหาวิทยาลัยนเรศวร (Naresuan University)',
+        'created_by' => $ownerId,
     ]);
-    $db->run(
-        'INSERT OR IGNORE INTO memberships (organization_id, user_id, role) VALUES (?, ?, ?)',
-        [$orgId, $user['id'], 'owner']
-    );
     $org = $db->one('SELECT * FROM organizations WHERE id = ?', [$orgId]);
 }
 
@@ -129,7 +119,7 @@ if (!$proj) {
         'investment_basis' => 'nominal',
         'include_in_kind' => 1,
         'status' => 'ready',
-        'created_by' => $user['id'],
+        'created_by' => $ownerId,
     ]);
 
     // Costs (matching PRD Section 1.2: Equipment 20,000, Staff 50,000, Materials 10,000, Admin 10,000 = 90,000)
@@ -313,6 +303,107 @@ if (!$proj) {
     ]);
 
     echo "Demo Project #$pId created with full PRD dataset.\n";
+}
+
+// 5. Seed Reference Faculty and Departments from Excel workbooks
+$fac = $db->one('SELECT * FROM faculties WHERE name = ? AND organization_id = ?', ['คณะสหเวชศาสตร์', $org['id']]);
+if (!$fac) {
+    $facId = $db->insert('faculties', [
+        'organization_id' => $org['id'],
+        'name'            => 'คณะสหเวชศาสตร์',
+        'description'     => 'Faculty of Allied Health Sciences, Naresuan University',
+        'created_by'      => $ownerId,
+    ]);
+    echo "Faculty created: คณะสหเวชศาสตร์ (#$facId)\n";
+
+    // 5.1 Department of Physical Therapy
+    $deptId = $db->insert('departments', [
+        'faculty_id'  => $facId,
+        'name'        => 'ภาควิชากายภาพบำบัด',
+        'description' => 'Department of Physical Therapy',
+        'created_by'  => $ownerId,
+    ]);
+    echo "Department created: ภาควิชากายภาพบำบัด (#$deptId)\n";
+
+    // 5.2 Plan 1: Faculty-owned Eye Screening Project (วิเคราะห์ SROI โครงการตา68.xlsx)
+    $pEyeId = $db->insert('projects', [
+        'organization_id'       => $org['id'],
+        'faculty_id'            => $facId,
+        'department_id'         => null,
+        'name'                  => 'โครงการตรวจคัดกรองสายตาผู้สูงอายุ 2568',
+        'organization_name'     => 'คณะสหเวชศาสตร์ มหาวิทยาลัยนเรศวร',
+        'description'           => 'การประเมินผลตอบแทนทางสังคม (SROI) โครงการบริการวิชาการตรวจคัดกรองสายตาผู้สูงอายุ ประจำปีงบประมาณ 2568',
+        'category'              => 'Health and wellbeing',
+        'country'               => 'Thailand',
+        'evaluation_type'       => 'evaluative',
+        'currency'              => 'THB',
+        'analysis_period_years' => 1,
+        'assessment_months'     => 12,
+        'discount_rate'         => 0.0,
+        'discount_base_year'    => 0,
+        'investment_basis'      => 'nominal',
+        'include_in_kind'       => 1,
+        'status'                => 'ready',
+        'created_by'            => $ownerId,
+    ]);
+    $db->insert('scenarios', ['project_id' => $pEyeId, 'name' => 'Base case', 'kind' => 'base', 'is_base' => 1, 'assumptions' => '{}']);
+    $db->insert('project_costs', [
+        'project_id' => $pEyeId, 'category' => 'delivery', 'description' => 'เวชภัณฑ์และวัสดุตรวจสายตา', 'amount' => 37230,
+        'currency' => 'THB', 'year' => 0, 'is_cash' => 1, 'period_label' => 'Y0', 'evidence_source' => 'สรุปค่าใช้จ่ายจริงโครงการตา 68',
+    ]);
+    $sEye = $db->insert('stakeholders', [
+        'project_id' => $pEyeId, 'name' => 'ผู้สูงอายุและประชาชนในชุมชน', 'category' => 'Beneficiary households',
+        'stakeholder_group' => 'primary_beneficiary', 'group_code' => 'S1', 'estimated_count' => 120,
+    ]);
+    $oEye = $db->insert('outcomes', [
+        'project_id' => $pEyeId, 'stakeholder_id' => $sEye, 'name' => 'การป้องกันภาวะสูญเสียการมองเห็นและคุณภาพชีวิตที่ดีขึ้น',
+        'quantity' => 1, 'proxy_value' => 216500, 'proxy_unit' => 'โครงการ / ปี', 'evidence_quality' => 'measured',
+        'proxy_source' => 'รายงานวิเคราะห์ SROI โครงการตา 68', 'duration_years' => 1,
+    ]);
+    $db->insert('impact_adjustments', [
+        'outcome_id' => $oEye, 'deadweight' => 0.0, 'attribution' => 0.0, 'displacement' => 0.0, 'drop_off' => 0.0,
+    ]);
+
+    // 5.3 Plan 2: Department-owned Hydrotherapy Building Project (อาคารธาราบำบัด_SROI Data 18.4.67.xlsx)
+    $pHydroId = $db->insert('projects', [
+        'organization_id'       => $org['id'],
+        'faculty_id'            => null,
+        'department_id'         => $deptId,
+        'name'                  => 'โครงการบริการอาคารธาราบำบัด (ประเมิน 6 เดือน)',
+        'organization_name'     => 'ภาควิชากายภาพบำบัด คณะสหเวชศาสตร์',
+        'description'           => 'การประเมินผลตอบแทนทางสังคมจากการฟื้นฟูสมรรถภาพผู้ป่วยด้วยธาราบำบัด (รอบ 6 เดือน)',
+        'category'              => 'Health and wellbeing',
+        'country'               => 'Thailand',
+        'evaluation_type'       => 'evaluative',
+        'currency'              => 'THB',
+        'analysis_period_years' => 1,
+        'assessment_months'     => 6,
+        'discount_rate'         => 0.0,
+        'discount_base_year'    => 0,
+        'investment_basis'      => 'nominal',
+        'include_in_kind'       => 1,
+        'status'                => 'ready',
+        'created_by'            => $ownerId,
+    ]);
+    $db->insert('scenarios', ['project_id' => $pHydroId, 'name' => 'Base case', 'kind' => 'base', 'is_base' => 1, 'assumptions' => '{}']);
+    $db->insert('project_costs', [
+        'project_id' => $pHydroId, 'category' => 'capex', 'description' => 'ค่าเสื่อมราคาอาคาร อุปกรณ์ และค่าดำเนินการ', 'amount' => 2827766,
+        'currency' => 'THB', 'year' => 0, 'is_cash' => 1, 'period_label' => '6 months', 'evidence_source' => 'ทะเบียนสินทรัพย์และงบดำเนินการธาราบำบัด',
+    ]);
+    $sHydro = $db->insert('stakeholders', [
+        'project_id' => $pHydroId, 'name' => 'ผู้ป่วยและผู้รับบริการธาราบำบัด', 'category' => 'Beneficiary households',
+        'stakeholder_group' => 'primary_beneficiary', 'group_code' => 'S1', 'estimated_count' => 1768,
+    ]);
+    $oHydro = $db->insert('outcomes', [
+        'project_id' => $pHydroId, 'stakeholder_id' => $sHydro, 'name' => 'มูลค่าผลลัพธ์การฟื้นฟูสมรรถภาพและการประหยัดค่ารักษาพยาบาล',
+        'quantity' => 1, 'proxy_value' => 434167, 'proxy_unit' => 'รอบ 6 เดือน', 'evidence_quality' => 'measured',
+        'proxy_source' => 'สถิติการรับบริการอาคารธาราบำบัด', 'duration_years' => 1,
+    ]);
+    $db->insert('impact_adjustments', [
+        'outcome_id' => $oHydro, 'deadweight' => 0.0, 'attribution' => 0.0, 'displacement' => 0.0, 'drop_off' => 0.0,
+    ]);
+
+    echo "Reference plans seeded: Eye Project (#$pEyeId, Faculty-owned) and Hydrotherapy (#$pHydroId, Dept-owned).\n";
 }
 
 echo "Seeding completed successfully.\n";

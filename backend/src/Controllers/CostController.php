@@ -37,6 +37,7 @@ final class CostController extends ProjectResource
             'include_in_calculation' => ['type' => 'bool', 'default' => true],
             'evidence_source' => ['type' => 'string', 'max' => 1000, 'nullable' => true],
             'notes' => ['type' => 'string', 'max' => 2000, 'nullable' => true],
+            'period_label' => ['type' => 'string', 'max' => 100, 'nullable' => true],
         ];
     }
 

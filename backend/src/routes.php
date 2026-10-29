@@ -4,7 +4,9 @@ declare(strict_types=1);
 use App\Controllers\AuthController;
 use App\Controllers\CalculationController;
 use App\Controllers\CostController;
+use App\Controllers\DepartmentController;
 use App\Controllers\EvidenceController;
+use App\Controllers\FacultyController;
 use App\Controllers\MetaController;
 use App\Controllers\OrganizationController;
 use App\Controllers\OutcomeController;
@@ -29,11 +31,12 @@ return function (Router $r, App $app): void {
     $evidence = new EvidenceController($app);
     $proxies = new ProxyController($app);
     $reports = new ReportController($app);
+    $faculties   = new FacultyController($app);
+    $departments = new DepartmentController($app);
 
-    // public
+    // public (there is deliberately no self-registration: accounts are created with `php bin/user.php add`)
     $r->add('GET', '/health', [$meta, 'health'], true);
     $r->add('GET', '/meta', [$meta, 'meta'], true);
-    $r->add('POST', '/auth/register', [$auth, 'register'], true);
     $r->add('POST', '/auth/login', [$auth, 'login'], true);
     $r->add('GET', '/shared/{token}', [$reports, 'shared'], true);
 
@@ -102,4 +105,19 @@ return function (Router $r, App $app): void {
     $r->add('DELETE', '/reports/{id}', [$reports, 'destroy']);
     $r->add('POST', '/reports/{id}/share', [$reports, 'share']);
     $r->add('DELETE', '/reports/{id}/share', [$reports, 'unshare']);
+
+    // faculties
+    $r->add('GET',    '/organizations/{id}/faculties',              [$faculties,   'index']);
+    $r->add('POST',   '/organizations/{id}/faculties',              [$faculties,   'store']);
+    $r->add('GET',    '/faculties/{facultyId}',                     [$faculties,   'show']);
+    $r->add('PATCH',  '/faculties/{facultyId}',                     [$faculties,   'update']);
+    $r->add('DELETE', '/faculties/{facultyId}',                     [$faculties,   'destroy']);
+    $r->add('GET',    '/faculties/{facultyId}/departments',         [$faculties,   'departments']);
+    $r->add('GET',    '/faculties/{facultyId}/report',              [$faculties,   'report']);
+
+    // departments
+    $r->add('POST',   '/faculties/{facultyId}/departments',         [$departments, 'store']);
+    $r->add('GET',    '/departments/{departmentId}',                [$departments, 'show']);
+    $r->add('PATCH',  '/departments/{departmentId}',                [$departments, 'update']);
+    $r->add('DELETE', '/departments/{departmentId}',                [$departments, 'destroy']);
 };

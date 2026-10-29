@@ -54,7 +54,7 @@ function createWindow() {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
-      webSecurity: false,
+      webSecurity: true,
     },
   });
   win.once('ready-to-show', () => win.show());

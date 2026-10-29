@@ -5,7 +5,7 @@
 
 import { api } from './api.js';
 
-let state = {
+const initialState = () => ({
   project: null,
   costs: [],
   stakeholders: [],
@@ -19,7 +19,9 @@ let state = {
   activeScenarioId: null,
   isLoading: false,
   error: null,
-};
+});
+
+let state = initialState();
 
 const subscribers = new Set();
 
@@ -40,6 +42,13 @@ function notify() {
 
 export function getState() {
   return state;
+}
+
+/** Forget everything that was loaded for the signed-in user (called on sign-out / expired session). */
+export function resetStore() {
+  state = initialState();
+  localStorage.removeItem('sroi_active_project_id');
+  notify();
 }
 
 export function getProject() {
