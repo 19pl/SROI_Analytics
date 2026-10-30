@@ -92,12 +92,15 @@
   display: grid;
   gap: 6px;
   min-width: 0;
+  align-content: end;
 }
 
 .field-label {
   font-size: 0.875rem;
   font-weight: 500;
-  white-space: nowrap;
+  line-height: 1.35; 
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .field-control {
