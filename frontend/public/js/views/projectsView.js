@@ -229,7 +229,7 @@ export async function renderProjects(root) {
                   return `
                 <tr data-project-id="${p.id}">
                   <td class="strong">
-                    <div style="font-size: 0.9375rem; color: var(--on-background);">${escapeHtml(p.name)}</div>
+                    <div style="font-size: 0.9375rem; color: var(--on-background);">${escapeHtml(p.name)}${p.calc_method === 'sheet' ? ` <span class="badge badge-integrated" style="font-size: 0.6875rem;">${t('sheet_badge', 'Sheet')}</span>` : ''}</div>
                     ${p.category ? `<div class="muted" style="font-size: 0.75rem;">${escapeHtml(p.category)}</div>` : ''}
                   </td>
                   <td>${ownerLabel}</td>
@@ -316,6 +316,14 @@ function openCreateProjectModal({ currentOrgId, faculties, onCreated }) {
       <div class="field" style="display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: var(--surface-soft); border-radius: var(--radius-sm); border: 1px solid var(--outline);">
         <span style="font-size: 0.75rem; font-weight: 600; color: var(--muted);">${t('institution_label', 'Institution')}:</span>
         <strong style="font-size: 0.875rem;">🏛️ ${t('institution_nu', 'มหาวิทยาลัยนเรศวร (Naresuan University)')}</strong>
+      </div>
+
+      <div class="field">
+        <label class="field-label">${t('sheet_mode_label', 'Entry style')}</label>
+        <select name="calc_method" class="input">
+          <option value="sheet" selected>${t('sheet_mode_sheet', 'Sheet (like Excel) — recommended')}</option>
+          <option value="wizard">${t('sheet_mode_wizard', 'Step-by-step wizard (6 steps)')}</option>
+        </select>
       </div>
 
       <div class="field">
@@ -483,6 +491,7 @@ function openCreateProjectModal({ currentOrgId, faculties, onCreated }) {
       faculty_id,
       department_id,
       assessment_months: form.assessment_months.value ? parseInt(form.assessment_months.value, 10) : null,
+      calc_method: form.calc_method.value,
     };
 
     if (currentOrgId) {

@@ -14,6 +14,11 @@ use App\Controllers\ProjectController;
 use App\Controllers\ProxyController;
 use App\Controllers\ReportController;
 use App\Controllers\ScenarioController;
+use App\Controllers\SheetColumnController;
+use App\Controllers\SheetController;
+use App\Controllers\SheetGroupController;
+use App\Controllers\SheetInputController;
+use App\Controllers\SheetOutcomeController;
 use App\Controllers\StakeholderController;
 use App\Core\App;
 use App\Core\Router;
@@ -78,6 +83,20 @@ return function (Router $r, App $app): void {
     $r->add('PUT', '/projects/{projectId}/outcomes/{id}/adjustment', [$outcomes, 'putAdjustment']);
     $r->add('GET', '/projects/{projectId}/outcomes/{id}/year-projections', [$outcomes, 'getYears']);
     $r->add('PUT', '/projects/{projectId}/outcomes/{id}/year-projections', [$outcomes, 'putYears']);
+
+    // sheet mode: enter and calculate the plan the way the Excel workbooks do (migration 005)
+    $sheet = new SheetController($app);
+    $r->add('GET', '/projects/{projectId}/sheet', [$sheet, 'show']);
+    $r->add('POST', '/projects/{projectId}/sheet/template', [$sheet, 'template']);
+    $r->add('POST', '/projects/{projectId}/sheet/calculate', [$sheet, 'calculate']);
+    foreach ([['sheet/groups', new SheetGroupController($app)], ['sheet/inputs', new SheetInputController($app)],
+              ['sheet/outcomes', new SheetOutcomeController($app)], ['sheet/columns', new SheetColumnController($app)]] as [$name, $c]) {
+        $r->add('GET', "/projects/{projectId}/$name", [$c, 'index']);
+        $r->add('POST', "/projects/{projectId}/$name", [$c, 'store']);
+        $r->add('GET', "/projects/{projectId}/$name/{id}", [$c, 'show']);
+        $r->add('PATCH', "/projects/{projectId}/$name/{id}", [$c, 'update']);
+        $r->add('DELETE', "/projects/{projectId}/$name/{id}", [$c, 'destroy']);
+    }
 
     // evidence
     $r->add('GET', '/projects/{projectId}/evidence', [$evidence, 'index']);

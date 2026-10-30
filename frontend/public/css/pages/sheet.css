@@ -1,0 +1,117 @@
+/* Sheet mode — Excel-style entry. Uses the app's design tokens only, so light/black themes both work. */
+
+.sheet-page { display: flex; flex-direction: column; gap: var(--sp-lg); min-width: 0; }
+
+/* scope block */
+.sheet-scope-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: var(--sp-md); }
+.sheet-status { font-size: 0.8125rem; color: var(--muted); min-height: 1.2em; }
+.sheet-status[data-state="error"] { color: var(--negative); font-weight: 600; }
+.sheet-status[data-state="ok"] { color: var(--positive); font-weight: 600; }
+
+/* live totals */
+.sheet-summary {
+  position: sticky; top: 0; z-index: 6;
+  display: flex; flex-wrap: wrap; gap: var(--sp-md); align-items: stretch;
+  padding: var(--sp-md); background: var(--surface-card); border: 1px solid var(--outline); border-radius: var(--radius-lg);
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+}
+.sheet-summary .stat { flex: 1 1 170px; padding: 6px 10px; border-left: 3px solid var(--outline-strong); min-width: 0; }
+.sheet-summary .stat.sroi { border-left-color: var(--primary); background: var(--primary-soft); border-radius: var(--radius-sm); }
+.sheet-summary .stat-label { font-size: 0.6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+.sheet-summary .stat-val { font-size: 1.25rem; font-weight: 700; color: var(--on-background); font-variant-numeric: tabular-nums; }
+.sheet-summary .stat-val small { font-size: 0.75rem; font-weight: 500; color: var(--muted); }
+.sheet-summary .stat.sroi .stat-val { color: var(--primary); font-size: 1.5rem; }
+.sheet-summary .stat-sub { font-size: 0.75rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.sheet-save { align-self: center; }
+
+/* notes and blocking errors */
+.sheet-issues { border: 1px solid var(--outline); border-radius: var(--radius-md); background: var(--surface-soft); font-size: 0.8125rem; }
+.sheet-issues > summary { cursor: pointer; padding: 8px 12px; font-weight: 600; color: var(--muted); }
+.sheet-issues.has-errors { border-color: var(--negative); background: var(--negative-bg); }
+.sheet-issues.has-errors > summary { color: var(--negative-fg); }
+.sheet-issues ul { margin: 0; padding: 0 12px 10px 28px; display: grid; gap: 4px; }
+.sheet-issues li.err { color: var(--negative-fg); }
+.sheet-issues li.warning { color: var(--warning-fg); }
+.sheet-issues code { font-size: 0.6875rem; opacity: .8; }
+
+/* the grid */
+.sheet-wrap {
+  overflow: auto; max-height: calc(100vh - 220px); min-height: 280px;
+  border: 1px solid var(--outline); border-radius: var(--radius-lg); background: var(--surface-card);
+}
+.sheet-table { border-collapse: separate; border-spacing: 0; table-layout: fixed; font-size: 0.8125rem; }
+.sheet-table th, .sheet-table td { border-right: 1px solid var(--outline); border-bottom: 1px solid var(--outline); vertical-align: top; padding: 0; background: var(--surface-card); }
+
+.sheet-table thead th { position: sticky; z-index: 3; background: var(--surface-soft); }
+.sheet-table .band-row th { top: 0; height: 34px; padding: 0 10px; text-align: left; font-size: 0.75rem; text-transform: uppercase; letter-spacing: .04em; color: var(--on-background); }
+.sheet-table .band-row th > span { vertical-align: middle; }
+.sheet-table .col-row th { top: 34px; padding: 7px 8px; text-align: left; font-weight: 600; color: var(--muted); line-height: 1.25; }
+.sheet-table .b-stk { border-top: 3px solid var(--outline-strong); }
+.sheet-table .b-inp { border-top: 3px solid var(--primary); }
+.sheet-table .b-out { border-top: 3px solid var(--positive); }
+.sheet-table .b-adj { border-top: 3px solid var(--warning); }
+.sheet-table .hint { color: var(--muted); font-weight: 400; cursor: help; }
+.sheet-table th.custom { font-style: italic; }
+.sheet-addcol, .sheet-editcol {
+  margin-left: 8px; border: 1px dashed var(--outline-strong); background: transparent; color: var(--primary);
+  border-radius: var(--radius-pill); font-size: 0.6875rem; padding: 2px 8px; cursor: pointer; text-transform: none; letter-spacing: 0;
+}
+.sheet-editcol { border: 0; padding: 0 4px; margin-left: 4px; color: var(--muted); }
+.sheet-addcol:hover, .sheet-editcol:hover { background: var(--primary-soft); }
+
+/* group heading rows: the label stays visible while scrolling sideways */
+.sheet-table .grp-head td { background: var(--surface-soft); border-top: 2px solid var(--outline-strong); }
+.sheet-table .grp-head.lvl-1 td { background: var(--surface-card); border-top: 1px solid var(--outline-strong); }
+.grp-head-in { position: sticky; left: 0; display: flex; align-items: center; gap: var(--sp-sm); width: min(calc(100vw - 340px), 1100px); padding: 6px 10px; flex-wrap: wrap; }
+.grp-head.lvl-1 .grp-head-in { padding-left: 30px; }
+.sheet-table .grp-head-in .grp-code { width: 64px; flex: none; font-weight: 700; border-color: var(--outline); background: var(--surface-card); }
+.sheet-table .grp-head-in .grp-name { width: 320px; flex: none; font-weight: 700; border-color: var(--outline); background: var(--surface-card); }
+.grp-sum { display: inline-flex; gap: var(--sp-lg); margin-left: var(--sp-sm); font-size: 0.75rem; color: var(--muted); }
+.grp-sum b { color: var(--on-background); font-variant-numeric: tabular-nums; }
+.grp-actions { display: inline-flex; gap: 6px; align-items: center; margin-left: auto; }
+.sheet-mini { height: 26px; font-size: 0.6875rem; padding: 0 10px; }
+
+/* cells */
+.sheet-table td.cell { padding: 3px; }
+.sheet-table td.cell.num { text-align: right; padding: 8px 10px; font-variant-numeric: tabular-nums; font-weight: 600; }
+.sheet-table td.slot { background: repeating-linear-gradient(135deg, transparent 0 8px, var(--surface-soft) 8px 9px); opacity: .7; }
+.sheet-table td.stk { background: var(--surface-soft); }
+.sheet-table .line-row.lvl-1 td.stk { background: var(--surface-card); }
+.sc {
+  width: 100%; box-sizing: border-box; border: 1px solid transparent; background: transparent; color: var(--on-background);
+  font: inherit; padding: 5px 6px; border-radius: var(--radius-xs); resize: none; min-height: 28px;
+}
+.sc:hover:not(:disabled) { border-color: var(--outline-strong); background: var(--surface-card); }
+.sc:focus { outline: none; border-color: var(--primary); background: var(--surface-card); box-shadow: 0 0 0 2px var(--primary-soft); }
+.sc:disabled { opacity: 1; color: var(--on-background); cursor: default; }
+.sc.is-invalid { border-color: var(--negative); background: var(--negative-bg); }
+.sc-long { overflow: hidden; line-height: 1.35; }
+.sc-raw { font-family: var(--font-mono); font-size: 0.78rem; text-align: right; }
+.sc-pct { text-align: right; padding-right: 20px; }
+.pct-wrap { position: relative; display: block; }
+.pct-wrap i { position: absolute; right: 8px; top: 6px; font-style: normal; color: var(--muted); pointer-events: none; }
+.calc { font-size: 0.6875rem; color: var(--muted); text-align: right; padding: 0 8px 2px; font-variant-numeric: tabular-nums; min-height: 0; }
+.calc:empty { display: none; }
+.calc-total.muted { color: var(--muted); font-weight: 400; }
+.calc-total.unassessed { color: var(--warning-fg); text-decoration: underline dotted; }
+
+/* band tints on the cells, matching the workbook's colour blocks */
+.sheet-table td.inp { box-shadow: inset 0 0 0 9999px color-mix(in srgb, var(--primary) 3%, transparent); }
+.sheet-table td.out { box-shadow: inset 0 0 0 9999px color-mix(in srgb, var(--positive) 3%, transparent); }
+.sheet-table td.adj { box-shadow: inset 0 0 0 9999px color-mix(in srgb, var(--warning) 5%, transparent); }
+
+.sheet-table td.act { text-align: center; padding: 4px; white-space: nowrap; }
+.sheet-inc { display: inline-flex; vertical-align: middle; margin-right: 4px; cursor: pointer; }
+.sheet-del { color: var(--muted); font-size: 1.1rem; line-height: 1; width: 26px; height: 26px; }
+.sheet-del:hover { color: var(--negative); }
+
+.sheet-foot { display: flex; align-items: center; gap: var(--sp-lg); flex-wrap: wrap; }
+.sheet-empty { text-align: center; padding: var(--sp-2xl); display: flex; flex-direction: column; gap: var(--sp-md); align-items: center; }
+
+.sheet-page.is-readonly .sc { cursor: default; }
+
+@media (max-width: 720px) {
+  .sheet-summary .stat { flex-basis: 140px; }
+  .grp-head-in { width: auto; }
+  .sheet-table .grp-head-in .grp-name { width: 200px; }
+}
