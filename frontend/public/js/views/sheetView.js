@@ -113,16 +113,20 @@ export async function renderSheet(root) {
         ${scopeHtml(p)}
         <div class="sheet-summary" id="sheetSummary"></div>
         <details class="sheet-issues" id="sheetIssues"></details>
+        <!-- <nav class="sheet-nav" id="sheetNav" aria-label="groups"></nav> -->
         <div class="sheet-groups" id="sheetTable"></div>
         <div class="sheet-foot">
-          ${ctx.readOnly ? `<span class="muted">${t('sheet_read_only', '')}</span>` : `<button class="btn btn-secondary" id="btnAddGroup">${t('sheet_add_group', '+ Group')}</button>`}
+          ${ctx.readOnly ? `<span class="muted">${t('sheet_read_only', '')}</span>` : `<span class="muted" style="font-size: 0.8125rem;">${t('sheet_fixed_note', '')}</span>`}
           <span class="muted" style="font-size: 0.75rem;">${t('sheet_formula_note', '')}</span>
         </div>
       </div>`;
     bindScope();
     bindTable(document.getElementById('sheetTable')); // delegated listeners: bound once, the rows inside are re-rendered freely
     renderTable();
-    document.getElementById('btnAddGroup')?.addEventListener('click', () => addGroup(null));
+    document.getElementById('sheetNav')?.addEventListener('click', (e) => {
+      const b = e.target.closest('[data-jump]');
+      if (b) document.querySelector(`.grp-card[data-gid="${b.dataset.jump}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
   }
 
   function scopeHtml(p) {
@@ -206,9 +210,9 @@ export async function renderSheet(root) {
     const keep = captureScroll();
     const s = ctx.sheet;
     const tops = s.groups.filter((g) => g.parent_id === null);
-    root2.innerHTML = tops
-      .map((g) => groupBlock(g, 0) + s.groups.filter((c) => c.parent_id === g.id).map((c) => groupBlock(c, 1)).join(''))
-      .join('');
+    root2.innerHTML = tops.map((g) => groupBlock(g, 0)).join('');
+    const nav = document.getElementById('sheetNav');
+    if (nav) nav.innerHTML = `<span class="nav-label">${t('sheet_jump', 'Go to')}</span>` + tops.map((g) => `<button type="button" class="nav-chip" data-jump="${g.id}"><b>${esc(g.code || '')}</b> ${esc(g.name)}</button>`).join('');
     root2.querySelectorAll('.sc-long').forEach(autosize);
     restoreScroll(keep);
     applyResult();
@@ -253,13 +257,12 @@ export async function renderSheet(root) {
     const btn = (act, label) => (ro ? '' : `<button class="btn btn-secondary sheet-mini" data-act="${act}" data-gid="${g.id}">${label}</button>`);
 
     const head = `<header class="grp-head">
-      <input class="sc grp-code" data-kind="groups" data-id="${g.id}" data-field="code" value="${esc(g.code || '')}" placeholder="S?" ${ro ? 'disabled' : ''} />
+      ${level === 1 ? `<span class="grp-tag">${t('sheet_subgroup_label', 'Sub-group')}</span>` : ''}
+      <input class="sc grp-code" data-kind="groups" data-id="${g.id}" data-field="code" value="${esc(g.code || '')}" disabled title="${esc(t('sheet_code_locked', ''))}" />
       <input class="sc grp-name" data-kind="groups" data-id="${g.id}" data-field="name" value="${esc(g.name)}" ${ro ? 'disabled' : ''} />
       <span class="grp-sum"><span>${t('sheet_group_total_in', 'Input')} <b data-gsum="${g.id}:in">–</b></span><span>${t('sheet_group_total_out', 'Outcome')} <b data-gsum="${g.id}:out">–</b></span></span>
-      <span class="grp-actions">
-        ${level === 0 ? btn('add-sub', t('sheet_add_subgroup', '+ Sub-group')) : ''}
-        ${ro ? '' : `<button class="btn-icon sheet-del" data-act="del-group" data-gid="${g.id}" title="${esc(t('sheet_delete_group', ''))}">×</button>`}
-      </span></header>`;
+      ${level === 1 && !ro ? `<button class="btn btn-secondary sheet-mini sheet-del-sub" data-act="del-group" data-gid="${g.id}" title="${esc(t('sheet_delete_group', ''))}">🗑 ${t('sheet_delete_sub', 'Delete sub-group')}</button>` : ''}
+      </header>`;
 
     // ---- 1. stakeholder: a small form, labels above the fields ----
     const field = (c) => `<div class="stk-field${c.type === 'long' ? ' wide' : ''}"><label>${t(c.l, c.k)}${hintOf(c)}</label>${cellHtml(c, g, 'groups')}</div>`;
@@ -300,7 +303,16 @@ export async function renderSheet(root) {
         <div class="tbl-wrap"><table class="sheet-table"><thead><tr><th style="min-width:220px">${t('sheet_col_outcome', 'Outcome')}</th>${ADJ.map(th).join('')}</tr></thead><tbody>${adjRows}</tbody></table></div></section>`;
     }
 
-    return `<article class="grp-card lvl-${level}" data-gid="${g.id}">${head}${stk}${inputs}${outcomes}${valuation}${adjust}</article>`;
+    let subs = '';
+    if (level === 0) {
+      const kids = s.groups.filter((c) => c.parent_id === g.id);
+      subs = `<section class="sec sub-area">
+        <div class="sec-head b-sub"><h3>${t('sheet_subgroups_title', 'Sub-groups of')} ${esc(g.code || '')} <span class="sub-count">${kids.length}</span></h3></div>
+        ${kids.length ? `<div class="sub-list">${kids.map((c) => groupBlock(c, 1)).join('')}</div>` : `<p class="sub-hint">${t('sheet_sub_hint', '')}</p>`}
+        ${ro ? '' : `<button type="button" class="sub-add" data-act="add-sub" data-gid="${g.id}"><span class="plus">＋</span><span><b>${t('sheet_add_sub_btn', 'Add a sub-group to')} ${esc(g.code || '')}</b><small>${t('sheet_add_sub_small', '')}</small></span></button>`}
+      </section>`;
+    }
+    return `<article class="grp-card lvl-${level}" data-gid="${g.id}">${head}${stk}${inputs}${outcomes}${valuation}${adjust}${subs}</article>`;
   }
 
   function actCell(r, kind) {
@@ -514,17 +526,45 @@ export async function renderSheet(root) {
     });
   }
 
-  async function addGroup(parentId) {
-    await guard(async () => {
-      const siblings = ctx.sheet.groups.filter((g) => g.parent_id === parentId);
-      const parent = parentId ? ctx.sheet.groups.find((g) => g.id === parentId) : null;
-      const code = parent ? `${parent.code || 'S'}.${siblings.length + 1}` : `S${siblings.length + 1}`;
-      const res = await api.createSheetRow(pid, 'groups', { parent_id: parentId, code, name: t('sheet_new_group', 'New group') });
-      await reload();
-      const first = document.querySelector(`[data-kind="groups"][data-id="${res.data.id}"][data-field="name"]`);
-      first?.focus();
-      first?.select?.();
-    });
+  function addGroup(parentId) {
+    const parent = ctx.sheet.groups.find((g) => g.id === parentId);
+    if (!parent) return;
+    const siblings = ctx.sheet.groups.filter((g) => g.parent_id === parentId);
+    const used = siblings.map((g) => Number(String(g.code || '').split('.').pop())).filter((n) => Number.isFinite(n));
+    const code = `${parent.code || 'S'}.${(used.length ? Math.max(...used) : 0) + 1}`;
+    const body = `
+      <form id="subForm" class="stack" style="gap: var(--sp-md);">
+        <p class="muted" style="margin:0;">${t('sheet_sub_modal_desc', '')} <b>${esc(code)}</b> · ${esc(parent.code || '')} ${esc(parent.name)}</p>
+        <div class="field"><label class="field-label">${t('sheet_sub_name', 'Sub-group name')} *</label>
+          <input class="input" name="name" required maxlength="300" placeholder="${esc(t('sheet_sub_name_ph', ''))}" autocomplete="off" /></div>
+        <div id="subErr" class="alert alert-danger" style="display:none;"></div>
+      </form>`;
+    const footer = `<button class="btn btn-secondary" data-modal-close>${t('cancel', 'Cancel')}</button>
+      <button class="btn btn-primary" id="btnCreateSub">${t('sheet_sub_create', 'Create sub-group')}</button>`;
+    openModal({ title: `${t('sheet_sub_modal_title', 'Add a sub-group')} → ${parent.code || ''}`, body, footer });
+    const form = document.getElementById('subForm');
+    form.name.focus();
+    const submit = async () => {
+      const name = form.name.value.trim();
+      const err = document.getElementById('subErr');
+      if (!name) {
+        err.textContent = t('required', 'Please fill in required fields.');
+        err.style.display = 'block';
+        return;
+      }
+      try {
+        const res = await api.createSheetRow(pid, 'groups', { parent_id: parentId, code, name });
+        closeModal();
+        await reload();
+        document.querySelector(`.grp-card[data-gid="${res.data.id}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        setStatus('ok', `${t('sheet_sub_created', 'Sub-group created')}: ${code} ${name}`);
+      } catch (e) {
+        err.textContent = Object.values(e.details || {}).join(' · ') || e.message;
+        err.style.display = 'block';
+      }
+    };
+    form.addEventListener('submit', (e) => { e.preventDefault(); submit(); });
+    document.getElementById('btnCreateSub').addEventListener('click', submit);
   }
 
   function deleteLine(kind, id) {
