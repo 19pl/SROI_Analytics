@@ -34,49 +34,57 @@
 .sheet-issues li.warning { color: var(--warning-fg); }
 .sheet-issues code { font-size: 0.6875rem; opacity: .8; }
 
-/* the grid */
-.sheet-wrap {
-  overflow: auto; max-height: calc(100vh - 220px); min-height: 280px;
-  border: 1px solid var(--outline); border-radius: var(--radius-lg); background: var(--surface-card);
-}
-.sheet-table { border-collapse: separate; border-spacing: 0; table-layout: fixed; font-size: 0.8125rem; }
-.sheet-table th, .sheet-table td { border-right: 1px solid var(--outline); border-bottom: 1px solid var(--outline); vertical-align: top; padding: 0; background: var(--surface-card); }
+/* groups: one card each, sections stacked top to bottom */
+.sheet-groups { display: flex; flex-direction: column; gap: var(--sp-xl); min-width: 0; }
+.grp-card { background: var(--surface-card); border: 1px solid var(--outline); border-radius: var(--radius-lg); box-shadow: var(--shadow-subtle); overflow: hidden; min-width: 0; }
+.grp-card.lvl-1 { margin-left: var(--sp-xl); border-left: 4px solid var(--outline-strong); }
+.grp-head { display: flex; align-items: center; gap: var(--sp-sm); flex-wrap: wrap; padding: var(--sp-md) var(--sp-lg); background: var(--surface-soft); border-bottom: 1px solid var(--outline); }
+.grp-head .grp-code { width: 64px; flex: none; font-weight: 700; border-color: var(--outline); background: var(--surface-card); }
+.grp-head .grp-name { flex: 1 1 260px; max-width: 520px; font-weight: 700; font-size: 0.9375rem; border-color: var(--outline); background: var(--surface-card); }
+.grp-sum { display: inline-flex; gap: var(--sp-lg); font-size: 0.8125rem; color: var(--muted); }
+.grp-sum b { color: var(--on-background); font-variant-numeric: tabular-nums; }
+.grp-actions { display: inline-flex; gap: 6px; align-items: center; margin-left: auto; }
+.sheet-mini { height: 28px; font-size: 0.75rem; padding: 0 12px; }
 
-.sheet-table thead th { position: sticky; z-index: 3; background: var(--surface-soft); }
-.sheet-table .band-row th { top: 0; height: 34px; padding: 0 10px; text-align: left; font-size: 0.75rem; text-transform: uppercase; letter-spacing: .04em; color: var(--on-background); }
-.sheet-table .band-row th > span { vertical-align: middle; }
-.sheet-table .col-row th { top: 34px; padding: 7px 8px; text-align: left; font-weight: 600; color: var(--muted); line-height: 1.25; }
-.sheet-table .b-stk { border-top: 3px solid var(--outline-strong); }
-.sheet-table .b-inp { border-top: 3px solid var(--primary); }
-.sheet-table .b-out { border-top: 3px solid var(--positive); }
-.sheet-table .b-adj { border-top: 3px solid var(--warning); }
+.sec { padding: var(--sp-md) var(--sp-lg) var(--sp-lg); border-bottom: 1px solid var(--outline); min-width: 0; }
+.sec:last-child { border-bottom: 0; }
+.sec-head { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-sm); flex-wrap: wrap; margin-bottom: var(--sp-sm); padding-left: 10px; border-left: 4px solid var(--outline-strong); }
+.sec-head h3 { margin: 0; font-size: 0.8125rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--on-background); }
+.sec-head.b-inp { border-left-color: var(--primary); }
+.sec-head.b-out { border-left-color: var(--positive); }
+.sec-head.b-adj { border-left-color: var(--warning); }
+.sec-tools { display: inline-flex; gap: var(--sp-sm); align-items: center; }
+
+/* stakeholder: a form grid, labels above the inputs */
+.stk-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: var(--sp-md); }
+.stk-field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.stk-field.wide { grid-column: span 2; }
+.stk-field > label { font-size: 0.75rem; font-weight: 600; color: var(--muted); }
+.stk-field .sc { border-color: var(--outline); background: var(--surface-card); }
+@media (max-width: 720px) { .stk-field.wide { grid-column: span 1; } .grp-card.lvl-1 { margin-left: 0; } }
+
+/* each section's table scrolls on its own only if it really has to */
+.tbl-wrap { overflow-x: auto; border: 1px solid var(--outline); border-radius: var(--radius-md); }
+.sheet-table { border-collapse: separate; border-spacing: 0; width: 100%; font-size: 0.8125rem; }
+.sheet-table th, .sheet-table td { border-right: 1px solid var(--outline); border-bottom: 1px solid var(--outline); vertical-align: top; padding: 0; background: var(--surface-card); }
+.sheet-table th:last-child, .sheet-table td:last-child { border-right: 0; }
+.sheet-table tbody tr:last-child td { border-bottom: 0; }
+.sheet-table thead th { padding: 8px; text-align: left; font-weight: 600; color: var(--muted); line-height: 1.25; background: var(--surface-soft); }
 .sheet-table .hint { color: var(--muted); font-weight: 400; cursor: help; }
 .sheet-table th.custom { font-style: italic; }
+.sheet-table td.ref { padding: 8px 10px; background: var(--surface-soft); font-weight: 600; min-width: 220px; }
+.ref-n { display: inline-block; min-width: 20px; color: var(--muted); font-weight: 700; }
+.sheet-none { padding: 14px; text-align: center; color: var(--muted); }
 .sheet-addcol, .sheet-editcol {
-  margin-left: 8px; border: 1px dashed var(--outline-strong); background: transparent; color: var(--primary);
+  border: 1px dashed var(--outline-strong); background: transparent; color: var(--primary);
   border-radius: var(--radius-pill); font-size: 0.6875rem; padding: 2px 8px; cursor: pointer; text-transform: none; letter-spacing: 0;
 }
 .sheet-editcol { border: 0; padding: 0 4px; margin-left: 4px; color: var(--muted); }
 .sheet-addcol:hover, .sheet-editcol:hover { background: var(--primary-soft); }
 
-/* group heading rows: the label stays visible while scrolling sideways */
-.sheet-table .grp-head td { background: var(--surface-soft); border-top: 2px solid var(--outline-strong); }
-.sheet-table .grp-head.lvl-1 td { background: var(--surface-card); border-top: 1px solid var(--outline-strong); }
-.grp-head-in { position: sticky; left: 0; display: flex; align-items: center; gap: var(--sp-sm); width: min(calc(100vw - 340px), 1100px); padding: 6px 10px; flex-wrap: wrap; }
-.grp-head.lvl-1 .grp-head-in { padding-left: 30px; }
-.sheet-table .grp-head-in .grp-code { width: 64px; flex: none; font-weight: 700; border-color: var(--outline); background: var(--surface-card); }
-.sheet-table .grp-head-in .grp-name { width: 320px; flex: none; font-weight: 700; border-color: var(--outline); background: var(--surface-card); }
-.grp-sum { display: inline-flex; gap: var(--sp-lg); margin-left: var(--sp-sm); font-size: 0.75rem; color: var(--muted); }
-.grp-sum b { color: var(--on-background); font-variant-numeric: tabular-nums; }
-.grp-actions { display: inline-flex; gap: 6px; align-items: center; margin-left: auto; }
-.sheet-mini { height: 26px; font-size: 0.6875rem; padding: 0 10px; }
-
 /* cells */
 .sheet-table td.cell { padding: 3px; }
-.sheet-table td.cell.num { text-align: right; padding: 8px 10px; font-variant-numeric: tabular-nums; font-weight: 600; }
-.sheet-table td.slot { background: repeating-linear-gradient(135deg, transparent 0 8px, var(--surface-soft) 8px 9px); opacity: .7; }
-.sheet-table td.stk { background: var(--surface-soft); }
-.sheet-table .line-row.lvl-1 td.stk { background: var(--surface-card); }
+.sheet-table td.cell.num { text-align: right; vertical-align: middle; padding: 8px 10px; font-variant-numeric: tabular-nums; font-weight: 600; }
 .sc {
   width: 100%; box-sizing: border-box; border: 1px solid transparent; background: transparent; color: var(--on-background);
   font: inherit; padding: 5px 6px; border-radius: var(--radius-xs); resize: none; min-height: 28px;
@@ -100,7 +108,9 @@
 .sheet-table td.out { box-shadow: inset 0 0 0 9999px color-mix(in srgb, var(--positive) 3%, transparent); }
 .sheet-table td.adj { box-shadow: inset 0 0 0 9999px color-mix(in srgb, var(--warning) 5%, transparent); }
 
-.sheet-table td.act { text-align: center; padding: 4px; white-space: nowrap; }
+.sheet-table td.act { width: 76px; padding: 4px; white-space: nowrap; }
+.sheet-table td.act > * { vertical-align: middle; }
+.sheet-table td.act .sheet-del { display: inline-flex; align-items: center; justify-content: center; }
 .sheet-inc { display: inline-flex; vertical-align: middle; margin-right: 4px; cursor: pointer; }
 .sheet-del { color: var(--muted); font-size: 1.1rem; line-height: 1; width: 26px; height: 26px; }
 .sheet-del:hover { color: var(--negative); }
@@ -112,6 +122,4 @@
 
 @media (max-width: 720px) {
   .sheet-summary .stat { flex-basis: 140px; }
-  .grp-head-in { width: auto; }
-  .sheet-table .grp-head-in .grp-name { width: 200px; }
 }

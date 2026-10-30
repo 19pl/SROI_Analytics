@@ -1,8 +1,8 @@
 /**
  * Sheet mode — enter and calculate an SROI plan the way the customer's Excel workbooks do.
  *
- * One page, one wide table, four colour bands that follow the workbook:
- *   Stakeholders | Inputs | Outcome + Valuation | Adjustment
+ * One page; each group is a card whose sections are stacked vertically (no sideways scrolling across the whole sheet):
+ *   Stakeholder → Inputs → Outcomes → Valuation → Adjustment
  * Number cells accept formulas (=63999000/20). The backend is authoritative: every save is validated and the totals
  * shown here are the engine's result, never computed in the browser.
  * Users can add their own topics ("custom columns") to any band, and rows (lines / groups) anywhere.
@@ -53,6 +53,8 @@ const ADJ = [
   { k: 'adjusted_total', l: 'sheet_col_adjusted', type: 'calc', w: 130, calc: 'adjusted_total' },
   { k: 'adj_source', l: 'sheet_col_adj_source', type: 'long', w: 190 },
 ];
+const OUT_DESC = OUT.filter((c) => ['dimension', 'beneficiary', 'outcome', 'quantity_text', 'weight', 'indicator'].includes(c.k));
+const OUT_VAL = OUT.filter((c) => ['valuation_method', 'y0_raw', 'y1_raw', 'gross_total', 'source'].includes(c.k));
 const ACT_W = 76; // line action column (delete / include)
 const CUSTOM_W = 170;
 
@@ -111,7 +113,7 @@ export async function renderSheet(root) {
         ${scopeHtml(p)}
         <div class="sheet-summary" id="sheetSummary"></div>
         <details class="sheet-issues" id="sheetIssues"></details>
-        <div class="sheet-wrap" id="sheetWrap"><table class="sheet-table" id="sheetTable"></table></div>
+        <div class="sheet-groups" id="sheetTable"></div>
         <div class="sheet-foot">
           ${ctx.readOnly ? `<span class="muted">${t('sheet_read_only', '')}</span>` : `<button class="btn btn-secondary" id="btnAddGroup">${t('sheet_add_group', '+ Group')}</button>`}
           <span class="muted" style="font-size: 0.75rem;">${t('sheet_formula_note', '')}</span>
@@ -195,111 +197,110 @@ export async function renderSheet(root) {
     return ctx.sheet.columns.filter((c) => c.band === band);
   }
 
-  function bandInfo() {
-    const cs = customCols('stakeholder');
-    const ci = customCols('input');
-    const co = customCols('outcome');
-    return {
-      stk: { cols: STK, custom: cs, span: STK.length + cs.length },
-      inp: { cols: INP, custom: ci, span: INP.length + ci.length + 1 },
-      out: { cols: OUT, custom: co, span: OUT.length + co.length },
-      adj: { cols: ADJ, span: ADJ.length + 1 },
-    };
-  }
+  // Layout: one card per group. Inside a card the sections are stacked top to bottom
+  // (Stakeholder → Inputs → Outcomes → Valuation → Adjustment); each section is its own small table that fits the screen.
 
   function renderTable() {
-    const table = document.getElementById('sheetTable');
-    if (!table) return;
+    const root2 = document.getElementById('sheetTable');
+    if (!root2) return;
     const keep = captureScroll();
-    const B = bandInfo();
-    const total = B.stk.span + B.inp.span + B.out.span + B.adj.span;
     const s = ctx.sheet;
-
-    const colgroup = [
-      ...STK.map((c) => c.w),
-      ...B.stk.custom.map(() => CUSTOM_W),
-      ...INP.map((c) => c.w),
-      ...B.inp.custom.map(() => CUSTOM_W),
-      ACT_W,
-      ...OUT.map((c) => c.w),
-      ...B.out.custom.map(() => CUSTOM_W),
-      ...ADJ.map((c) => c.w),
-      ACT_W,
-    ];
-    const addBtn = (band) => (ctx.readOnly ? '' : `<button class="sheet-addcol" data-addcol="${band}" title="${t('sheet_add_column', 'Add topic')}">＋ ${t('sheet_add_column', 'Add topic')}</button>`);
-    const th = (c) => `<th style="min-width:${c.w}px">${t(c.l, c.k)}${c.k === 'adj_y0' || c.k === 'adj_y1' ? ` <span class="hint" title="${esc(t('sheet_adj_hint', ''))}">ⓘ</span>` : ''}${c.type === 'raw' ? ` <span class="hint" title="${esc(t('sheet_formula_hint', ''))}">ƒ</span>` : ''}</th>`;
-    const thCustom = (c) =>
-      `<th class="custom" style="min-width:${CUSTOM_W}px" data-colid="${c.id}">${esc(c.label)}${c.counts_toward !== 'none' ? ` <span class="hint" title="${esc(t('sheet_col_counts', ''))}">Σ</span>` : ''}${ctx.readOnly ? '' : ` <button class="sheet-editcol" data-editcol="${c.id}" title="${t('sheet_col_modal_title', 'Custom topic')}">✎</button>`}</th>`;
-
-    const head1 = `<tr class="band-row">
-      <th colspan="${B.stk.span}" class="b-stk"><span>${t('sheet_band_stakeholder', '')}</span>${addBtn('stakeholder')}</th>
-      <th colspan="${B.inp.span}" class="b-inp"><span>${t('sheet_band_input', '')}</span>${addBtn('input')}</th>
-      <th colspan="${B.out.span}" class="b-out"><span>${t('sheet_band_outcome', '')}</span>${addBtn('outcome')}</th>
-      <th colspan="${B.adj.span}" class="b-adj"><span>${t('sheet_band_adjust', '')}</span></th>
-    </tr>`;
-    const head2 = `<tr class="col-row">
-      ${STK.map(th).join('')}${B.stk.custom.map(thCustom).join('')}
-      ${INP.map(th).join('')}${B.inp.custom.map(thCustom).join('')}<th style="min-width:${ACT_W}px"></th>
-      ${OUT.map(th).join('')}${B.out.custom.map(thCustom).join('')}
-      ${ADJ.map(th).join('')}<th style="min-width:${ACT_W}px"></th>
-    </tr>`;
-
     const tops = s.groups.filter((g) => g.parent_id === null);
-    const body = tops
-      .map((g) => groupBlock(g, 0, B, total) + s.groups.filter((c) => c.parent_id === g.id).map((c) => groupBlock(c, 1, B, total)).join(''))
+    root2.innerHTML = tops
+      .map((g) => groupBlock(g, 0) + s.groups.filter((c) => c.parent_id === g.id).map((c) => groupBlock(c, 1)).join(''))
       .join('');
-
-    table.innerHTML = `<colgroup>${colgroup.map((w) => `<col style="width:${w}px">`).join('')}</colgroup><thead>${head1}${head2}</thead><tbody>${body}</tbody>`;
-    table.querySelectorAll('.sc-long').forEach(autosize);
+    root2.querySelectorAll('.sc-long').forEach(autosize);
     restoreScroll(keep);
     applyResult();
   }
 
-  function groupBlock(g, level, B, total) {
-    const ins = ctx.sheet.inputs.filter((r) => r.group_id === g.id);
-    const outs = ctx.sheet.outcomes.filter((r) => r.group_id === g.id);
-    const n = Math.max(ins.length, outs.length, 1);
-    const ro = ctx.readOnly;
-    const btn = (act, label, cls = '') => (ro ? '' : `<button class="btn btn-secondary sheet-mini ${cls}" data-act="${act}" data-gid="${g.id}">${label}</button>`);
+  function hintOf(c) {
+    const adj = c.k === 'adj_y0' || c.k === 'adj_y1' ? ` <span class="hint" title="${esc(t('sheet_adj_hint', ''))}">ⓘ</span>` : '';
+    const fx = c.type === 'raw' ? ` <span class="hint" title="${esc(t('sheet_formula_hint', ''))}">ƒ</span>` : '';
+    return adj + fx;
+  }
+  function th(c) {
+    return `<th style="min-width:${c.w}px">${t(c.l, c.k)}${hintOf(c)}</th>`;
+  }
+  function thCustom(c) {
+    const sigma = c.counts_toward !== 'none' ? ` <span class="hint" title="${esc(t('sheet_col_counts', ''))}">Σ</span>` : '';
+    const edit = ctx.readOnly ? '' : ` <button class="sheet-editcol" data-editcol="${c.id}" title="${t('sheet_col_modal_title', 'Custom topic')}">✎</button>`;
+    return `<th class="custom" style="min-width:${CUSTOM_W}px">${esc(c.label)}${sigma}${edit}</th>`;
+  }
 
-    const head = `<tr class="grp-head lvl-${level}" data-gid="${g.id}"><td colspan="${total}"><div class="grp-head-in">
+  function secHead(cls, title, band, extra = '') {
+    const addBtn = band && !ctx.readOnly ? `<button class="sheet-addcol" data-addcol="${band}" title="${t('sheet_add_column', 'Add topic')}">＋ ${t('sheet_add_column', 'Add topic')}</button>` : '';
+    return `<div class="sec-head ${cls}"><h3>${title}</h3><span class="sec-tools">${addBtn}${extra}</span></div>`;
+  }
+
+  function emptyRow(span, msg) {
+    return `<tr><td class="sheet-none" colspan="${span}">${msg}</td></tr>`;
+  }
+
+  /** a row label that follows the outcome / input name so the tables below stay readable */
+  function refCell(r, n, field) {
+    return `<td class="ref"><span class="ref-n">${n}</span><span class="ref-t" data-ref="${field}:${r.id}">${esc(r[field] || '')}</span></td>`;
+  }
+
+  function groupBlock(g, level) {
+    const s = ctx.sheet;
+    const ins = s.inputs.filter((r) => r.group_id === g.id);
+    const outs = s.outcomes.filter((r) => r.group_id === g.id);
+    const ro = ctx.readOnly;
+    const cs = customCols('stakeholder');
+    const ci = customCols('input');
+    const co = customCols('outcome');
+    const btn = (act, label) => (ro ? '' : `<button class="btn btn-secondary sheet-mini" data-act="${act}" data-gid="${g.id}">${label}</button>`);
+
+    const head = `<header class="grp-head">
       <input class="sc grp-code" data-kind="groups" data-id="${g.id}" data-field="code" value="${esc(g.code || '')}" placeholder="S?" ${ro ? 'disabled' : ''} />
       <input class="sc grp-name" data-kind="groups" data-id="${g.id}" data-field="name" value="${esc(g.name)}" ${ro ? 'disabled' : ''} />
       <span class="grp-sum"><span>${t('sheet_group_total_in', 'Input')} <b data-gsum="${g.id}:in">–</b></span><span>${t('sheet_group_total_out', 'Outcome')} <b data-gsum="${g.id}:out">–</b></span></span>
       <span class="grp-actions">
-        ${btn('add-input', t('sheet_add_input', '+ Input'))}
-        ${btn('add-outcome', t('sheet_add_outcome', '+ Outcome'))}
         ${level === 0 ? btn('add-sub', t('sheet_add_subgroup', '+ Sub-group')) : ''}
         ${ro ? '' : `<button class="btn-icon sheet-del" data-act="del-group" data-gid="${g.id}" title="${esc(t('sheet_delete_group', ''))}">×</button>`}
-      </span></div></td></tr>`;
+      </span></header>`;
 
-    let rows = '';
-    for (let i = 0; i < n; i++) {
-      let tds = '';
-      if (i === 0) {
-        tds += STK.map((c) => `<td class="cell stk" rowspan="${n}">${cellHtml(c, g, 'groups')}</td>`).join('');
-        tds += B.stk.custom.map((c) => `<td class="cell stk custom" rowspan="${n}">${customCell(c, g, 'groups')}</td>`).join('');
-      }
-      if (ins[i]) {
-        const r = ins[i];
-        tds += INP.map((c) => `<td class="cell inp${c.type === 'calc' ? ' num' : ''}">${cellHtml(c, r, 'inputs')}</td>`).join('');
-        tds += B.inp.custom.map((c) => `<td class="cell inp custom">${customCell(c, r, 'inputs')}</td>`).join('');
-        tds += actCell(r, 'inputs');
-      } else {
-        tds += `<td class="slot inp" colspan="${B.inp.span}"></td>`;
-      }
-      if (outs[i]) {
-        const r = outs[i];
-        tds += OUT.map((c) => `<td class="cell out${c.type === 'calc' ? ' num' : ''}">${cellHtml(c, r, 'outcomes')}</td>`).join('');
-        tds += B.out.custom.map((c) => `<td class="cell out custom">${customCell(c, r, 'outcomes')}</td>`).join('');
-        tds += ADJ.map((c) => `<td class="cell adj${c.type === 'calc' ? ' num' : ''}">${cellHtml(c, r, 'outcomes')}</td>`).join('');
-        tds += actCell(r, 'outcomes');
-      } else {
-        tds += `<td class="slot out" colspan="${B.out.span + B.adj.span}"></td>`;
-      }
-      rows += `<tr class="line-row lvl-${level}" data-gid="${g.id}">${tds}</tr>`;
+    // ---- 1. stakeholder: a small form, labels above the fields ----
+    const field = (c) => `<div class="stk-field${c.type === 'long' ? ' wide' : ''}"><label>${t(c.l, c.k)}${hintOf(c)}</label>${cellHtml(c, g, 'groups')}</div>`;
+    const fieldCustom = (c) => `<div class="stk-field wide"><label>${esc(c.label)}${ro ? '' : ` <button class="sheet-editcol" data-editcol="${c.id}" title="${t('sheet_col_modal_title', 'Custom topic')}">✎</button>`}</label>${customCell(c, g, 'groups')}</div>`;
+    const stk = `<section class="sec b-stk">
+      ${secHead('b-stk', t('sheet_band_stakeholder', 'Stakeholder'), 'stakeholder')}
+      <div class="stk-grid">${STK.map(field).join('')}${cs.map(fieldCustom).join('')}</div></section>`;
+
+    // ---- 2. inputs ----
+    const inSpan = INP.length + ci.length + 1;
+    const inRows = ins.length
+      ? ins.map((r) => `<tr>${INP.map((c) => `<td class="cell inp${c.type === 'calc' ? ' num' : ''}">${cellHtml(c, r, 'inputs')}</td>`).join('')}${ci.map((c) => `<td class="cell inp custom">${customCell(c, r, 'inputs')}</td>`).join('')}${actCell(r, 'inputs')}</tr>`).join('')
+      : emptyRow(inSpan, t('sheet_no_inputs', 'No input lines yet'));
+    const inputs = `<section class="sec b-inp">
+      ${secHead('b-inp', t('sheet_band_input', 'Inputs'), 'input', btn('add-input', t('sheet_add_input', '+ Input')))}
+      <div class="tbl-wrap"><table class="sheet-table"><thead><tr>${INP.map(th).join('')}${ci.map(thCustom).join('')}<th style="min-width:${ACT_W}px"></th></tr></thead><tbody>${inRows}</tbody></table></div></section>`;
+
+    // ---- 3. outcomes (what changed) ----
+    const descSpan = OUT_DESC.length + co.length + 1;
+    const descRows = outs.length
+      ? outs.map((r) => `<tr>${OUT_DESC.map((c) => `<td class="cell out">${cellHtml(c, r, 'outcomes')}</td>`).join('')}${co.map((c) => `<td class="cell out custom">${customCell(c, r, 'outcomes')}</td>`).join('')}${actCell(r, 'outcomes')}</tr>`).join('')
+      : emptyRow(descSpan, t('sheet_no_outcomes', 'No outcome lines yet'));
+    const outcomes = `<section class="sec b-out">
+      ${secHead('b-out', t('sheet_sec_outcome', 'Outcomes'), 'outcome', btn('add-outcome', t('sheet_add_outcome', '+ Outcome')))}
+      <div class="tbl-wrap"><table class="sheet-table"><thead><tr>${OUT_DESC.map(th).join('')}${co.map(thCustom).join('')}<th style="min-width:${ACT_W}px"></th></tr></thead><tbody>${descRows}</tbody></table></div></section>`;
+
+    // ---- 4 + 5. valuation and adjustment: one row per outcome, labelled with the outcome name ----
+    let valuation = '';
+    let adjust = '';
+    if (outs.length) {
+      const valRows = outs.map((r, i) => `<tr>${refCell(r, i + 1, 'outcome')}${OUT_VAL.map((c) => `<td class="cell out${c.type === 'calc' ? ' num' : ''}">${cellHtml(c, r, 'outcomes')}</td>`).join('')}</tr>`).join('');
+      valuation = `<section class="sec b-val">
+        ${secHead('b-out', t('sheet_band_valuation', 'Valuation'), null)}
+        <div class="tbl-wrap"><table class="sheet-table"><thead><tr><th style="min-width:220px">${t('sheet_col_outcome', 'Outcome')}</th>${OUT_VAL.map(th).join('')}</tr></thead><tbody>${valRows}</tbody></table></div></section>`;
+      const adjRows = outs.map((r, i) => `<tr>${refCell(r, i + 1, 'outcome')}${ADJ.map((c) => `<td class="cell adj${c.type === 'calc' ? ' num' : ''}">${cellHtml(c, r, 'outcomes')}</td>`).join('')}</tr>`).join('');
+      adjust = `<section class="sec b-adj">
+        ${secHead('b-adj', t('sheet_band_adjust', 'Adjustment'), null)}
+        <div class="tbl-wrap"><table class="sheet-table"><thead><tr><th style="min-width:220px">${t('sheet_col_outcome', 'Outcome')}</th>${ADJ.map(th).join('')}</tr></thead><tbody>${adjRows}</tbody></table></div></section>`;
     }
-    return head + rows;
+
+    return `<article class="grp-card lvl-${level}" data-gid="${g.id}">${head}${stk}${inputs}${outcomes}${valuation}${adjust}</article>`;
   }
 
   function actCell(r, kind) {
@@ -489,6 +490,7 @@ export async function renderSheet(root) {
     try {
       const res = await api.updateSheetRow(pid, kind, id, payload);
       Object.assign(row, res.data);
+      if (kind === 'outcomes' && field === 'outcome') document.querySelectorAll(`[data-ref="outcome:${id}"]`).forEach((n) => { n.textContent = row.outcome || ''; });
       el.classList.remove('is-invalid');
       el.removeAttribute('title');
       await refreshResult();
