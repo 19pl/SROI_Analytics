@@ -64,12 +64,12 @@ const byKey = (list, keys) => keys.map((k) => list.find((c) => c.k === k));
 // (the column definitions above stay the single source of truth for data; these maps only decide placement)
 const STK_FIELDS = byKey(STK, ['population_raw', 'unit', 'actual_count_raw', 'actual_count_method', 'activity', 'note']);
 const STK_SPAN = { population_raw: 's3', unit: 's2', actual_count_raw: 's3', actual_count_method: 's4', activity: 's6', note: 's6' };
-const INP_SPAN = { resource: 's12', y0_raw: 's4', y1_raw: 's4', total: 's4', basis: 's6', source: 's6' };
-const OUT_CHANGE = byKey(OUT, ['outcome', 'dimension', 'beneficiary', 'weight', 'quantity_text', 'indicator']);
-const OUT_CHANGE_SPAN = { outcome: 's12', dimension: 's3', beneficiary: 's6', weight: 's3', quantity_text: 's6', indicator: 's6' };
-const OUT_VALUE = byKey(OUT, ['valuation_method', 'y0_raw', 'y1_raw', 'gross_total', 'source']);
-const OUT_VALUE_SPAN = { valuation_method: 's12', y0_raw: 's4', y1_raw: 's4', gross_total: 's4', source: 's12' };
-const ADJ_SPAN = { adj_y0: 's3', adj_y0_reason: 's9', adj_y1: 's3', adj_y1_reason: 's9', adjusted_total: 's4', adj_source: 's8' };
+const INP_SPAN = { resource: 's6', y0_raw: 's2', y1_raw: 's2', total: 's2', basis: 's6', source: 's6' };
+const OUT_CHANGE = byKey(OUT, ['outcome', 'beneficiary', 'dimension', 'weight', 'quantity_text', 'indicator']);
+const OUT_CHANGE_SPAN = { outcome: 's5', beneficiary: 's3', dimension: 's2', weight: 's2', quantity_text: 's6', indicator: 's6' };
+const OUT_VALUE = byKey(OUT, ['valuation_method', 'source', 'y0_raw', 'y1_raw', 'gross_total']);
+const OUT_VALUE_SPAN = { valuation_method: 's6', source: 's6', y0_raw: 's4', y1_raw: 's4', gross_total: 's4' };
+const ADJ_SPAN = { adj_y0: 's2', adj_y0_reason: 's4', adj_y1: 's2', adj_y1_reason: 's4', adjusted_total: 's4', adj_source: 's8' };
 
 const fmt = (n, dp = 2) =>
   n === null || n === undefined || Number.isNaN(Number(n))
@@ -124,7 +124,10 @@ export async function renderSheet(root) {
     root.innerHTML = `
       <div class="sheet-page ${ctx.readOnly ? 'is-readonly' : ''}">
         ${scopeHtml(p)}
-        <div class="sheet-summary" id="sheetSummary"></div>
+        <div class="sheet-sticky">
+          <div class="sheet-summary" id="sheetSummary"></div>
+          <div class="sheet-where" id="sheetWhere" hidden aria-live="off"></div>
+        </div>
         <details class="sheet-issues" id="sheetIssues"></details>
         <nav class="sheet-nav" id="sheetNav" aria-label="S1–S4"></nav>
         <div class="sheet-groups" id="sheetTable"></div>
@@ -280,9 +283,9 @@ export async function renderSheet(root) {
   /** a labelled built-in field; `span` is its width in the 12-column grid (s2 … s12) */
   function fld(c, row, kind, span) {
     if (c.type === 'calc') {
-      return `<div class="fld readout ${span}"><span class="fld-label">${t(c.l, c.k)}</span>${cellHtml(c, row, kind)}</div>`;
+      return `<div class="fld readout ${span}"><span class="fld-label" title="${esc(t(c.l, c.k))}">${t(c.l, c.k)}</span>${cellHtml(c, row, kind)}</div>`;
     }
-    return `<label class="fld ${span}"><span class="fld-label">${t(c.l, c.k)}${hintOf(c)}</span>${cellHtml(c, row, kind)}</label>`;
+    return `<label class="fld ${span}"><span class="fld-label" title="${esc(t(c.l, c.k))}">${t(c.l, c.k)}${hintOf(c)}</span>${cellHtml(c, row, kind)}</label>`;
   }
 
   /** a labelled user-defined field (custom topic) */
@@ -549,6 +552,12 @@ export async function renderSheet(root) {
     // grow long cells with their content
     table.addEventListener('input', (e) => {
       if (e.target.classList?.contains('sc-long')) autosize(e.target);
+      if (e.target.closest?.('[data-kind]')) showWhere(e.target);
+    });
+    // pinned breadcrumb: which stakeholder / line / field is being typed in, wherever the page is scrolled to
+    table.addEventListener('focusin', (e) => showWhere(e.target));
+    table.addEventListener('focusout', (e) => {
+      if (!table.contains(e.relatedTarget)) showWhere(null);
     });
 
     table.addEventListener('click', (e) => {
@@ -575,10 +584,43 @@ export async function renderSheet(root) {
     });
   }
 
+  /** fill the pinned strip: S2.1 Name  ›  Outcome 3: title  ›  Field label */
+  function showWhere(el) {
+    const bar = document.getElementById('sheetWhere');
+    if (!bar) return;
+    const cell = el?.closest?.('[data-kind]');
+    if (!cell) { bar.hidden = true; return; }
+    const val = (n) => (n ? String(n.value ?? n.textContent ?? '').trim() : '');
+    const crumbs = [];
+    const card = cell.closest('.grp-card');
+    const parent = card?.parentElement?.closest('.grp-card');
+    [parent, card].forEach((c) => {
+      if (!c) return;
+      const code = val(c.querySelector(':scope > .grp-head .grp-code'));
+      const name = val(c.querySelector(':scope > .grp-head .grp-name'));
+      crumbs.push(`<b>${esc(code)}</b> ${esc(name)}`.trim());
+    });
+    const line = cell.closest('.line');
+    if (line) {
+      const n = line.querySelector('.line-n')?.textContent || '';
+      if (line.classList.contains('line-out')) {
+        const title = val(line.querySelector('[data-field="outcome"]')) || val(line.querySelector('.line-title'));
+        crumbs.push(`${esc(t('sheet_group_total_out', 'Outcome'))} ${esc(n)}${title ? ': ' + esc(title) : ''}`);
+      } else {
+        const title = val(line.querySelector('[data-field="resource"]'));
+        crumbs.push(`${esc(t('sheet_group_total_in', 'Input'))} ${esc(n)}${title ? ': ' + esc(title) : ''}`);
+      }
+    }
+    const label = cell.closest('.fld')?.querySelector('.fld-label');
+    if (label) crumbs.push(`<em>${esc(label.title || label.textContent.trim())}</em>`);
+    bar.innerHTML = crumbs.join('<span class="sep">›</span>');
+    bar.hidden = false;
+  }
+
   function autosize(el) {
     if (!el.offsetParent) return; // inside a folded card: it cannot be measured now, setCollapsed() re-measures on unfold
     el.style.height = 'auto';
-    el.style.height = Math.min(Math.max(el.scrollHeight + 2, 38), 220) + 'px';
+    el.style.height = Math.min(Math.max(el.scrollHeight + 2, 34), 112) + 'px';
   }
 
   async function saveField(el) {
