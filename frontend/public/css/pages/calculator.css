@@ -18,7 +18,14 @@
 
 .stack {
   display: grid;
+  /* สำคัญ: ถ้าไม่กำหนด คอลัมน์ของ grid จะกว้างตามเนื้อหาที่กว้างที่สุด (เช่นตาราง)
+     ทำให้หน้าล้นจอแทนที่จะเลื่อนแนวนอนเฉพาะในตาราง */
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--sp-lg);
+  min-width: 0;
+}
+
+.stack > * {
   min-width: 0;
 }
 
@@ -308,7 +315,12 @@
 
 @media (max-width: 1100px) {
   .wizard-content-layout {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--sp-lg);
+  }
+
+  .help-drawer {
+    position: static;
   }
 }
 
@@ -354,7 +366,7 @@
 /* Stakeholder Workspace & Cards */
 .stakeholder-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr));
   gap: var(--sp-md);
   margin-top: var(--sp-md);
 }
@@ -557,3 +569,24 @@
   border-left: 4px solid var(--info);
 }
 
+
+/* ---------- Responsive: กราฟและแดชบอร์ดบนจอเล็ก ---------- */
+@media (max-width: 640px) {
+  .hbar-row {
+    grid-template-columns: minmax(70px, 32%) minmax(0, 1fr) auto;
+    gap: var(--sp-sm);
+  }
+
+  .hbar-val {
+    font-size: 0.75rem;
+  }
+
+  .chart-card {
+    padding: var(--sp-md);
+  }
+
+  .proxy-item {
+    flex-wrap: wrap;
+    gap: var(--sp-xs);
+  }
+}

@@ -92,12 +92,15 @@
   display: grid;
   gap: 6px;
   min-width: 0;
+  align-content: end;
 }
 
 .field-label {
   font-size: 0.875rem;
   font-weight: 500;
-  white-space: nowrap;
+  line-height: 1.35; 
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .field-control {
@@ -398,6 +401,7 @@ input[type='number'] {
   width: 100%;
   max-width: 640px;
   max-height: 90vh;
+  max-height: 90dvh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -651,4 +655,193 @@ input[type='number'] {
   top: var(--sp-md);
   right: var(--sp-md);
   height: 34px;
+}
+
+/* ======================================================================
+   Responsive เพิ่มเติม (ส่วนประกอบที่ใช้ร่วมกัน)
+   ====================================================================== */
+
+/* ตารางที่เลื่อนแนวนอนได้: กันการเลื่อนลามไปทั้งหน้า */
+.table-wrap {
+  overscroll-behavior-x: contain;
+}
+
+/* ป้ายสถานะในตารางตัดบรรทัดได้ทุกขนาดจอ เพื่อให้ตารางพอดีกรอบโดยไม่ต้องเลื่อนข้าง */
+.table td .badge {
+  white-space: normal;
+  line-height: 1.35;
+  border-radius: var(--radius-lg);
+}
+
+/* ---------- แท็บเล็ต/มือถือ (<= 768px) ---------- */
+@media (max-width: 768px) {
+  /* Stepper: แสดงชื่อเฉพาะขั้นที่ใช้งานอยู่ ขั้นอื่นเหลือแค่ตัวเลข */
+  .stepper {
+    gap: 2px;
+    padding: 6px;
+    scroll-snap-type: x proximity;
+  }
+
+  .step-item {
+    flex: none;
+    padding: 8px 10px;
+    scroll-snap-align: center;
+  }
+
+  .step-item:not(.is-active) > span:not(.step-num) {
+    display: none;
+  }
+
+  .step-divider {
+    flex: none;
+    min-width: 6px;
+    width: 6px;
+  }
+
+  .modal-overlay {
+    padding: var(--sp-sm);
+  }
+
+  .modal-header,
+  .modal-body {
+    padding: var(--sp-md);
+  }
+}
+
+/* ---------- มือถือ (<= 640px) ---------- */
+@media (max-width: 640px) {
+  .modal-footer {
+    flex-wrap: wrap;
+    padding: var(--sp-md);
+  }
+
+  .modal-footer .btn {
+    flex: 1 1 140px;
+    justify-content: center;
+  }
+
+  .card-head > .btn,
+  .card-head > .btn-primary {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 1100px) {
+  /*
+   * .table-cards : ตารางที่แปลงเป็น "การ์ดทีละแถว" บนมือถือ
+   * วิธีใช้: ใส่ class="table table-cards" ที่ <table> และใส่ data-label="ชื่อคอลัมน์" ที่ทุก <td>
+   * (ใช้ data-label="" กับเซลล์แรก/เซลล์ชื่อ เพื่อให้แสดงเต็มความกว้างโดยไม่มีป้ายกำกับ)
+   */
+  .table-cards,
+  .table-cards tbody,
+  .table-cards tr,
+  .table-cards td {
+    display: block;
+    width: 100%;
+  }
+
+  /* แต่ละแถวเป็นการ์ด: มือถือ 1 คอลัมน์, แท็บเล็ตเรียงเป็นตาราง 2-3 คอลัมน์อัตโนมัติ */
+  .table-cards tbody {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr));
+    gap: var(--sp-md);
+    padding: var(--sp-xs);
+  }
+
+  .table-cards thead {
+    /* ซ่อนหัวตารางแต่ยังให้ screen reader อ่านได้ */
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+
+  .table-cards tbody tr {
+    min-width: 0;
+    padding: var(--sp-xs) 0;
+    border: 1px solid var(--outline);
+    border-radius: var(--radius-lg);
+    background: var(--surface-soft);
+  }
+
+  .table-cards td {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-md);
+    padding: 6px var(--sp-md);
+    border-bottom: 0;
+    text-align: right;
+  }
+
+  .table-cards td::before {
+    content: attr(data-label);
+    flex: 0 0 34%;
+    max-width: 34%;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    text-align: left;
+    color: var(--muted);
+  }
+
+  .table-cards td[data-label='']::before {
+    display: none;
+  }
+
+  .table-cards td[data-label=''] {
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-start;
+    gap: 2px;
+    text-align: left;
+    padding-top: var(--sp-sm);
+    padding-bottom: var(--sp-sm);
+    border-bottom: 1px solid var(--outline);
+  }
+
+  .table-cards td .badge {
+    white-space: normal;
+    text-align: right;
+  }
+}
+
+/* ---------- มือถือเล็ก (<= 480px): ปุ่มที่ข้อความยาวต้องตัดบรรทัดได้ ไม่ล้นจอ ---------- */
+@media (max-width: 480px) {
+  .btn {
+    flex-shrink: 1;
+    max-width: 100%;
+    height: auto;
+    min-height: 40px;
+    padding-top: 6px;
+    padding-bottom: 6px;
+    white-space: normal;
+    text-align: center;
+  }
+}
+
+/* ---------- จอสัมผัส ---------- */
+@media (pointer: coarse) {
+  .btn {
+    min-height: 44px;
+  }
+
+  .table .btn {
+    min-height: 36px;
+  }
+
+  .btn-icon {
+    width: 40px;
+    height: 40px;
+  }
+
+  /* ฟอนต์ < 16px ทำให้ iOS Safari ซูมหน้าอัตโนมัติตอนแตะช่องกรอก */
+  .input,
+  .input-cell,
+  .input-wide {
+    font-size: 16px;
+  }
 }

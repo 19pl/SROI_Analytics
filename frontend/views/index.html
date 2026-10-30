@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="/css/components.css" />
     <link rel="stylesheet" href="/css/pages/calculator.css" />
     <link rel="stylesheet" href="/css/pages/about.css" />
+    <link rel="stylesheet" href="/css/pages/sheet.css" />
     <link rel="stylesheet" href="/css/decor.css" />
     <link rel="stylesheet" href="/css/skin.css" />
     <script>
@@ -53,8 +54,11 @@
         </div>
       </aside>
 
+      <!-- ฉากมืดด้านหลังเมนูแบบ Drawer (แสดงเฉพาะจอเล็ก คลิกเพื่อปิดเมนู) -->
+      <div class="nav-backdrop" id="navBackdrop" aria-hidden="true"></div>
+
       <header class="shell-header">
-        <button class="btn-ghost-shell" id="toggleSidebar" aria-label="ย่อหรือขยายเมนู">
+        <button class="btn-ghost-shell" id="toggleSidebar" aria-label="ย่อหรือขยายเมนู" aria-controls="nav" aria-expanded="false">
           <svg
             width="20"
             height="20"

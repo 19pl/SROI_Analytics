@@ -25,8 +25,8 @@ export function openProxyLibraryModal({ onSelectProxy, orgId = null }) {
 
   const modalHtml = `
     <div style="display: flex; gap: var(--sp-md); margin-bottom: var(--sp-md); flex-wrap: wrap;">
-      <input type="text" class="input" id="proxySearchInput" placeholder="${t('proxy_search_ph', 'Search proxies (e.g. tutoring, health, waste, energy)...')}" style="flex: 1; min-width: 220px;" />
-      <select class="input" id="proxyCategorySelect" style="width: 200px;">
+      <input type="text" class="input" id="proxySearchInput" placeholder="${t('proxy_search_ph', 'Search proxies (e.g. tutoring, health, waste, energy)...')}" style="flex: 1; min-width: min(220px, 100%);" />
+      <select class="input" id="proxyCategorySelect" style="flex: 0 1 200px; min-width: 140px;">
         ${categories.map((c) => `<option value="${c === 'All Categories' ? '' : c}">${c === 'All Categories' ? t('proxy_all_cats', 'All Categories') : c}</option>`).join('')}
       </select>
     </div>

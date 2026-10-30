@@ -12,6 +12,17 @@ body {
   overflow-x: hidden;
 }
 
+html {
+  -webkit-text-size-adjust: 100%; /* กัน iOS/Android ขยายตัวอักษรเองตอนหมุนจอ */
+  text-size-adjust: 100%;
+}
+
+img,
+video {
+  max-width: 100%;
+  height: auto;
+}
+
 body {
   font-family: var(--font-sans);
   font-size: 0.875rem;

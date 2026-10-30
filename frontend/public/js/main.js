@@ -68,6 +68,15 @@ function highlightActiveNav(route) {
   moveNavIndicator();
 }
 
+// ---------- Responsive: เมนูแบบ Drawer บนจอเล็ก (<= 900px) ----------
+// ต้องตรงกับ breakpoint ใน css/layout.css
+const mqMobileNav = window.matchMedia('(max-width: 900px)');
+
+function setNavOpen(open) {
+  $('app')?.classList.toggle('is-nav-open', open);
+  $('toggleSidebar')?.setAttribute('aria-expanded', String(open));
+}
+
 function updateControls() {
   // Theme control UI
   const theme = getTheme();
@@ -190,12 +199,35 @@ async function init() {
   renderNav();
   updateControls();
 
+  // จอแท็บเล็ตแนวนอน/โน้ตบุ๊กเล็ก: เริ่มต้นด้วยเมนูแบบย่อ เพื่อให้เนื้อหามีพื้นที่มากขึ้น
+  if (window.matchMedia('(max-width: 1200px)').matches && !mqMobileNav.matches) {
+    $('app')?.classList.add('is-collapsed');
+  }
+
   $('toggleSidebar')?.addEventListener('click', () => {
+    // จอเล็ก: ปุ่มนี้เปิด/ปิด Drawer, จอใหญ่: ย่อ/ขยาย Sidebar
+    if (mqMobileNav.matches) {
+      setNavOpen(!$('app').classList.contains('is-nav-open'));
+      return;
+    }
     $('app').classList.toggle('is-collapsed');
     // รีคำนวณตำแหน่งแถบไฮไลต์หลังแอนิเมชันย่อ/ขยายจบ
     setTimeout(moveNavIndicator, 320);
   });
   window.addEventListener('resize', moveNavIndicator);
+
+  // ปิด Drawer: คลิกฉากมืด, เลือกเมนู, กด Esc, เปลี่ยนหน้า หรือเมื่อขนาดจอข้าม breakpoint
+  $('navBackdrop')?.addEventListener('click', () => setNavOpen(false));
+  $('nav')?.addEventListener('click', (e) => {
+    if (e.target.closest('.nav-item')) setNavOpen(false);
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') setNavOpen(false);
+  });
+  mqMobileNav.addEventListener('change', () => {
+    setNavOpen(false);
+    setTimeout(moveNavIndicator, 320);
+  });
 
   // Theme switcher button
   $('btnToggleTheme')?.addEventListener('click', () => {
@@ -221,7 +253,10 @@ async function init() {
     updateControls();
   });
 
-  window.addEventListener('hashchange', navigate);
+  window.addEventListener('hashchange', () => {
+    setNavOpen(false);
+    navigate();
+  });
 
   // Subscribe header updates to store changes
   subscribe(updateHeader);

@@ -146,13 +146,13 @@ export async function renderOrg(root) {
                 ${t('fac_and_dept_count', 'Faculties & Departments')} (${faculties.length})
               </h2>
             </div>
-            <div style="display: flex; gap: var(--sp-sm); align-items: center;">
+            <div style="display: flex; gap: var(--sp-sm); align-items: center; flex-wrap: wrap;">
               <input
                 type="text"
                 id="searchFacultyInput"
                 class="input"
                 placeholder="${t('search_faculties_placeholder', 'Search faculties...')}"
-                style="height: 34px; font-size: 0.8125rem; width: 220px;"
+                style="height: 34px; font-size: 0.8125rem; flex: 1 1 160px; min-width: 0; max-width: 220px;"
               />
               <button class="btn btn-secondary" id="btnSubAddFaculty" style="height: 34px; font-size: 0.8125rem;">
                 ${icons.plus} ${t('btn_add_faculty', 'Add Faculty')}

@@ -104,7 +104,7 @@ export function renderStep6(container) {
         </div>
 
         <!-- Visual Analytics Grid -->
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: var(--sp-lg);">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(450px, 100%), 1fr)); gap: var(--sp-lg);">
           <!-- A. Stakeholder Value Distribution -->
           <div class="chart-card">
             <div class="chart-title">A. ${t('chart_stakeholder_dist', 'Social Value by Stakeholder Group')}</div>

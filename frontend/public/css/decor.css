@@ -51,6 +51,7 @@
 .container {
   position: relative;
   min-height: calc(100vh - var(--header-h));
+  min-height: calc(100dvh - var(--header-h));
 }
 
 .container::after {
@@ -141,6 +142,7 @@
     height: 260px;
     right: -90px;
     bottom: -90px;
+    animation: none; /* ประหยัดแบตและ GPU บนมือถือ */
   }
 }
 

@@ -7,6 +7,7 @@
 .app {
   --sw: var(--sidebar-w);
   min-height: 100vh;
+  min-height: 100dvh; /* มือถือ: ไม่นับแถบ address bar ที่ยืด/หด */
   /* พื้นหลังเข้ม ตกแต่งด้วยแสงไล่ระดับสีส้มมุมซ้ายบน */
   background:
     radial-gradient(900px 500px at 0% 0%, rgba(243, 112, 33, 0.28), transparent 70%),
@@ -56,6 +57,7 @@
 /* ชื่อหน้าใน Header ใช้พื้นที่ว่างที่เหลือ */
 .header-title {
   flex: 1;
+  min-width: 0; /* ให้ย่อและแสดง ... ได้เมื่อพื้นที่ใน Header ไม่พอ */
   color: var(--shell-text-muted);
   font-weight: 500;
   overflow: hidden;
@@ -515,6 +517,7 @@
   margin-left: var(--sw);
   width: calc(100% - var(--sw));
   min-height: calc(100vh - var(--header-h));
+  min-height: calc(100dvh - var(--header-h));
   background: var(--background);
   transition: margin 300ms var(--ease);
   overflow-x: clip; /* กันล้นแนวนอนโดยไม่ตัดเงาการ์ดและไม่ทำให้ sticky พัง */
@@ -532,84 +535,220 @@
   font-size: 1.5rem;
   line-height: 2rem;
   font-weight: 700;
+  overflow-wrap: anywhere;
 }
 
 .page-sub {
   margin-bottom: var(--sp-xl);
 }
 
+/* ---------- Backdrop ของเมนู Drawer (ซ่อนบนจอใหญ่) ---------- */
+.nav-backdrop {
+  display: none;
+}
+
 /* ---------- Responsive ---------- */
-/* จอแท็บเล็ต/มือถือ: บังคับใช้ Sidebar แบบย่อเสมอ */
-@media (max-width: 768px) {
+/*
+ * Breakpoints ที่ใช้ทั้งแอป
+ *   >= 1920px  จอใหญ่/Ultra-wide : ขยายความกว้างเนื้อหา
+ *   <= 1200px  แท็บเล็ตแนวนอน     : Sidebar เริ่มต้นแบบย่อ (ตั้งใน main.js)
+ *   <= 900px   แท็บเล็ต/มือถือ     : Sidebar กลายเป็น Drawer เลื่อนออกมาจากซ้าย (ปุ่ม ☰ ใน Header)
+ *   <= 640px   มือถือ             : Header แสดงเฉพาะไอคอน
+ *   <= 480px   มือถือเล็ก          : ลดระยะห่าง/ขนาดหัวข้อ
+ * ถ้าแก้ 900px ต้องแก้ mqMobileNav ใน js/main.js ให้ตรงกันด้วย
+ */
+
+/* จอใหญ่มาก */
+@media (min-width: 1920px) {
   .app {
-    --sw: var(--sidebar-w-collapsed);
+    --container-max: 1680px;
+  }
+}
+
+/* จอเตี้ย (มือถือแนวนอน / โน้ตบุ๊กจอเล็ก): ซ่อน footer ของ Sidebar กันเมนูถูกบัง */
+@media (max-height: 560px) {
+  .sidebar-footer {
+    display: none;
+  }
+}
+
+/* ---------- แท็บเล็ต/มือถือ: Sidebar เป็น Drawer ---------- */
+@media (max-width: 900px) {
+  .app,
+  .app.is-collapsed {
+    --sw: 0px; /* เนื้อหาและ Header เต็มความกว้าง */
   }
 
-  /* บังคับใช้สไตล์แบบย่อเหมือน .app.is-collapsed */
-  .shell-sidebar {
-    padding-left: 12px;
-    padding-right: 12px;
-    overflow: visible;
+  .shell-sidebar,
+  .app.is-collapsed .shell-sidebar {
+    z-index: 40;
+    width: min(280px, 86vw);
+    padding: var(--sp-lg);
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    transform: translateX(-102%);
+    visibility: hidden;
+    box-shadow: none;
+    /* visibility หน่วงไว้จนแอนิเมชันปิดจบ เพื่อไม่ให้ Tab ไปโดนเมนูที่ซ่อนอยู่ */
+    transition: transform 300ms var(--ease), visibility 0s linear 300ms;
   }
 
-  .brand {
-    justify-content: center;
-    gap: 0;
-    padding: 0;
+  .app.is-nav-open .shell-sidebar {
+    transform: none;
+    visibility: visible;
+    box-shadow: 12px 0 48px rgba(0, 0, 0, 0.55);
+    transition: transform 300ms var(--ease), visibility 0s;
   }
 
-  .brand-text,
-  .nav-label,
-  .sidebar-footer-text,
-  .nav-item span {
-    opacity: 0;
-    max-width: 0;
-    pointer-events: none;
+  /* ถ้าผู้ใช้ย่อ Sidebar ไว้ตอนจอใหญ่ แล้วย่อหน้าต่าง: ให้ Drawer แสดงแบบเต็มเสมอ */
+  .app.is-collapsed .brand {
+    justify-content: flex-start;
+    gap: 12px;
+    padding: 0 8px;
   }
 
-  .nav-item {
-    gap: 0;
-    padding: 0;
-    justify-content: center;
+  .app.is-collapsed .brand-text,
+  .app.is-collapsed .nav-label,
+  .app.is-collapsed .sidebar-footer-text,
+  .app.is-collapsed .nav-item span {
+    opacity: 1;
+    transform: none;
+    pointer-events: auto;
   }
 
-  .nav-item:hover {
+  .app.is-collapsed .brand-text,
+  .app.is-collapsed .nav-label,
+  .app.is-collapsed .sidebar-footer-text {
+    max-width: none;
+  }
+
+  .app.is-collapsed .nav-item span {
+    max-width: 220px;
+  }
+
+  .app.is-collapsed .nav-item {
+    gap: var(--sp-md);
+    padding: 0 14px;
+    justify-content: flex-start;
+  }
+
+  .app.is-collapsed .nav-item:hover {
+    transform: translateX(3px);
+  }
+
+  .app.is-collapsed .nav-item.is-active:hover {
     transform: none;
   }
 
-  .nav-item::after {
+  .app.is-collapsed .nav-item::after {
+    display: none; /* ไม่ต้องใช้ tooltip เพราะ Drawer แสดงชื่อเมนูเต็ม */
+  }
+
+  .app.is-collapsed .nav-indicator::before {
+    left: -16px;
+  }
+
+  .app.is-collapsed .sidebar-footer {
+    justify-content: flex-start;
+    padding: 12px;
+  }
+
+  .app.is-collapsed .sidebar-footer-dot {
+    margin: 0 6px;
+  }
+
+  .app.is-collapsed .btn-ghost-shell svg {
+    transform: none;
+  }
+
+  /* ฉากมืดด้านหลัง Drawer */
+  .nav-backdrop {
     display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 30;
+    background: rgba(2, 6, 23, 0.6);
+    -webkit-backdrop-filter: blur(2px);
+    backdrop-filter: blur(2px);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 250ms var(--ease), visibility 0s linear 250ms;
   }
 
-  .nav-item:hover::after {
+  .app.is-nav-open .nav-backdrop {
     opacity: 1;
-    transform: translate(0, -50%);
+    visibility: visible;
+    transition: opacity 250ms var(--ease), visibility 0s;
   }
 
-  .nav-indicator::before {
-    left: -12px;
+  .app.is-login .nav-backdrop {
+    display: none;
   }
 
-  .sidebar-footer {
-    justify-content: center;
-    padding: 12px 0;
-  }
-
-  .sidebar-footer-dot {
-    margin: 0;
+  /* เปิด Drawer แล้วไม่ให้หน้าด้านหลังเลื่อนตาม */
+  body:has(.app.is-nav-open) {
+    overflow: hidden;
   }
 
   .container {
-    padding: var(--sp-md);
+    padding: var(--sp-lg) var(--sp-md) var(--sp-xl);
+  }
+}
+
+/* ---------- มือถือ: Header เหลือแต่ไอคอน ---------- */
+@media (max-width: 640px) {
+  .shell-header {
+    gap: var(--sp-sm);
+    padding: 0 var(--sp-md);
+  }
+
+  .header-actions {
+    gap: 6px;
+  }
+
+  .btn-header-control {
+    padding: 0 8px;
+  }
+
+  /* ชื่อธีมและชื่อผู้ใช้ซ่อนไว้ (ยังมี title/aria-label ให้อ่าน) */
+  #themeLabel,
+  #headerBadge span {
+    display: none;
+  }
+
+  .header-title {
+    font-size: 0.8125rem;
   }
 }
 
 @media (max-width: 480px) {
   .container {
-    padding: var(--sp-sm);
+    padding: var(--sp-md) var(--sp-sm) var(--sp-xl);
   }
 
   .shell-header {
     padding: 0 var(--sp-sm);
+  }
+
+  .page-title {
+    font-size: 1.25rem;
+    line-height: 1.75rem;
+  }
+}
+
+/* จอสัมผัส: ปุ่มกดได้ง่ายขึ้น (ขั้นต่ำ ~44px ตามแนวทาง Apple/Google) */
+@media (pointer: coarse) {
+  .nav-item {
+    min-height: 48px;
+  }
+
+  .btn-ghost-shell {
+    width: 44px;
+    height: 44px;
+  }
+
+  .btn-header-control {
+    height: 40px;
   }
 }

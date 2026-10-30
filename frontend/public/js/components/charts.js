@@ -71,8 +71,8 @@ export function renderStakeholderChart(stakeholders = []) {
     .join('');
 
   return `
-    <div style="display: grid; grid-template-columns: 180px 1fr; gap: var(--sp-lg); align-items: center;">
-      <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+    <div style="display: flex; flex-wrap: wrap; gap: var(--sp-lg); align-items: center; justify-content: center;">
+      <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" style="flex: none; max-width: 100%; height: auto;">
         <circle cx="${cx}" cy="${cy}" r="${radius}" fill="none" stroke="var(--surface-soft)" stroke-width="${strokeWidth}" />
         ${slices
           .map(
@@ -89,7 +89,7 @@ export function renderStakeholderChart(stakeholders = []) {
           ${positiveShares.length} Groups
         </text>
       </svg>
-      <div style="display: flex; flex-direction: column; gap: 6px;">
+      <div style="display: flex; flex-direction: column; gap: 6px; flex: 1 1 200px; min-width: 0;">
         ${legendHtml}
       </div>
     </div>
@@ -161,14 +161,14 @@ export function renderAnnualTrendChart(annualData = []) {
         </span>
       </div>
 
-      <div style="display: flex; align-items: flex-end; justify-content: space-between; height: 160px; padding-top: 10px; border-bottom: 1px solid var(--outline); gap: 12px;">
+      <div style="display: flex; align-items: flex-end; justify-content: space-between; height: 160px; padding-top: 10px; border-bottom: 1px solid var(--outline); gap: 12px; overflow-x: auto;">
         ${annualData
           .map((d) => {
             const invH = ((d.investment || 0) / maxVal) * 120;
             const pvH = ((d.present_value || 0) / maxVal) * 120;
 
             return `
-            <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%; justify-content: flex-end;">
+            <div style="flex: 1 0 44px; display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%; justify-content: flex-end;">
               <div style="display: flex; align-items: flex-end; gap: 4px; width: 100%; justify-content: center;">
                 <div style="width: 14px; height: ${Math.max(2, invH)}px; background: var(--warning); border-radius: 3px 3px 0 0;"
                   title="Year ${d.year} Investment: ${formatBaht(d.investment)}"></div>
