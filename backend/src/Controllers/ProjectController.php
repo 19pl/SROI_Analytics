@@ -44,6 +44,11 @@ final class ProjectController
             'faculty_id'    => ['type' => 'int', 'min' => 1, 'nullable' => true],
             'department_id' => ['type' => 'int', 'min' => 1, 'nullable' => true],
             'assessment_months' => ['type' => 'int', 'min' => 1, 'nullable' => true],
+            // sheet mode (migration 005)
+            'calc_method' => ['type' => 'enum', 'in' => ['wizard', 'sheet'], 'default' => 'wizard'],
+            'y0_label' => ['type' => 'string', 'max' => 100, 'nullable' => true],
+            'y1_label' => ['type' => 'string', 'max' => 100, 'nullable' => true],
+            'sheet_adjustment_mode' => ['type' => 'enum', 'in' => ['deduct', 'retain'], 'default' => 'deduct'],
         ];
     }
 
@@ -73,7 +78,7 @@ final class ProjectController
             $r = $this->present($r);
             $r['latest_run'] = $this->app->db->one(
                 "SELECT id, sroi_ratio, present_value, investment, net_social_value, created_at FROM calculation_runs
-                 WHERE project_id = ? AND scenario_id = (SELECT id FROM scenarios WHERE project_id = ? AND is_base = 1) ORDER BY id DESC LIMIT 1",
+                 WHERE project_id = ? AND (scenario_id = (SELECT id FROM scenarios WHERE project_id = ? AND is_base = 1) OR methodology_version LIKE 'sheet-%') ORDER BY id DESC LIMIT 1",
                 [$r['id'], $r['id']]
             );
         }

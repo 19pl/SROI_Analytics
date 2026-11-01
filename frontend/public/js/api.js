@@ -248,6 +248,18 @@ export const api = {
   restoreProject: (id) => request(`/projects/${id}/restore`, { method: 'POST' }),
   getProjectAudit: (id) => request(`/projects/${id}/audit`),
 
+  // Sheet mode: enter and calculate the plan like the Excel workbooks (backend/database/migrations/005)
+  getSheet: (projectId) => request(`/projects/${projectId}/sheet`),
+  startSheetTemplate: (projectId) => request(`/projects/${projectId}/sheet/template`, { method: 'POST' }),
+  calculateSheet: (projectId) => request(`/projects/${projectId}/sheet/calculate`, { method: 'POST' }),
+  /** kind: groups | inputs | outcomes | columns */
+  createSheetRow: (projectId, kind, data) =>
+    request(`/projects/${projectId}/sheet/${kind}`, { method: 'POST', body: data }),
+  updateSheetRow: (projectId, kind, id, data) =>
+    request(`/projects/${projectId}/sheet/${kind}/${id}`, { method: 'PATCH', body: data }),
+  deleteSheetRow: (projectId, kind, id) =>
+    request(`/projects/${projectId}/sheet/${kind}/${id}`, { method: 'DELETE' }),
+
   // Project Costs (Step 1)
   getCosts: (projectId) => request(`/projects/${projectId}/costs`),
   createCost: (projectId, data) =>

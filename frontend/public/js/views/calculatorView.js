@@ -12,6 +12,7 @@ import { renderStep3 } from './steps/step3Outcomes.js';
 import { renderStep4 } from './steps/step4Adjustments.js';
 import { renderStep5 } from './steps/step5Review.js';
 import { renderStep6 } from './steps/step6Dashboard.js';
+import { renderSheet } from './sheetView.js';
 
 export function renderCalculator(root) {
   const hash = window.location.hash || '#/wizard/step-1';
@@ -24,6 +25,12 @@ export function renderCalculator(root) {
   }
 
   const { project } = getState();
+
+  // Sheet-mode plans (Excel-style entry) have their own single-page view; wizard plans are unchanged.
+  if (project?.calc_method === 'sheet' && !isGuest()) {
+    renderSheet(root);
+    return;
+  }
 
   root.innerHTML = `
     <div class="wizard-container">

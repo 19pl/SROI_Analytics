@@ -12,7 +12,7 @@ php bin/migrate.php         # creates storage/sroi.sqlite
 php bin/seed.php            # optional: reference data + the Naresuan University organization (creates NO users)
 php bin/user.php add --email=you@nu.ac.th --name="Your Name" --role=owner   # prompts for the password
 php -S localhost:8000 -t public public/index.php
-php tests/run.php           # 181 assertions: engine + full API workflow
+php tests/run.php           # 389 assertions: engine, sheet engine/formulas, full API workflow
 ```
 
 Requires PHP extensions `pdo_sqlite`, `mbstring`, `iconv`, `fileinfo`. In production point the web server's document root at
@@ -59,6 +59,33 @@ run `php bin/user.php remove --email=demo@impactvalue.local`.
 | Step 5 | `GET …/review` (readiness, warnings, per-step completion), `…/scenarios` CRUD, `GET …/scenario-comparison`, `GET …/sensitivity` |
 | Step 6 | `GET …/dashboard` (live), `POST …/calculate` (saved run), `GET …/runs[/{id}]`, `GET …/run-comparison?a=&b=`, `POST/GET …/reports`, `GET /reports/{id}/export?format=pdf\|html\|csv\|json[&dataset=outcomes\|investment\|results\|annual\|stakeholders]`, `POST/DELETE /reports/{id}/share` |
 | Stateless | `POST /calculator/preview` — send a full snapshot, get the engine result, nothing stored |
+
+## Sheet mode (Excel-style entry and calculation)
+
+Added in migration `005_sheet_mode.sql` (additive; wizard projects are untouched and keep `calc_method = 'wizard'`).
+A project created with `calc_method = 'sheet'` is entered and calculated the way the customer's Excel workbooks work.
+Run `php bin/migrate.php` once to apply it to an existing database.
+
+| Area | Endpoints (`…` = `/projects/{projectId}`) |
+|---|---|
+| Whole sheet | `GET …/sheet` (columns, groups, inputs, outcomes + live result), `POST …/sheet/template` (creates S1–S4 on an empty sheet), `POST …/sheet/calculate` (saves a run in `calculation_runs`, methodology `sheet-1.0.0`) |
+| Rows | `…/sheet/groups`, `…/sheet/inputs`, `…/sheet/outcomes` — CRUD (groups: top level S1..S4 plus one level of sub-groups S1.1…) |
+| Custom topics | `…/sheet/columns` — CRUD for user-defined columns (`band`: stakeholder/input/outcome; `data_type`: text/number/percent/date/select). Values live in each row's `custom` JSON. A number column may be set to count toward the input or outcome total (in Y0 or Y1). |
+
+**Calculation (`src/Domain/Calculation/SheetEngine.php`, pure and tested):**
+
+```
+input line    = Y0 + Y1 (+ counted custom columns)
+outcome line  = Y0 + Y1 (+ counted custom columns)                       "gross"
+adjusted Y    = gross_Y x (1 - adj_Y)   (project.sheet_adjustment_mode = deduct, default)
+              = gross_Y x adj_Y         (mode = retain)
+SROI          = total adjusted outcome (Y0+Y1) / total input (Y0+Y1)       no discounting
+```
+
+- Cells accept a number or a small formula (`=63999000/20`, `=(904840+123500)*9%`) — parsed by `Formula.php`, a hand-written parser (no `eval`): `+ - * / ^`, parentheses, unary sign, postfix `%`, thousands commas, `×` `÷`. Invalid formulas are rejected on write (422 with the field name) and block a calculation if one is ever found stored.
+- **Adjustment % is an input that waits for the customer.** Empty (`NULL`) = *not assessed*: the value is left unchanged and flagged (`ADJUSTMENT_NOT_ASSESSED`), never treated as 0 %. How a typed % is applied (deduct vs retain) is a project setting because neither workbook fills those columns in — **confirm the customer's rule**.
+- Blank value cells are reported (`VALUE_NOT_ENTERED`), not silently zero. Group totals roll sub-groups up; the grand total sums *lines*, never group totals, so nothing is counted twice.
+- Verified against `อาคารธาราบำบัด_SROI Data 18.4.67.xlsx` (tab "Template 6 เดือน"): total input 6,229,220; the engine reproduces the workbook's SROI 0.15348 exactly when the two lines the workbook's own subtotals skip are left out (S57 omits S48 = 85,775; S70 omits S68 = 1,046.52), and gives 0.16742 when every line is counted. See `tests/SheetEngineTest.php`.
 
 ## Calculation engine (`src/Domain/Calculation/CalculationEngine.php`)
 

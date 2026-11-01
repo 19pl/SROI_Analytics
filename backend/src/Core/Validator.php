@@ -6,7 +6,7 @@ namespace App\Core;
 /**
  * Declarative input validation.
  *
- * Rule keys: type (string|int|number|fraction|bool|enum|date|email|array), required, nullable,
+ * Rule keys: type (string|raw|int|number|fraction|bool|enum|date|email|array), required, nullable,
  * default (create only), min, max (value for numbers, length for strings), in (enum values),
  * check (callable(mixed):?string returning an error message).
  * Unknown input fields are ignored (whitelist).
@@ -81,6 +81,20 @@ final class Validator
                     $err = "must be at most $max characters";
                 }
                 return $v;
+            case 'raw':
+                // a spreadsheet-style cell: a number or a short formula, kept as the text the user typed
+                if (is_int($v) || is_float($v)) {
+                    $v = is_float($v) && floor($v) == $v && abs($v) < 1e15 ? (string)(int)$v : (string)$v;
+                }
+                if (!is_string($v)) {
+                    $err = 'must be a number or a formula';
+                    return null;
+                }
+                $v = trim($v);
+                if ($max !== null && mb_strlen($v) > $max) {
+                    $err = "must be at most $max characters";
+                }
+                return $v === '' ? null : $v;
             case 'int':
                 if (is_string($v) && preg_match('/^-?\d{1,15}$/', $v)) {
                     $v = (int)$v;
