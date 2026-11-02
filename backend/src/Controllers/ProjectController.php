@@ -258,6 +258,29 @@ final class ProjectController
         $p['faculty_id']      = $p['faculty_id'] !== null ? (int)$p['faculty_id'] : null;
         $p['department_id']   = $p['department_id'] !== null ? (int)$p['department_id'] : null;
         $p['assessment_months'] = $p['assessment_months'] !== null ? (int)$p['assessment_months'] : null;
+
+        // Read-only display fields: who directly owns this plan (derived from the ownership columns,
+        // never stored, so renaming a faculty/department is reflected everywhere immediately).
+        $p['faculty_name'] = null;
+        $p['department_name'] = null;
+        $p['owner_level'] = 'organization';
+        $p['owner_name'] = null;
+        if ($p['department_id'] !== null) {
+            $row = $this->app->db->one(
+                'SELECT d.name AS dept_name, f.name AS faculty_name FROM departments d JOIN faculties f ON f.id = d.faculty_id WHERE d.id = ?',
+                [$p['department_id']]
+            );
+            $p['department_name'] = $row['dept_name'] ?? null;
+            $p['faculty_name'] = $row['faculty_name'] ?? null;
+            $p['owner_level'] = 'department';
+            $p['owner_name'] = $p['department_name'];
+        } elseif ($p['faculty_id'] !== null) {
+            $p['faculty_name'] = $this->app->db->val('SELECT name FROM faculties WHERE id = ?', [$p['faculty_id']]);
+            $p['owner_level'] = 'faculty';
+            $p['owner_name'] = $p['faculty_name'];
+        } elseif (!empty($p['organization_id'])) {
+            $p['owner_name'] = $this->app->db->val('SELECT name FROM organizations WHERE id = ?', [(int)$p['organization_id']]);
+        }
         return $p;
     }
 }

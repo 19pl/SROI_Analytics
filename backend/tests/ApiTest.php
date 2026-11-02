@@ -418,6 +418,15 @@ T::test('api: faculty CRUD, department CRUD, plan ownership, consolidated report
     T::eq($did, $dp['data']['department_id']);
     T::eq(null, $dp['data']['faculty_id']);
 
+    // Owner display names are derived server-side so the UI never shows a blank institution
+    T::eq('faculty', $fp['data']['owner_level'], 'faculty plan owner level');
+    T::true(is_string($fp['data']['owner_name']) && $fp['data']['owner_name'] !== '', 'faculty plan has owner_name');
+    T::eq($fp['data']['faculty_name'], $fp['data']['owner_name'], 'faculty plan owner_name = faculty name');
+    T::eq('department', $dp['data']['owner_level'], 'dept plan owner level');
+    T::eq('Physical Therapy', $dp['data']['owner_name'], 'dept plan owner_name = department name');
+    T::eq('Physical Therapy', $dp['data']['department_name']);
+    T::true(is_string($dp['data']['faculty_name']) && $dp['data']['faculty_name'] !== '', 'dept plan exposes parent faculty name');
+
     // Reject plan with both faculty_id and department_id
     [$s] = $call('POST', '/projects', ['name' => 'Bad', 'currency' => 'THB', 'faculty_id' => $fid, 'department_id' => $did], $tok);
     T::eq(422, $s, 'dual ownership rejected');
