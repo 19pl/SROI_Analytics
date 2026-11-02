@@ -38,7 +38,13 @@ const INP = [
   { k: 'source', l: 'sheet_col_source', type: 'long', w: 190 },
 ];
 const OUT = [
-  { k: 'dimension', l: 'sheet_col_dimension', type: 'select', w: 120, options: ['economic', 'social', 'environmental', 'other'] },
+  {
+    k: 'dimension',
+    l: 'sheet_col_dimension',
+    type: 'select',
+    w: 120,
+    options: ['economic', 'social', 'environmental', 'other'],
+  },
   { k: 'beneficiary', l: 'sheet_col_beneficiary', type: 'long', w: 140 },
   { k: 'outcome', l: 'sheet_col_outcome', type: 'long', w: 240 },
   { k: 'quantity_text', l: 'sheet_col_quantity', type: 'long', w: 170 },
@@ -62,14 +68,62 @@ const byKey = (list, keys) => keys.map((k) => list.find((c) => c.k === k));
 
 // ---- layout of each block: a 12-column grid, so related fields sit side by side and nothing scrolls sideways ----
 // (the column definitions above stay the single source of truth for data; these maps only decide placement)
-const STK_FIELDS = byKey(STK, ['population_raw', 'unit', 'actual_count_raw', 'actual_count_method', 'activity', 'note']);
-const STK_SPAN = { population_raw: 's3', unit: 's2', actual_count_raw: 's3', actual_count_method: 's4', activity: 's6', note: 's6' };
-const INP_SPAN = { resource: 's6', y0_raw: 's2', y1_raw: 's2', total: 's2', basis: 's6', source: 's6' };
-const OUT_CHANGE = byKey(OUT, ['outcome', 'beneficiary', 'dimension', 'weight', 'quantity_text', 'indicator']);
-const OUT_CHANGE_SPAN = { outcome: 's5', beneficiary: 's3', dimension: 's2', weight: 's2', quantity_text: 's6', indicator: 's6' };
+const STK_FIELDS = byKey(STK, [
+  'population_raw',
+  'unit',
+  'actual_count_raw',
+  'actual_count_method',
+  'activity',
+  'note',
+]);
+const STK_SPAN = {
+  population_raw: 's3',
+  unit: 's2',
+  actual_count_raw: 's3',
+  actual_count_method: 's4',
+  activity: 's6',
+  note: 's6',
+};
+const INP_SPAN = {
+  resource: 's6',
+  y0_raw: 's2',
+  y1_raw: 's2',
+  total: 's2',
+  basis: 's6',
+  source: 's6',
+};
+const OUT_CHANGE = byKey(OUT, [
+  'outcome',
+  'beneficiary',
+  'dimension',
+  'weight',
+  'quantity_text',
+  'indicator',
+]);
+const OUT_CHANGE_SPAN = {
+  outcome: 's5',
+  beneficiary: 's3',
+  dimension: 's2',
+  weight: 's2',
+  quantity_text: 's6',
+  indicator: 's6',
+};
 const OUT_VALUE = byKey(OUT, ['valuation_method', 'source', 'y0_raw', 'y1_raw', 'gross_total']);
-const OUT_VALUE_SPAN = { valuation_method: 's6', source: 's6', y0_raw: 's4', y1_raw: 's4', gross_total: 's4' };
-const ADJ_SPAN = { adj_y0: 's2', adj_y0_reason: 's4', adj_y1: 's2', adj_y1_reason: 's4', adjusted_total: 's4', adj_source: 's8' };
+const OUT_VALUE_SPAN = {
+  valuation_method: 's6',
+  source: 's6',
+  y0_raw: 's4',
+  y1_raw: 's4',
+  gross_total: 's4',
+};
+const ADJ_SPAN = {
+  adj_y0: 's2',
+  adj_y0_reason: 's4',
+  adj_y1: 's2',
+  adj_y1_reason: 's4',
+  adjusted_total: 's4',
+  adj_source: 's8',
+};
 
 const fmt = (n, dp = 2) =>
   n === null || n === undefined || Number.isNaN(Number(n))
@@ -85,7 +139,14 @@ export async function renderSheet(root) {
     return;
   }
   const pid = project.id;
-  const ctx = { pid, sheet: null, readOnly: true, chain: Promise.resolve(), statusTimer: null, closed: new Set() };
+  const ctx = {
+    pid,
+    sheet: null,
+    readOnly: true,
+    chain: Promise.resolve(),
+    statusTimer: null,
+    closed: new Set(),
+  };
 
   root.innerHTML = `<div class="sheet-page"><div class="muted" style="padding: var(--sp-xl);">…</div></div>`;
   try {
@@ -153,21 +214,35 @@ export async function renderSheet(root) {
       if (fold) {
         const collapse = fold.dataset.fold === 'collapse';
         document.querySelectorAll('.grp-card.lvl-1').forEach((c) => setCollapsed(c, collapse));
-        if (!collapse) document.querySelectorAll('.grp-card.lvl-0').forEach((c) => setCollapsed(c, false));
+        if (!collapse)
+          document.querySelectorAll('.grp-card.lvl-0').forEach((c) => setCollapsed(c, false));
       }
     });
   }
 
   function periodOptions() {
-    return [['', t('scope_full_year', 'Full year')], ['6', t('scope_6_months', '6 months')], ['9', t('scope_9_months', '9 months')], ['12', t('scope_12_months', '12 months')]];
+    return [
+      ['', t('scope_full_year', 'Full year')],
+      ['6', t('scope_6_months', '6 months')],
+      ['9', t('scope_9_months', '9 months')],
+      ['12', t('scope_12_months', '12 months')],
+    ];
   }
 
   /** one-line digest of the assessment settings, shown while the settings panel is folded */
   function scopeSummaryText(p) {
-    const period = periodOptions().find(([v]) => v === String(p.assessment_months ?? ''))?.[1] || '';
-    const evalLabel = p.evaluation_type === 'forecast' ? t('eval_type_forecast', 'Forecast') : t('eval_type_evaluative', 'Evaluative');
-    const adj = String(p.adjustment_mode === 'retain' ? t('sheet_adj_retain', '') : t('sheet_adj_deduct', '')).split(':')[0];
-    return [`${p.y0_label || '–'} → ${p.y1_label || '–'}`, evalLabel, period, adj].filter(Boolean).join(' · ');
+    const period =
+      periodOptions().find(([v]) => v === String(p.assessment_months ?? ''))?.[1] || '';
+    const evalLabel =
+      p.evaluation_type === 'forecast'
+        ? t('eval_type_forecast', 'Forecast')
+        : t('eval_type_evaluative', 'Evaluative');
+    const adj = String(
+      p.adjustment_mode === 'retain' ? t('sheet_adj_retain', '') : t('sheet_adj_deduct', ''),
+    ).split(':')[0];
+    return [`${p.y0_label || '–'} → ${p.y1_label || '–'}`, evalLabel, period, adj]
+      .filter(Boolean)
+      .join(' · ');
   }
 
   function scopeHtml(p) {
@@ -262,10 +337,12 @@ export async function renderSheet(root) {
     root2.innerHTML = tops.map((g) => groupBlock(g, 0)).join('');
     const nav = document.getElementById('sheetNav');
     if (nav) {
-      const chips = tops.map((g) => {
-        const n = s.groups.filter((c) => c.parent_id === g.id).length;
-        return `<button type="button" class="nav-chip" data-jump="${g.id}"><b>${esc(g.code || '')}</b> ${esc(g.name)}<span class="chip-n">${n}</span></button>`;
-      }).join('');
+      const chips = tops
+        .map((g) => {
+          const n = s.groups.filter((c) => c.parent_id === g.id).length;
+          return `<button type="button" class="nav-chip" data-jump="${g.id}"><b>${esc(g.code || '')}</b> ${esc(g.name)}<span class="chip-n">${n}</span></button>`;
+        })
+        .join('');
       const fold = s.groups.some((g) => g.parent_id !== null)
         ? `<span class="nav-fold"><button type="button" class="nav-link" data-fold="collapse">${t('sheet_fold_all', 'Collapse all')}</button><button type="button" class="nav-link" data-fold="expand">${t('sheet_unfold_all', 'Expand all')}</button></span>`
         : '';
@@ -277,7 +354,9 @@ export async function renderSheet(root) {
   }
 
   function hintOf(c) {
-    return c.k === 'adj_y0' || c.k === 'adj_y1' ? ` <span class="hint" title="${esc(t('sheet_adj_hint', ''))}">ⓘ</span>` : '';
+    return c.k === 'adj_y0' || c.k === 'adj_y1'
+      ? ` <span class="hint" title="${esc(t('sheet_adj_hint', ''))}">ⓘ</span>`
+      : '';
   }
 
   /** a labelled built-in field; `span` is its width in the 12-column grid (s2 … s12) */
@@ -290,8 +369,13 @@ export async function renderSheet(root) {
 
   /** a labelled user-defined field (custom topic) */
   function fldCustom(c, row, kind, span = 's6') {
-    const sigma = c.counts_toward !== 'none' ? ` <span class="hint" title="${esc(t('sheet_col_counts', ''))}">Σ</span>` : '';
-    const edit = ctx.readOnly ? '' : ` <button type="button" class="sheet-editcol" data-editcol="${c.id}" title="${esc(t('sheet_col_modal_title', 'Custom topic'))}">✎</button>`;
+    const sigma =
+      c.counts_toward !== 'none'
+        ? ` <span class="hint" title="${esc(t('sheet_col_counts', ''))}">Σ</span>`
+        : '';
+    const edit = ctx.readOnly
+      ? ''
+      : ` <button type="button" class="sheet-editcol" data-editcol="${c.id}" title="${esc(t('sheet_col_modal_title', 'Custom topic'))}">✎</button>`;
     return `<label class="fld custom ${span}"><span class="fld-label">${esc(c.label)}${sigma}${edit}</span>${customCell(c, row, kind)}</label>`;
   }
 
@@ -301,7 +385,10 @@ export async function renderSheet(root) {
 
   /** numbered section heading with a one-line explanation of what to enter */
   function secHead(n, title, desc, band) {
-    const add = band && !ctx.readOnly ? `<button type="button" class="sheet-addcol" data-addcol="${band}" title="${esc(t('sheet_add_column', 'Add topic'))}">＋ ${t('sheet_add_column', 'Add topic')}</button>` : '';
+    const add =
+      band && !ctx.readOnly
+        ? `<button type="button" class="sheet-addcol" data-addcol="${band}" title="${esc(t('sheet_add_column', 'Add topic'))}">＋ ${t('sheet_add_column', 'Add topic')}</button>`
+        : '';
     return `<div class="sec-head"><span class="sec-n">${n}</span><div class="sec-ttl"><h3>${title}</h3>${desc ? `<p>${desc}</p>` : ''}</div>${add}</div>`;
   }
 
@@ -315,7 +402,9 @@ export async function renderSheet(root) {
   }
 
   function addLineBtn(act, gid, label) {
-    return ctx.readOnly ? '' : `<button type="button" class="line-add" data-act="${act}" data-gid="${gid}">＋ ${label}</button>`;
+    return ctx.readOnly
+      ? ''
+      : `<button type="button" class="line-add" data-act="${act}" data-gid="${gid}">＋ ${label}</button>`;
   }
 
   function groupBlock(g, level) {
@@ -333,9 +422,10 @@ export async function renderSheet(root) {
     const direct = level === 1 || hasDirectData(g);
     const kids = level === 0 ? s.groups.filter((c) => c.parent_id === g.id) : [];
 
-    const meta = level === 1
-      ? `<span class="grp-count">${ins.length} ${t('sheet_group_total_in', 'Input')} · ${outs.length} ${t('sheet_group_total_out', 'Outcome')}</span>`
-      : `<span class="grp-count">${kids.length} ${t('sheet_stk_label', 'Stakeholder')}</span>`;
+    const meta =
+      level === 1
+        ? `<span class="grp-count">${ins.length} ${t('sheet_group_total_in', 'Input')} · ${outs.length} ${t('sheet_group_total_out', 'Outcome')}</span>`
+        : `<span class="grp-count">${kids.length} ${t('sheet_stk_label', 'Stakeholder')}</span>`;
 
     const head = `<header class="grp-head">
       <button type="button" class="grp-toggle" data-act="toggle" data-gid="${g.id}" aria-expanded="${!collapsed}" title="${esc(t('sheet_toggle', 'Fold / unfold'))}"><span class="chev" aria-hidden="true">▾</span></button>
@@ -352,18 +442,24 @@ export async function renderSheet(root) {
       <div class="fgrid">${fields(STK_FIELDS, g, 'groups', STK_SPAN)}${cs.map((c) => fldCustom(c, g, 'groups')).join('')}</div></section>`;
 
     // ---- 2. inputs: one small card per resource line ----
-    const inLines = ins.map((r, i) => `<article class="line line-inp${r.include_in_total ? '' : ' is-excluded'}">
+    const inLines = ins
+      .map(
+        (r, i) => `<article class="line line-inp${r.include_in_total ? '' : ' is-excluded'}">
         <span class="line-n">${i + 1}</span>
         ${lineTools(r, 'inputs')}
         <div class="fgrid">${fields(INP, r, 'inputs', INP_SPAN)}${ci.map((c) => fldCustom(c, r, 'inputs')).join('')}</div>
-      </article>`).join('');
+      </article>`,
+      )
+      .join('');
     const inputs = `<section class="sec b-inp">
       ${secHead(2, t('sheet_band_input', 'Inputs'), t('sheet_sec_input_desc', ''), 'input')}
       ${ins.length ? `<div class="line-list">${inLines}</div>` : `<p class="line-empty">${t('sheet_no_inputs', 'No input lines yet')}</p>`}
       ${addLineBtn('add-input', g.id, t('sheet_add_input_btn', 'Add an input line'))}</section>`;
 
     // ---- 3. outcomes: one card per outcome holding its three blocks — change · value · adjustment ----
-    const outCards = outs.map((r, i) => `<article class="line line-out${r.include_in_total ? '' : ' is-excluded'}">
+    const outCards = outs
+      .map(
+        (r, i) => `<article class="line line-out${r.include_in_total ? '' : ' is-excluded'}">
         <header class="line-head">
           <span class="line-n">${i + 1}</span>
           <span class="line-title" data-ref="outcome:${r.id}" data-ph="${esc(t('sheet_unnamed', '(unnamed outcome)'))}">${esc(r.outcome || '')}</span>
@@ -376,7 +472,9 @@ export async function renderSheet(root) {
           <div class="fgrid">${fields(OUT_VALUE, r, 'outcomes', OUT_VALUE_SPAN)}</div></div>
         <div class="blk b-adj"><h4>${t('sheet_band_adjust', 'Adjustment')}</h4>
           <div class="fgrid">${fields(ADJ, r, 'outcomes', ADJ_SPAN)}</div></div>
-      </article>`).join('');
+      </article>`,
+      )
+      .join('');
     const outcomes = `<section class="sec b-out">
       ${secHead(3, t('sheet_sec_outcome', 'Outcomes'), t('sheet_sec_outcome_desc', ''), 'outcome')}
       ${outs.length ? `<div class="line-list">${outCards}</div>` : `<p class="line-empty">${t('sheet_no_outcomes', 'No outcome lines yet')}</p>`}
@@ -392,7 +490,9 @@ export async function renderSheet(root) {
         ${ro ? '' : `<button type="button" class="sub-add" data-act="add-sub" data-gid="${g.id}"><span class="plus">＋</span><span><b>${t('sheet_add_stk_btn', 'Add a stakeholder to')} ${esc(g.code || '')}</b><small>${t('sheet_add_stk_small', '')}</small></span></button>`}
       </section>`;
       // Data an older plan entered directly on the S-heading stays visible and editable (never silently hidden).
-      body = direct ? `<div class="direct-block"><p class="direct-note">${t('sheet_direct_note', 'Entered directly on this group (older entry style).')}</p>${body}</div>` : '';
+      body = direct
+        ? `<div class="direct-block"><p class="direct-note">${t('sheet_direct_note', 'Entered directly on this group (older entry style).')}</p>${body}</div>`
+        : '';
     }
     return `<article class="grp-card lvl-${level}${collapsed ? ' is-collapsed' : ''}" data-gid="${g.id}">${head}<div class="grp-body">${body}${subs}</div></article>`;
   }
@@ -402,7 +502,9 @@ export async function renderSheet(root) {
     if (!card) return;
     const id = String(card.dataset.gid);
     card.classList.toggle('is-collapsed', collapse);
-    card.querySelector(':scope > .grp-head .grp-toggle')?.setAttribute('aria-expanded', String(!collapse));
+    card
+      .querySelector(':scope > .grp-head .grp-toggle')
+      ?.setAttribute('aria-expanded', String(!collapse));
     if (collapse) ctx.closed.add(id);
     else {
       ctx.closed.delete(id);
@@ -413,9 +515,22 @@ export async function renderSheet(root) {
   /** true when an S-heading carries its own stakeholder fields, custom values, input lines or outcome lines */
   function hasDirectData(g) {
     const s = ctx.sheet;
-    const filled = ['population_raw', 'unit', 'note', 'activity', 'activity_summary', 'actual_count_raw', 'actual_count_method'].some((k) => String(g[k] ?? '').trim() !== '');
+    const filled = [
+      'population_raw',
+      'unit',
+      'note',
+      'activity',
+      'activity_summary',
+      'actual_count_raw',
+      'actual_count_method',
+    ].some((k) => String(g[k] ?? '').trim() !== '');
     const custom = g.custom && Object.keys(g.custom).length > 0;
-    return filled || custom || s.inputs.some((r) => r.group_id === g.id) || s.outcomes.some((r) => r.group_id === g.id);
+    return (
+      filled ||
+      custom ||
+      s.inputs.some((r) => r.group_id === g.id) ||
+      s.outcomes.some((r) => r.group_id === g.id)
+    );
   }
 
   /** one built-in cell */
@@ -449,7 +564,8 @@ export async function renderSheet(root) {
     if (c.data_type === 'select') {
       return `<select class="sc" ${base} ${dis}><option value=""></option>${c.options.map((o) => `<option ${v === o ? 'selected' : ''}>${esc(o)}</option>`).join('')}</select>`;
     }
-    if (c.data_type === 'date') return `<input class="sc" type="date" ${base} value="${esc(v)}" ${dis} />`;
+    if (c.data_type === 'date')
+      return `<input class="sc" type="date" ${base} value="${esc(v)}" ${dis} />`;
     if (c.data_type === 'number' || c.data_type === 'percent') {
       return `<input class="sc sc-raw" type="text" inputmode="decimal" autocomplete="off" ${base} value="${esc(v)}" ${dis} />`;
     }
@@ -471,7 +587,8 @@ export async function renderSheet(root) {
 
     const sum = document.getElementById('sheetSummary');
     if (sum) {
-      const stat = (label, value, cls = '', sub = '') => `<div class="stat ${cls}"><div class="stat-label">${label}</div><div class="stat-val">${value}</div>${sub ? `<div class="stat-sub">${sub}</div>` : ''}</div>`;
+      const stat = (label, value, cls = '', sub = '') =>
+        `<div class="stat ${cls}"><div class="stat-label">${label}</div><div class="stat-val">${value}</div>${sub ? `<div class="stat-sub">${sub}</div>` : ''}</div>`;
       sum.innerHTML = `
         ${stat(t('sheet_total_input', 'Total input'), `${fmt(r.totals.input.total)} <small>${esc(cur)}</small>`, '', `Y0 ${fmt(r.totals.input.y0)} · Y1 ${fmt(r.totals.input.y1)}`)}
         ${stat(t('sheet_total_outcome', 'Total outcome'), `${fmt(r.totals.outcome_adjusted.total)} <small>${esc(cur)}</small>`, '', `Y0 ${fmt(r.totals.outcome_adjusted.y0)} · Y1 ${fmt(r.totals.outcome_adjusted.y1)}`)}
@@ -513,7 +630,10 @@ export async function renderSheet(root) {
       }
       const inputEl = el.previousElementSibling;
       const raw = inputEl?.value ?? '';
-      el.textContent = v !== null && v !== undefined && raw.trim() !== '' && !isPlainNumber(raw) ? `= ${fmt(v)}` : '';
+      el.textContent =
+        v !== null && v !== undefined && raw.trim() !== '' && !isPlainNumber(raw)
+          ? `= ${fmt(v)}`
+          : '';
     });
     document.querySelectorAll('[data-gsum]').forEach((el) => {
       const [id, which] = el.dataset.gsum.split(':');
@@ -524,7 +644,10 @@ export async function renderSheet(root) {
     document.querySelectorAll('[data-calc$=":adjusted_total"]').forEach((el) => {
       const id = el.dataset.calc.split(':')[1];
       const o = maps.outcomes.get(id);
-      el.title = o && o.adj_y0 === null && o.adj_y1 === null && (o.gross_total || 0) !== 0 ? t('sheet_not_assessed', 'not assessed') : '';
+      el.title =
+        o && o.adj_y0 === null && o.adj_y1 === null && (o.gross_total || 0) !== 0
+          ? t('sheet_not_assessed', 'not assessed')
+          : '';
       el.classList.toggle('unassessed', !!el.title);
     });
   }
@@ -532,14 +655,19 @@ export async function renderSheet(root) {
   // ================================================================== editing ==================================================================
 
   function findRow(kind, id) {
-    const list = { groups: ctx.sheet.groups, inputs: ctx.sheet.inputs, outcomes: ctx.sheet.outcomes }[kind];
+    const list = {
+      groups: ctx.sheet.groups,
+      inputs: ctx.sheet.inputs,
+      outcomes: ctx.sheet.outcomes,
+    }[kind];
     return list.find((r) => String(r.id) === String(id));
   }
 
   function readValue(el) {
     if (el.type === 'checkbox') return el.checked;
     const v = el.value;
-    if (el.classList.contains('sc-pct')) return v === '' ? null : Math.round((Number(v) / 100) * 1e6) / 1e6;
+    if (el.classList.contains('sc-pct'))
+      return v === '' ? null : Math.round((Number(v) / 100) * 1e6) / 1e6;
     return typeof v === 'string' ? v.trim() : v;
   }
 
@@ -569,17 +697,27 @@ export async function renderSheet(root) {
       const add = e.target.closest('[data-addcol]');
       if (add) return openColumnModal(add.dataset.addcol, null);
       const edit = e.target.closest('[data-editcol]');
-      if (edit) return openColumnModal(null, ctx.sheet.columns.find((c) => String(c.id) === edit.dataset.editcol));
+      if (edit)
+        return openColumnModal(
+          null,
+          ctx.sheet.columns.find((c) => String(c.id) === edit.dataset.editcol),
+        );
       const b = e.target.closest('[data-act]');
       if (!b) return;
       const gid = Number(b.dataset.gid);
       switch (b.dataset.act) {
-        case 'toggle': return; // handled above through the header click
-        case 'add-input': return addLine('inputs', gid, 'resource');
-        case 'add-outcome': return addLine('outcomes', gid, 'outcome');
-        case 'add-sub': return addGroup(gid);
-        case 'del-line': return deleteLine(b.dataset.kind, b.dataset.id);
-        case 'del-group': return deleteGroup(gid);
+        case 'toggle':
+          return; // handled above through the header click
+        case 'add-input':
+          return addLine('inputs', gid, 'resource');
+        case 'add-outcome':
+          return addLine('outcomes', gid, 'outcome');
+        case 'add-sub':
+          return addGroup(gid);
+        case 'del-line':
+          return deleteLine(b.dataset.kind, b.dataset.id);
+        case 'del-group':
+          return deleteGroup(gid);
       }
     });
   }
@@ -589,7 +727,10 @@ export async function renderSheet(root) {
     const bar = document.getElementById('sheetWhere');
     if (!bar) return;
     const cell = el?.closest?.('[data-kind]');
-    if (!cell) { bar.hidden = true; return; }
+    if (!cell) {
+      bar.hidden = true;
+      return;
+    }
     const val = (n) => (n ? String(n.value ?? n.textContent ?? '').trim() : '');
     const crumbs = [];
     const card = cell.closest('.grp-card');
@@ -604,11 +745,17 @@ export async function renderSheet(root) {
     if (line) {
       const n = line.querySelector('.line-n')?.textContent || '';
       if (line.classList.contains('line-out')) {
-        const title = val(line.querySelector('[data-field="outcome"]')) || val(line.querySelector('.line-title'));
-        crumbs.push(`${esc(t('sheet_group_total_out', 'Outcome'))} ${esc(n)}${title ? ': ' + esc(title) : ''}`);
+        const title =
+          val(line.querySelector('[data-field="outcome"]')) ||
+          val(line.querySelector('.line-title'));
+        crumbs.push(
+          `${esc(t('sheet_group_total_out', 'Outcome'))} ${esc(n)}${title ? ': ' + esc(title) : ''}`,
+        );
       } else {
         const title = val(line.querySelector('[data-field="resource"]'));
-        crumbs.push(`${esc(t('sheet_group_total_in', 'Input'))} ${esc(n)}${title ? ': ' + esc(title) : ''}`);
+        crumbs.push(
+          `${esc(t('sheet_group_total_in', 'Input'))} ${esc(n)}${title ? ': ' + esc(title) : ''}`,
+        );
       }
     }
     const label = cell.closest('.fld')?.querySelector('.fld-label');
@@ -636,15 +783,31 @@ export async function renderSheet(root) {
       payload = { custom: next };
     } else {
       let v = readValue(el);
-      if (v === '' && ['dimension', 'unit', 'note', 'population_raw', 'actual_count_raw', 'y0_raw', 'y1_raw'].includes(field)) v = null;
+      if (
+        v === '' &&
+        [
+          'dimension',
+          'unit',
+          'note',
+          'population_raw',
+          'actual_count_raw',
+          'y0_raw',
+          'y1_raw',
+        ].includes(field)
+      )
+        v = null;
       payload = { [field]: v };
     }
     setStatus('saving');
     try {
       const res = await api.updateSheetRow(pid, kind, id, payload);
       Object.assign(row, res.data);
-      if (kind === 'outcomes' && field === 'outcome') document.querySelectorAll(`[data-ref="outcome:${id}"]`).forEach((n) => { n.textContent = row.outcome || ''; });
-      if (field === 'include_in_total') el.closest('.line')?.classList.toggle('is-excluded', !el.checked);
+      if (kind === 'outcomes' && field === 'outcome')
+        document.querySelectorAll(`[data-ref="outcome:${id}"]`).forEach((n) => {
+          n.textContent = row.outcome || '';
+        });
+      if (field === 'include_in_total')
+        el.closest('.line')?.classList.toggle('is-excluded', !el.checked);
       el.classList.remove('is-invalid');
       el.removeAttribute('title');
       await refreshResult();
@@ -660,9 +823,14 @@ export async function renderSheet(root) {
 
   async function addLine(kind, gid, nameField) {
     await guard(async () => {
-      const res = await api.createSheetRow(pid, kind, { group_id: gid, [nameField]: t('sheet_new_line', 'New line') });
+      const res = await api.createSheetRow(pid, kind, {
+        group_id: gid,
+        [nameField]: t('sheet_new_line', 'New line'),
+      });
       await reload();
-      const first = document.querySelector(`[data-kind="${kind}"][data-id="${res.data.id}"][data-field="${nameField}"]`);
+      const first = document.querySelector(
+        `[data-kind="${kind}"][data-id="${res.data.id}"][data-field="${nameField}"]`,
+      );
       first?.focus();
       first?.select?.();
     });
@@ -672,7 +840,15 @@ export async function renderSheet(root) {
     const parent = ctx.sheet.groups.find((g) => g.id === parentId);
     if (!parent) return;
     const siblings = ctx.sheet.groups.filter((g) => g.parent_id === parentId);
-    const used = siblings.map((g) => Number(String(g.code || '').split('.').pop())).filter((n) => Number.isFinite(n));
+    const used = siblings
+      .map((g) =>
+        Number(
+          String(g.code || '')
+            .split('.')
+            .pop(),
+        ),
+      )
+      .filter((n) => Number.isFinite(n));
     const code = `${parent.code || 'S'}.${(used.length ? Math.max(...used) : 0) + 1}`;
     // The same first four columns as the Excel row: name (ระบุ) · count (จำนวนประชากร) · unit (หน่วย) · activity (กิจกรรม/ทรัพยากร)
     const body = `
@@ -693,7 +869,11 @@ export async function renderSheet(root) {
       </form>`;
     const footer = `<button class="btn btn-secondary" data-modal-close>${t('cancel', 'Cancel')}</button>
       <button class="btn btn-primary" id="btnCreateSub">${t('sheet_sub_create', 'Add stakeholder')}</button>`;
-    openModal({ title: `${t('sheet_sub_modal_title', 'Add a stakeholder')} → ${parent.code || ''}`, body, footer });
+    openModal({
+      title: `${t('sheet_sub_modal_title', 'Add a stakeholder')} → ${parent.code || ''}`,
+      body,
+      footer,
+    });
     const form = document.getElementById('subForm');
     form.name.focus();
     const submit = async () => {
@@ -714,14 +894,19 @@ export async function renderSheet(root) {
         const res = await api.createSheetRow(pid, 'groups', payload);
         closeModal();
         await reload();
-        document.querySelector(`.grp-card[data-gid="${res.data.id}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        document
+          .querySelector(`.grp-card[data-gid="${res.data.id}"]`)
+          ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         setStatus('ok', `${t('sheet_sub_created', 'Stakeholder added')}: ${code} ${name}`);
       } catch (e) {
         err.textContent = Object.values(e.details || {}).join(' · ') || e.message;
         err.style.display = 'block';
       }
     };
-    form.addEventListener('submit', (e) => { e.preventDefault(); submit(); });
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      submit();
+    });
     document.getElementById('btnCreateSub').addEventListener('click', submit);
   }
 
@@ -729,7 +914,11 @@ export async function renderSheet(root) {
     confirmModal({
       title: t('sheet_delete_line', 'Delete this line'),
       message: t('sheet_confirm_delete_line', 'Delete this line?'),
-      onConfirm: () => guard(async () => { await api.deleteSheetRow(pid, kind, id); await reload(); }),
+      onConfirm: () =>
+        guard(async () => {
+          await api.deleteSheetRow(pid, kind, id);
+          await reload();
+        }),
     });
   }
 
@@ -737,7 +926,11 @@ export async function renderSheet(root) {
     confirmModal({
       title: t('sheet_delete_group', 'Delete this group'),
       message: t('sheet_confirm_delete_group', 'Delete this group?'),
-      onConfirm: () => guard(async () => { await api.deleteSheetRow(pid, 'groups', gid); await reload(); }),
+      onConfirm: () =>
+        guard(async () => {
+          await api.deleteSheetRow(pid, 'groups', gid);
+          await reload();
+        }),
     });
   }
 
@@ -746,7 +939,13 @@ export async function renderSheet(root) {
   function openColumnModal(band, existing) {
     const isEdit = !!existing;
     const b = existing ? existing.band : band;
-    const types = [['text', 'sheet_col_type_text'], ['number', 'sheet_col_type_number'], ['percent', 'sheet_col_type_percent'], ['date', 'sheet_col_type_date'], ['select', 'sheet_col_type_select']];
+    const types = [
+      ['text', 'sheet_col_type_text'],
+      ['number', 'sheet_col_type_number'],
+      ['percent', 'sheet_col_type_percent'],
+      ['date', 'sheet_col_type_date'],
+      ['select', 'sheet_col_type_select'],
+    ];
     const canCount = b === 'input' || b === 'outcome';
     const body = `
       <form id="sheetColForm" class="stack" style="gap: var(--sp-md);">
@@ -755,13 +954,17 @@ export async function renderSheet(root) {
         <div class="form-grid">
           <div class="field"><label class="field-label">${t('sheet_col_type', 'Data type')}</label>
             <select class="input" name="data_type">${types.map(([v, k]) => `<option value="${v}" ${existing?.data_type === v ? 'selected' : ''}>${t(k, v)}</option>`).join('')}</select></div>
-          ${canCount ? `<div class="field" id="countsWrap"><label class="field-label">${t('sheet_col_counts', 'Use in the calculation?')}</label>
+          ${
+            canCount
+              ? `<div class="field" id="countsWrap"><label class="field-label">${t('sheet_col_counts', 'Use in the calculation?')}</label>
             <select class="input" name="counts_toward">
               <option value="none" ${existing?.counts_toward === 'none' || !existing ? 'selected' : ''}>${t('sheet_col_counts_none', '')}</option>
               <option value="${b}" ${existing && existing.counts_toward !== 'none' ? 'selected' : ''}>${t(b === 'input' ? 'sheet_col_counts_input' : 'sheet_col_counts_outcome', '')}</option>
             </select></div>
           <div class="field" id="countInWrap"><label class="field-label">${t('sheet_col_count_in', 'Counts in year')}</label>
-            <select class="input" name="count_in"><option value="y0" ${existing?.count_in !== 'y1' ? 'selected' : ''}>Y0</option><option value="y1" ${existing?.count_in === 'y1' ? 'selected' : ''}>Y1</option></select></div>` : ''}
+            <select class="input" name="count_in"><option value="y0" ${existing?.count_in !== 'y1' ? 'selected' : ''}>Y0</option><option value="y1" ${existing?.count_in === 'y1' ? 'selected' : ''}>Y1</option></select></div>`
+              : ''
+          }
         </div>
         <div class="field" id="optionsWrap" style="display:none;"><label class="field-label">${t('sheet_col_options', 'Choices (one per line)')}</label>
           <textarea class="input" name="options" rows="4">${esc((existing?.options || []).join('\n'))}</textarea></div>
@@ -794,7 +997,11 @@ export async function renderSheet(root) {
       const numeric = type === 'number' || type === 'percent';
       const data = { label: form.label.value.trim(), data_type: type };
       if (!isEdit) data.band = b;
-      if (type === 'select') data.options = form.options.value.split('\n').map((x) => x.trim()).filter(Boolean);
+      if (type === 'select')
+        data.options = form.options.value
+          .split('\n')
+          .map((x) => x.trim())
+          .filter(Boolean);
       if (canCount) {
         data.counts_toward = numeric ? form.counts_toward.value : 'none';
         data.count_in = form.count_in.value;
@@ -818,7 +1025,11 @@ export async function renderSheet(root) {
       confirmModal({
         title: t('sheet_col_delete', 'Delete this topic'),
         message: t('sheet_col_delete_confirm', ''),
-        onConfirm: () => guard(async () => { await api.deleteSheetRow(pid, 'columns', existing.id); await reload(); }),
+        onConfirm: () =>
+          guard(async () => {
+            await api.deleteSheetRow(pid, 'columns', existing.id);
+            await reload();
+          }),
       });
     });
   }
@@ -828,7 +1039,10 @@ export async function renderSheet(root) {
   async function saveRun() {
     await guard(async () => {
       const res = await api.calculateSheet(pid);
-      setStatus('ok', `${t('sheet_saved_run', 'Calculation saved')} · SROI ${fmtRatio(res.data.result.sroi)}`);
+      setStatus(
+        'ok',
+        `${t('sheet_saved_run', 'Calculation saved')} · SROI ${fmtRatio(res.data.result.sroi)}`,
+      );
     });
   }
 
@@ -848,7 +1062,9 @@ export async function renderSheet(root) {
       // an action may have posted its own confirmation (e.g. "Calculation saved"): keep it
       if (document.getElementById('sheetStatus')?.dataset.state !== 'ok') setStatus('saved');
     } catch (err) {
-      const detail = Object.values(err.details || {}).filter((x) => typeof x === 'string').join(' · ');
+      const detail = Object.values(err.details || {})
+        .filter((x) => typeof x === 'string')
+        .join(' · ');
       setStatus('error', detail || err.message);
     }
   }
@@ -863,8 +1079,20 @@ export async function renderSheet(root) {
     if (!el) return;
     clearTimeout(ctx.statusTimer);
     el.dataset.state = state;
-    el.textContent = state === 'saving' ? t('sheet_saving', 'Saving…') : state === 'saved' ? `✓ ${t('sheet_saved', 'Saved')}` : msg;
-    if (state === 'saved' || state === 'ok') ctx.statusTimer = setTimeout(() => { el.textContent = ''; el.dataset.state = ''; }, state === 'ok' ? 6000 : 1800);
+    el.textContent =
+      state === 'saving'
+        ? t('sheet_saving', 'Saving…')
+        : state === 'saved'
+          ? `✓ ${t('sheet_saved', 'Saved')}`
+          : msg;
+    if (state === 'saved' || state === 'ok')
+      ctx.statusTimer = setTimeout(
+        () => {
+          el.textContent = '';
+          el.dataset.state = '';
+        },
+        state === 'ok' ? 6000 : 1800,
+      );
   }
 
   function captureScroll() {

@@ -100,18 +100,17 @@
 }
 
 /* Black Theme Overrides */
-[data-theme="black"] .app {
+[data-theme='black'] .app {
   background:
-    radial-gradient(900px 500px at 0% 0%, rgba(37, 99, 235, 0.12), transparent 70%),
-    #000000;
+    radial-gradient(900px 500px at 0% 0%, rgba(37, 99, 235, 0.12), transparent 70%), #000000;
 }
 
-[data-theme="black"] .table th {
+[data-theme='black'] .table th {
   background: rgba(59, 130, 246, 0.12);
   color: var(--primary-strong);
 }
 
-[data-theme="black"] .modal-overlay {
+[data-theme='black'] .modal-overlay {
   background: rgba(0, 0, 0, 0.75);
 }
 
@@ -140,8 +139,16 @@
   flex-direction: column;
   overflow: hidden;
   background:
-    radial-gradient(240px 220px at 0% 0%, color-mix(in srgb, var(--primary) 32%, transparent), transparent 70%),
-    radial-gradient(200px 260px at 100% 100%, color-mix(in srgb, var(--primary) 14%, transparent), transparent 70%),
+    radial-gradient(
+      240px 220px at 0% 0%,
+      color-mix(in srgb, var(--primary) 32%, transparent),
+      transparent 70%
+    ),
+    radial-gradient(
+      200px 260px at 100% 100%,
+      color-mix(in srgb, var(--primary) 14%, transparent),
+      transparent 70%
+    ),
     linear-gradient(180deg, color-mix(in srgb, var(--shell-bg) 96%, #fff 4%), var(--shell-bg));
   box-shadow: 8px 0 32px -12px rgba(0, 0, 0, 0.45);
 }
@@ -154,7 +161,12 @@
   bottom: 0;
   width: 1px;
   pointer-events: none;
-  background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--primary) 70%, transparent) 30%, transparent 75%);
+  background: linear-gradient(
+    180deg,
+    transparent,
+    color-mix(in srgb, var(--primary) 70%, transparent) 30%,
+    transparent 75%
+  );
   opacity: 0.55;
 }
 
@@ -200,7 +212,9 @@
   gap: 1px;
   min-width: 0;
   line-height: 1.15;
-  transition: opacity 200ms var(--ease), transform 300ms var(--ease);
+  transition:
+    opacity 200ms var(--ease),
+    transform 300ms var(--ease);
 }
 
 .brand-name {
@@ -251,7 +265,11 @@
   width: 100%;
   height: 0;
   border-radius: var(--radius-lg);
-  background: linear-gradient(135deg, var(--primary), color-mix(in srgb, var(--primary) 70%, #7c3aed));
+  background: linear-gradient(
+    135deg,
+    var(--primary),
+    color-mix(in srgb, var(--primary) 70%, #7c3aed)
+  );
   box-shadow:
     0 8px 20px -6px color-mix(in srgb, var(--primary) 70%, transparent),
     inset 0 1px 0 rgba(255, 255, 255, 0.22);
@@ -314,7 +332,10 @@
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 200px;
-  transition: opacity 200ms var(--ease), max-width 300ms var(--ease), transform 300ms var(--ease);
+  transition:
+    opacity 200ms var(--ease),
+    max-width 300ms var(--ease),
+    transform 300ms var(--ease);
 }
 
 .nav-item:hover {
@@ -464,7 +485,9 @@
   opacity: 0;
   pointer-events: none;
   transform: translate(-6px, -50%);
-  transition: opacity 150ms var(--ease), transform 200ms var(--ease);
+  transition:
+    opacity 150ms var(--ease),
+    transform 200ms var(--ease);
   display: none;
 }
 
@@ -480,24 +503,48 @@
 
 /* ---------- Keyframes ---------- */
 @keyframes sbSlideIn {
-  from { opacity: 0; transform: translateX(-16px); }
-  to   { opacity: 1; transform: translateX(0); }
+  from {
+    opacity: 0;
+    transform: translateX(-16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 @keyframes sbFadeDown {
-  from { opacity: 0; transform: translateY(-12px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes sbFadeUp {
-  from { opacity: 0; transform: translateY(12px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes sbPulse {
-  0%   { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.55); }
-  70%  { box-shadow: 0 0 0 8px rgba(34, 197, 94, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+  0% {
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.55);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgba(34, 197, 94, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

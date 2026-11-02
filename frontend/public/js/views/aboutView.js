@@ -44,7 +44,10 @@ const stepsCard = (data) =>
     body: `<div class="about-steps">${data.steps.map(stepItem).join('')}</div>`,
   });
 
-const termItem = (data, { symbol, title, subtitle, description, example }) => `<article class="about-term">
+const termItem = (
+  data,
+  { symbol, title, subtitle, description, example },
+) => `<article class="about-term">
   <span class="about-term-symbol">${symbol}</span>
   <div>
     <h3>${title} <span>${subtitle}</span></h3>

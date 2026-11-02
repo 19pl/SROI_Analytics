@@ -109,22 +109,34 @@ const reportsBody = () =>
 const PAGES = {
   projects: {
     title: ['projects_title', 'Projects Workspace'],
-    subtitle: ['projects_subtitle', 'Manage social return on investment assessments and select plans for evaluation'],
+    subtitle: [
+      'projects_subtitle',
+      'Manage social return on investment assessments and select plans for evaluation',
+    ],
     body: projectsBody,
   },
   org: {
     title: ['org_title', 'Faculties & Departments Hierarchy'],
-    subtitle: ['org_subtitle', 'Manage university organizational structure and configure SROI plan ownership at Naresuan University'],
+    subtitle: [
+      'org_subtitle',
+      'Manage university organizational structure and configure SROI plan ownership at Naresuan University',
+    ],
     body: orgBody,
   },
   reports: {
     title: ['reports_title', 'Reports & Audit Log'],
-    subtitle: ['reports_subtitle', 'Audit trail of model snapshots, sensitivity checks, and formal export records'],
+    subtitle: [
+      'reports_subtitle',
+      'Audit trail of model snapshots, sensitivity checks, and formal export records',
+    ],
     body: reportsBody,
   },
   facultyReport: {
     title: ['faculty_report_title', 'Faculty Consolidated SROI Report'],
-    subtitle: ['faculty_report_subtitle', 'Multi-plan portfolio analysis across faculty-owned and department-owned SROI assessments'],
+    subtitle: [
+      'faculty_report_subtitle',
+      'Multi-plan portfolio analysis across faculty-owned and department-owned SROI assessments',
+    ],
     body: () => emptyCard(),
   },
 };
@@ -147,5 +159,12 @@ export function renderGuestPage(root, page) {
 /** Guest content for one calculator step (the stepper and help panel around it stay as they are). */
 export function guestStepHtml(stepNum) {
   const s = STEPS[stepNum - 1] || STEPS[0];
-  return guestBannerHtml() + card({ title: t(s.labelKey, s.label), description: t(s.descKey, s.desc), body: emptyStateHtml() });
+  return (
+    guestBannerHtml() +
+    card({
+      title: t(s.labelKey, s.label),
+      description: t(s.descKey, s.desc),
+      body: emptyStateHtml(),
+    })
+  );
 }

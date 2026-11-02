@@ -1,11 +1,13 @@
 /**
- * ImpactValue SROI 6-Stage Guided Wizard View
+ * ImpactValue SROI Guided Wizard View
+ * Supports Step 0 (Welcome & Preparation) followed by Stages 1 to 6
  */
 
-import { getState, subscribe } from '../store.js';
+import { getState } from '../store.js';
 import { stepperHtml } from '../components/stepper.js';
 import { renderHelpPanel } from '../components/helpPanel.js';
 import { isGuest, guestStepHtml } from '../components/guestNotice.js';
+import { renderStep0 } from './steps/step0Welcome.js';
 import { renderStep1 } from './steps/step1Project.js';
 import { renderStep2 } from './steps/step2Stakeholders.js';
 import { renderStep3 } from './steps/step3Outcomes.js';
@@ -13,10 +15,11 @@ import { renderStep4 } from './steps/step4Adjustments.js';
 import { renderStep5 } from './steps/step5Review.js';
 import { renderStep6 } from './steps/step6Dashboard.js';
 import { renderSheet } from './sheetView.js';
+import { t } from '../i18n.js';
 
 export function renderCalculator(root) {
-  const hash = window.location.hash || '#/wizard/step-1';
-  let stepNum = 1;
+  const hash = window.location.hash || '#/wizard/step-0';
+  let stepNum = 0;
   const match = hash.match(/step-(\d)/);
   if (match) {
     stepNum = parseInt(match[1], 10);
@@ -24,7 +27,7 @@ export function renderCalculator(root) {
     stepNum = 1;
   }
 
-  const { project } = getState();
+  const { project, costs, stakeholders, outcomes, review } = getState();
 
   // Sheet-mode plans (Excel-style entry) have their own single-page view; wizard plans are unchanged.
   if (project?.calc_method === 'sheet' && !isGuest()) {
@@ -32,9 +35,20 @@ export function renderCalculator(root) {
     return;
   }
 
+  // Calculate completed steps dynamically based on store state
+  const completedSteps = [];
+  if (project) {
+    completedSteps.push(0); // Welcome reviewed
+    if (costs && costs.length > 0) completedSteps.push(1);
+    if (stakeholders && stakeholders.length > 0) completedSteps.push(2);
+    if (outcomes && outcomes.length > 0) completedSteps.push(3);
+    if (review?.completion?.adjustments) completedSteps.push(4);
+    if (review?.ready) completedSteps.push(5);
+  }
+
   root.innerHTML = `
     <div class="wizard-container">
-      ${stepperHtml(stepNum, [1])}
+      ${stepperHtml(stepNum, completedSteps)}
 
       <div class="wizard-content-layout">
         <div id="wizardStepContent" class="stack"></div>
@@ -48,6 +62,23 @@ export function renderCalculator(root) {
 
   renderHelpPanel(helpContainer, stepNum);
 
+  // If no project is selected at all, prompt user to select or create a project
+  if (!project && !isGuest()) {
+    contentContainer.innerHTML = `
+      <div class="card" style="padding: var(--sp-2xl); text-align: center;">
+        <div style="font-size: 2.5rem; margin-bottom: 12px;">📂</div>
+        <h2 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 8px;">${t('no_active_project_title', 'ยังไม่ได้เลือกแผนงานที่ต้องการประเมิน')}</h2>
+        <p class="muted" style="max-width: 500px; margin: 0 auto 20px auto; font-size: 0.875rem;">
+          ${t('no_active_project_desc', 'กรุณาเลือกโครงการจากรายการโครงการ หรือสร้างแผนงานใหม่เพื่อเริ่มต้นการประเมิน SROI')}
+        </p>
+        <div style="display: flex; gap: var(--sp-md); justify-content: center;">
+          <a href="#/projects" class="btn btn-primary">${t('go_to_projects', 'ไปยังรายการโครงการ (Projects Workspace)')}</a>
+        </div>
+      </div>
+    `;
+    return;
+  }
+
   // Guests see the stepper, help text and a description of the step; the forms need project data
   if (isGuest()) {
     contentContainer.innerHTML = guestStepHtml(stepNum);
@@ -56,6 +87,9 @@ export function renderCalculator(root) {
 
   // Render Step View
   switch (stepNum) {
+    case 0:
+      renderStep0(contentContainer);
+      break;
     case 1:
       renderStep1(contentContainer);
       break;

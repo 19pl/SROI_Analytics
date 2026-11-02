@@ -83,9 +83,10 @@ export async function renderOrg(root) {
     try {
       const res = await api.getOrganizations();
       organizations = res.data || [];
-      const nuOrg = organizations.find((o) =>
-        o.name.toLowerCase().includes('naresuan') || o.name.includes('นเรศวร')
-      ) || organizations[0] || { id: 1, name: 'มหาวิทยาลัยนเรศวร (Naresuan University)' };
+      const nuOrg = organizations.find(
+        (o) => o.name.toLowerCase().includes('naresuan') || o.name.includes('นเรศวร'),
+      ) ||
+        organizations[0] || { id: 1, name: 'มหาวิทยาลัยนเรศวร (Naresuan University)' };
 
       currentOrgId = Number(nuOrg.id);
       if (orgDisplayName) {
@@ -124,7 +125,10 @@ export async function renderOrg(root) {
       allMembers = members;
 
       // Update stat counters
-      const totalDepts = allFaculties.reduce((acc, f) => acc + (f.departments ? f.departments.length : 0), 0);
+      const totalDepts = allFaculties.reduce(
+        (acc, f) => acc + (f.departments ? f.departments.length : 0),
+        0,
+      );
       if (statFacCount) statFacCount.textContent = allFaculties.length;
       if (statDeptCount) statDeptCount.textContent = totalDepts;
       if (statMemCount) statMemCount.textContent = allMembers.length;
@@ -213,9 +217,10 @@ export async function renderOrg(root) {
     const searchInput = document.getElementById('searchFacultyInput');
     searchInput?.addEventListener('input', (e) => {
       const q = e.target.value.toLowerCase().trim();
-      const filtered = faculties.filter((f) =>
-        f.name.toLowerCase().includes(q) ||
-        (f.description && f.description.toLowerCase().includes(q))
+      const filtered = faculties.filter(
+        (f) =>
+          f.name.toLowerCase().includes(q) ||
+          (f.description && f.description.toLowerCase().includes(q)),
       );
       const container = document.getElementById('facultyCardsList');
       if (container) {
@@ -224,9 +229,15 @@ export async function renderOrg(root) {
       }
     });
 
-    document.getElementById('btnSubAddFaculty')?.addEventListener('click', () => openCreateFacultyModal(orgId));
-    document.getElementById('btnEmptyAddFac')?.addEventListener('click', () => openCreateFacultyModal(orgId));
-    document.getElementById('btnAddMember')?.addEventListener('click', () => openAddMemberModal(orgId));
+    document
+      .getElementById('btnSubAddFaculty')
+      ?.addEventListener('click', () => openCreateFacultyModal(orgId));
+    document
+      .getElementById('btnEmptyAddFac')
+      ?.addEventListener('click', () => openCreateFacultyModal(orgId));
+    document
+      .getElementById('btnAddMember')
+      ?.addEventListener('click', () => openAddMemberModal(orgId));
   }
 
   function renderFacultyCards(faculties) {
@@ -350,7 +361,10 @@ export async function renderOrg(root) {
         const facId = Number(btn.dataset.deleteFac);
         confirmModal({
           title: t('btn_delete', 'Delete Faculty'),
-          message: t('confirm_delete_fac', 'Are you sure you want to delete this faculty? If it or its departments own any plans, deletion will be blocked to protect data.'),
+          message: t(
+            'confirm_delete_fac',
+            'Are you sure you want to delete this faculty? If it or its departments own any plans, deletion will be blocked to protect data.',
+          ),
           onConfirm: async () => {
             try {
               await api.deleteFaculty(facId);
@@ -374,7 +388,10 @@ export async function renderOrg(root) {
         const deptId = Number(btn.dataset.deleteDept);
         confirmModal({
           title: t('btn_delete', 'Delete Department'),
-          message: t('confirm_delete_dept', 'Are you sure you want to delete this department? If it owns any plans, deletion will be blocked.'),
+          message: t(
+            'confirm_delete_dept',
+            'Are you sure you want to delete this department? If it owns any plans, deletion will be blocked.',
+          ),
           onConfirm: async () => {
             try {
               await api.deleteDepartment(deptId);

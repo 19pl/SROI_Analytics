@@ -524,8 +524,12 @@
   transition: width 300ms var(--ease);
 }
 
-.hbar-fill-pos { background: var(--positive); }
-.hbar-fill-neg { background: var(--negative); }
+.hbar-fill-pos {
+  background: var(--positive);
+}
+.hbar-fill-neg {
+  background: var(--negative);
+}
 
 .hbar-val {
   font-size: 0.8125rem;
@@ -557,3 +561,160 @@
   border-left: 4px solid var(--info);
 }
 
+/* ---------- Guided Workflow & Wizard Footer ---------- */
+.wizard-footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 50;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--sp-md);
+  padding: var(--sp-md) var(--sp-lg);
+  background: var(--surface-card);
+  border: 1px solid var(--outline);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.06);
+  backdrop-filter: blur(8px);
+  margin-top: var(--sp-xl);
+}
+
+.wizard-footer-left,
+.wizard-footer-right {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-sm);
+}
+
+.wizard-footer-center {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-md);
+  font-size: 0.8125rem;
+}
+
+.save-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 3px 8px;
+  border-radius: var(--radius-full);
+}
+
+.save-status.is-saved {
+  background: rgba(46, 125, 50, 0.1);
+  color: var(--positive);
+}
+
+.save-status.is-saving {
+  background: rgba(237, 108, 2, 0.1);
+  color: var(--warning);
+}
+
+.step-welcome .step-num {
+  background: rgba(25, 118, 210, 0.1);
+  color: var(--primary);
+}
+
+@media (max-width: 768px) {
+  .wizard-footer {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--sp-sm);
+  }
+  .wizard-footer-center {
+    justify-content: center;
+    order: -1;
+  }
+  .wizard-footer-left,
+  .wizard-footer-right {
+    width: 100%;
+  }
+  .wizard-footer-left a,
+  .wizard-footer-left button,
+  .wizard-footer-right a,
+  .wizard-footer-right button {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* Activity vs Outcome Comparison Table */
+.edu-compare-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.8125rem;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border: 1px solid var(--outline);
+}
+
+.edu-compare-table th {
+  background: var(--surface-soft);
+  padding: 8px 12px;
+  text-align: left;
+  font-weight: 600;
+  color: var(--on-background);
+  border-bottom: 1px solid var(--outline);
+}
+
+.edu-compare-table td {
+  padding: 10px 12px;
+  vertical-align: top;
+  border-bottom: 1px solid var(--outline);
+  line-height: 1.4;
+}
+
+.edu-compare-table tr:last-child td {
+  border-bottom: none;
+}
+
+.edu-compare-table .badge-activity {
+  background: #e0e0e0;
+  color: #424242;
+  font-size: 0.6875rem;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+}
+
+.edu-compare-table .badge-outcome {
+  background: rgba(46, 125, 50, 0.15);
+  color: var(--positive);
+  font-weight: 600;
+  font-size: 0.6875rem;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+}
+
+/* Collapsible Section Accordion */
+.accordion-box {
+  border: 1px solid var(--outline);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--surface-card);
+}
+
+.accordion-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: var(--surface-soft);
+  cursor: pointer;
+  user-select: none;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--on-background);
+}
+
+.accordion-header:hover {
+  background: rgba(0, 0, 0, 0.03);
+}
+
+.accordion-content {
+  padding: var(--sp-lg);
+  border-top: 1px solid var(--outline);
+}

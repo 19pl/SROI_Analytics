@@ -96,9 +96,10 @@ export async function renderProjects(root) {
   try {
     const orgRes = await api.getOrganizations();
     organizations = orgRes.data || [];
-    const nuOrg = organizations.find((o) =>
-      o.name.toLowerCase().includes('naresuan') || o.name.includes('นเรศวร')
-    ) || organizations[0] || { id: 1, name: 'มหาวิทยาลัยนเรศวร (Naresuan University)' };
+    const nuOrg = organizations.find(
+      (o) => o.name.toLowerCase().includes('naresuan') || o.name.includes('นเรศวร'),
+    ) ||
+      organizations[0] || { id: 1, name: 'มหาวิทยาลัยนเรศวร (Naresuan University)' };
 
     nuOrgId = nuOrg.id;
     await loadFacultiesForOrg(Number(nuOrg.id));
@@ -151,10 +152,11 @@ export async function renderProjects(root) {
     const q = (searchInput?.value || '').toLowerCase().trim();
     let filtered = allProjects;
     if (q) {
-      filtered = filtered.filter((p) =>
-        (p.name && p.name.toLowerCase().includes(q)) ||
-        (p.description && p.description.toLowerCase().includes(q)) ||
-        (p.category && p.category.toLowerCase().includes(q))
+      filtered = filtered.filter(
+        (p) =>
+          (p.name && p.name.toLowerCase().includes(q)) ||
+          (p.description && p.description.toLowerCase().includes(q)) ||
+          (p.category && p.category.toLowerCase().includes(q)),
       );
     }
     renderTable(filtered);
@@ -184,7 +186,9 @@ export async function renderProjects(root) {
           <button class="btn btn-primary" id="btnCreateFirstProject">${icons.plus} ${t('btn_new_plan', 'New SROI Plan')}</button>
         </div>
       `;
-      document.getElementById('btnCreateFirstProject')?.addEventListener('click', triggerCreateModal);
+      document
+        .getElementById('btnCreateFirstProject')
+        ?.addEventListener('click', triggerCreateModal);
       return;
     }
 
@@ -223,7 +227,9 @@ export async function renderProjects(root) {
                   const sroiVal = hasSroi ? Number(p.latest_run.sroi_ratio) : null;
                   const sroiText = hasSroi ? `${sroiVal.toFixed(2)} : 1` : '-';
                   const sroiColor = hasSroi
-                    ? sroiVal >= 1 ? 'var(--positive)' : 'var(--warning)'
+                    ? sroiVal >= 1
+                      ? 'var(--positive)'
+                      : 'var(--warning)'
                     : 'var(--muted)';
 
                   return `
@@ -300,7 +306,7 @@ export async function renderProjects(root) {
       faculties,
       onCreated: async (newP) => {
         await loadProject(newP.id);
-        window.location.hash = '#/wizard/step-1';
+        window.location.hash = newP.calc_method === 'sheet' ? '#/wizard/step-1' : '#/wizard/step-0';
       },
     });
   };
@@ -319,11 +325,14 @@ function openCreateProjectModal({ currentOrgId, faculties, onCreated }) {
       </div>
 
       <div class="field">
-        <label class="field-label">${t('sheet_mode_label', 'Entry style')}</label>
+        <label class="field-label">${t('sheet_mode_label', 'รูปแบบการทำงาน (Assessment Method)')}</label>
         <select name="calc_method" class="input">
-          <option value="sheet" selected>${t('sheet_mode_sheet', 'Sheet (like Excel) — recommended')}</option>
-          <option value="wizard">${t('sheet_mode_wizard', 'Step-by-step wizard (6 steps)')}</option>
+          <option value="wizard" selected>${t('sheet_mode_wizard', 'ระบบแนะนำทีละขั้นตอน (Guided Assistant) — แนะนำสำหรับผู้เริ่มต้น')}</option>
+          <option value="sheet">${t('sheet_mode_sheet', 'ตารางคำนวณแบบสเปรดชีต (Sheet Mode) — สำหรับผู้มีไฟล์ Excel แล้ว')}</option>
         </select>
+        <span class="muted" style="font-size: 0.75rem; margin-top: 4px; display: block;">
+          💡 ระบบแนะนำทีละขั้นตอนจะช่วยอธิบายความหมายของแต่ละช่อง แนะนำการแปลงกิจกรรมเป็นผลลัพธ์ และตรวจสอบความถูกต้องให้อัตโนมัติ
+        </span>
       </div>
 
       <div class="field">
@@ -490,7 +499,9 @@ function openCreateProjectModal({ currentOrgId, faculties, onCreated }) {
       description: form.description.value.trim(),
       faculty_id,
       department_id,
-      assessment_months: form.assessment_months.value ? parseInt(form.assessment_months.value, 10) : null,
+      assessment_months: form.assessment_months.value
+        ? parseInt(form.assessment_months.value, 10)
+        : null,
       calc_method: form.calc_method.value,
     };
 

@@ -39,7 +39,8 @@ function renderNav() {
       '<span class="nav-indicator" aria-hidden="true"></span>' +
       routes
         .filter((r) => !r.hidden && !(r.path === '#/auth' && !getCurrentUser())) // account page is for signed-in users
-        .map(navItemHtml).join('');
+        .map(navItemHtml)
+        .join('');
     navEl.classList.add('has-indicator');
   }
 }
@@ -122,7 +123,8 @@ function updateHeader() {
   // Header account button: "Sign in" for guests, name + role for signed-in users
   const accountBtn = $('headerBadge');
   if (accountBtn) {
-    const userIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>';
+    const userIcon =
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>';
     if (user) {
       const role = user.role ? ` · ${escapeHtml(t('role_short_' + user.role, user.role))}` : '';
       accountBtn.innerHTML = `${userIcon}<span>${escapeHtml(user.name || 'Analyst')}${role}</span>`;

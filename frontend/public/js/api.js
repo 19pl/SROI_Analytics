@@ -46,7 +46,10 @@ function notifyAuth() {
 /** Add the person's highest role (from their organizations) to the user object, for the header. */
 export function userWithRole(user, organizations = []) {
   const rank = { viewer: 1, editor: 2, owner: 3 };
-  const role = organizations.reduce((best, o) => (rank[o.role] > (rank[best] || 0) ? o.role : best), null);
+  const role = organizations.reduce(
+    (best, o) => (rank[o.role] > (rank[best] || 0) ? o.role : best),
+    null,
+  );
   return { ...user, role };
 }
 
@@ -156,8 +159,7 @@ export const api = {
   meta: () => request('/meta'),
 
   // Auth (there is no register: accounts are created by an administrator with `php bin/user.php add`)
-  login: (email, password) =>
-    request('/auth/login', { method: 'POST', body: { email, password } }),
+  login: (email, password) => request('/auth/login', { method: 'POST', body: { email, password } }),
   me: () => request('/auth/me'),
   /** Sign out. Always ends up signed out locally, even if the server could not be reached. */
   logout: async () => {
@@ -206,8 +208,7 @@ export const api = {
   getFaculty: (facultyId) => request(`/faculties/${facultyId}`),
   updateFaculty: (facultyId, data) =>
     request(`/faculties/${facultyId}`, { method: 'PATCH', body: data }),
-  deleteFaculty: (facultyId) =>
-    request(`/faculties/${facultyId}`, { method: 'DELETE' }),
+  deleteFaculty: (facultyId) => request(`/faculties/${facultyId}`, { method: 'DELETE' }),
   getFacultyDepartments: (facultyId) => request(`/faculties/${facultyId}/departments`),
   getFacultyReport: (facultyId) => request(`/faculties/${facultyId}/report`),
 
@@ -217,8 +218,7 @@ export const api = {
   getDepartment: (departmentId) => request(`/departments/${departmentId}`),
   updateDepartment: (departmentId, data) =>
     request(`/departments/${departmentId}`, { method: 'PATCH', body: data }),
-  deleteDepartment: (departmentId) =>
-    request(`/departments/${departmentId}`, { method: 'DELETE' }),
+  deleteDepartment: (departmentId) => request(`/departments/${departmentId}`, { method: 'DELETE' }),
 
   // Financial Proxies Library
   getProxies: (category = '', query = '') => {
@@ -250,8 +250,10 @@ export const api = {
 
   // Sheet mode: enter and calculate the plan like the Excel workbooks (backend/database/migrations/005)
   getSheet: (projectId) => request(`/projects/${projectId}/sheet`),
-  startSheetTemplate: (projectId) => request(`/projects/${projectId}/sheet/template`, { method: 'POST' }),
-  calculateSheet: (projectId) => request(`/projects/${projectId}/sheet/calculate`, { method: 'POST' }),
+  startSheetTemplate: (projectId) =>
+    request(`/projects/${projectId}/sheet/template`, { method: 'POST' }),
+  calculateSheet: (projectId) =>
+    request(`/projects/${projectId}/sheet/calculate`, { method: 'POST' }),
   /** kind: groups | inputs | outcomes | columns */
   createSheetRow: (projectId, kind, data) =>
     request(`/projects/${projectId}/sheet/${kind}`, { method: 'POST', body: data }),
@@ -285,7 +287,11 @@ export const api = {
     request(`/projects/${projectId}/outcomes`, { method: 'POST', body: data }),
   updateOutcome: (projectId, id, data, changeReason = null) => {
     const headers = changeReason ? { 'X-Change-Reason': changeReason } : {};
-    return request(`/projects/${projectId}/outcomes/${id}`, { method: 'PATCH', body: data, headers });
+    return request(`/projects/${projectId}/outcomes/${id}`, {
+      method: 'PATCH',
+      body: data,
+      headers,
+    });
   },
   deleteOutcome: (projectId, id) =>
     request(`/projects/${projectId}/outcomes/${id}`, { method: 'DELETE' }),
@@ -294,7 +300,10 @@ export const api = {
   getAdjustment: (projectId, outcomeId) =>
     request(`/projects/${projectId}/outcomes/${outcomeId}/adjustment`),
   saveAdjustment: (projectId, outcomeId, data) =>
-    request(`/projects/${projectId}/outcomes/${outcomeId}/adjustment`, { method: 'PUT', body: data }),
+    request(`/projects/${projectId}/outcomes/${outcomeId}/adjustment`, {
+      method: 'PUT',
+      body: data,
+    }),
   getYearProjections: (projectId, outcomeId) =>
     request(`/projects/${projectId}/outcomes/${outcomeId}/year-projections`),
   saveYearProjections: (projectId, outcomeId, projections) =>
@@ -322,7 +331,10 @@ export const api = {
     return request(`/projects/${projectId}/dashboard${q}`);
   },
   calculateRun: (projectId, scenarioId = null) =>
-    request(`/projects/${projectId}/calculate`, { method: 'POST', body: { scenario_id: scenarioId } }),
+    request(`/projects/${projectId}/calculate`, {
+      method: 'POST',
+      body: { scenario_id: scenarioId },
+    }),
   getRuns: (projectId) => request(`/projects/${projectId}/runs`),
   getRun: (projectId, runId) => request(`/projects/${projectId}/runs/${runId}`),
   getScenarios: (projectId) => request(`/projects/${projectId}/scenarios`),

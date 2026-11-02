@@ -43,14 +43,20 @@ export function stakeholderOptionsHtml(stakeholders, selectedId, esc) {
     const list = stakeholders.filter((s) => s.stakeholder_group === g.key);
     if (!list.length) return '';
     return `<optgroup label="${esc(groupLabel(g))}">${list
-      .map((s) => `<option value="${s.id}" ${Number(selectedId) === s.id ? 'selected' : ''}>${esc(stakeholderLabel(s))}</option>`)
+      .map(
+        (s) =>
+          `<option value="${s.id}" ${Number(selectedId) === s.id ? 'selected' : ''}>${esc(stakeholderLabel(s))}</option>`,
+      )
       .join('')}</optgroup>`;
   });
   const rest = stakeholders.filter((s) => !groupByKey(s.stakeholder_group));
   if (rest.length) {
     parts.push(
       `<optgroup label="${esc(t('grp_none', 'Unclassified'))}">${rest
-        .map((s) => `<option value="${s.id}" ${Number(selectedId) === s.id ? 'selected' : ''}>${esc(stakeholderLabel(s))}</option>`)
+        .map(
+          (s) =>
+            `<option value="${s.id}" ${Number(selectedId) === s.id ? 'selected' : ''}>${esc(stakeholderLabel(s))}</option>`,
+        )
         .join('')}</optgroup>`,
     );
   }

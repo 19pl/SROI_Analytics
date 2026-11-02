@@ -53,7 +53,12 @@ export function closeModal() {
   }
 }
 
-export function confirmModal({ title = 'Confirm Action', message, confirmText = 'Confirm', onConfirm }) {
+export function confirmModal({
+  title = 'Confirm Action',
+  message,
+  confirmText = 'Confirm',
+  onConfirm,
+}) {
   const footer = `
     <button class="btn btn-secondary" data-modal-close>Cancel</button>
     <button class="btn btn-danger" id="modalConfirmBtn">${confirmText}</button>

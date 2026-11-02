@@ -13,7 +13,10 @@ function nextHash() {
   const query = location.hash.split('?')[1] || '';
   const next = new URLSearchParams(query).get('next') || '';
   // only same-app hash routes; never bounce back to the login/account pages or to anything external
-  const allowed = /^#\/[A-Za-z0-9\-_/?=&%.]*$/.test(next) && !next.startsWith('#/login') && !next.startsWith('#/auth');
+  const allowed =
+    /^#\/[A-Za-z0-9\-_/?=&%.]*$/.test(next) &&
+    !next.startsWith('#/login') &&
+    !next.startsWith('#/auth');
   return allowed ? next : '#/projects';
 }
 
@@ -72,7 +75,9 @@ export function renderLogin(root) {
     </div>
   `;
 
-  document.getElementById('loginLang')?.addEventListener('click', () => setLanguage(lang === 'th' ? 'en' : 'th'));
+  document
+    .getElementById('loginLang')
+    ?.addEventListener('click', () => setLanguage(lang === 'th' ? 'en' : 'th'));
 
   const loginForm = document.getElementById('authLoginForm');
   const errBox = document.getElementById('authErrorMsg');

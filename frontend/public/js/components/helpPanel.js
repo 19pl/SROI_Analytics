@@ -1,140 +1,171 @@
 /**
  * Contextual Help & Methodology Panel Component
  * Bilingual support (Thai & English)
+ * Dynamically updates across all steps (0 to 6) and links to the SROI Glossary.
  */
 
-import { getLanguage } from '../i18n.js';
+import { getLanguage, t } from '../i18n.js';
+import { openGlossaryModal } from './glossaryModal.js';
 
 const HELP_CONTENT = {
   th: {
+    0: {
+      title: 'บทนำและการเตรียมตัว',
+      body: `
+        <p>ยินดีต้อนรับสู่ระบบประเมิน SROI ของมหาวิทยาลัยนเรศวร</p>
+        <p><strong>SROI คืออะไร?</strong> เครื่องมือแปลงคุณค่าทางสังคม สุขภาพ และการศึกษา ให้เป็นมูลค่าเทียบเคียงตัวเงิน เพื่อเปรียบเทียบกับงบประมาณลงทุน</p>
+        <p><strong>3 สิ่งที่ควรเตรียม:</strong></p>
+        <ul>
+          <li>ข้อมูลโครงการและงบประมาณที่ใช้</li>
+          <li>กลุ่มคนที่เกี่ยวข้องและจำนวน</li>
+          <li>การเปลี่ยนแปลงจริงที่เกิดขึ้นกับพวกเขา</li>
+        </ul>
+        <p>ระบบบันทึกความคืบหน้าให้อัตโนมัติ สามารถกลับมาทำต่อได้เสมอ</p>
+      `,
+    },
     1: {
       title: 'ขั้นตอนที่ 1: ขอบเขตและเงินลงทุน',
       body: `
-        <p>กำหนดขอบเขตของโครงการ กรอบเวลาในการประเมิน และทรัพยากรเงินลงทุนทั้งหมด</p>
-        <div class="formula-box">เงินลงทุนรวม = Σ (จำนวนเงินแต่ละรายการ × อัตราแลกเปลี่ยน)</div>
-        <p><strong>มูลค่าตามราคาปัจจุบัน vs มูลค่าปัจจุบัน:</strong> หากมีต้นทุนที่เกิดขึ้นในปีอนาคต ให้เลือกว่าจะคิดลดต้นทุนเพื่อเปรียบเทียบในรูปมูลค่าปัจจุบัน (PV) หรือไม่</p>
-        <p><strong>สิ่งสนับสนุนที่ไม่ใช่ตัวเงิน (In-Kind):</strong> สามารถระบุมูลค่าของเวลาอาสาสมัครหรือทรัพยากรที่ได้รับบริจาคได้ เพื่อสะท้อนการลงทุนจริงของสังคม</p>
+        <p>กำหนดขอบเขตโครงการ กรอบเวลาในการประเมิน และทรัพยากรเงินลงทุนทั้งหมด</p>
+        <div class="formula-box">เงินลงทุนรวม = Σ ค่าใช้จ่ายเงินสด + มูลค่าสิ่งสนับสนุน In-Kind</div>
+        <p><strong>เงินลงทุนนับรวมอะไรบ้าง?</strong> งบประมาณจัดกิจกรรม, ค่าตอบแทนวิทยากร, ค่าวัสดุเวชภัณฑ์/อุปกรณ์, รวมถึงเวลาของอาสาสมัคร</p>
+        <p><strong>ระยะเวลาประเมิน:</strong> โครงการทั่วไปนิยมประเมิน 1-3 ปี ขึ้นอยู่กับว่าผลประโยชน์จะส่งผลต่อเนื่องยาวนานเพียงใด</p>
       `,
     },
     2: {
       title: 'ขั้นตอนที่ 2: แผนผังผู้มีส่วนได้ส่วนเสีย',
       body: `
-        <p>ระบุบุคคล ชุมชน และองค์กรทั้งหมดที่ได้รับผลกระทบหรือเกิดการเปลี่ยนแปลงจากโครงการ</p>
-        <p><strong>หลักการ:</strong> มีส่วนร่วมกับผู้มีส่วนได้ส่วนเสียเพื่อเข้าใจสิ่งที่เปลี่ยนแปลงสำหรับพวกเขา ทั้งผลประโยชน์เชิงบวกและผลกระทบทางลบที่ไม่ได้ตั้งใจ</p>
-        <p><strong>ข้อควรระวัง:</strong> ระวังกลุ่มเป้าหมายที่ซ้ำซ้อนกันเพื่อหลีกเลี่ยงการนับคุณค่าทางสังคมซ้ำ (Double-counting)</p>
+        <p>ระบุบุคคล ชุมชน และหน่วยงานที่เกี่ยวข้อง แบ่งตามกลุ่มมาตรฐาน S1–S4:</p>
+        <ul>
+          <li><strong>S1:</strong> กลุ่มเป้าหมาย / ผู้รับประโยชน์หลัก (นิสิต, ชุมชน, ผู้ป่วย)</li>
+          <li><strong>S2:</strong> คณะทำงาน (อาจารย์, นักวิจัย, เจ้าหน้าที่)</li>
+          <li><strong>S3:</strong> หน่วยงานสนับสนุนภายใน (คณะ, กอง, มหาวิทยาลัย)</li>
+          <li><strong>S4:</strong> ภาคีภายนอก (อปท., รพ.สต., ภาคเอกชน)</li>
+        </ul>
+        <p><strong>ข้อควรระวัง:</strong> ระวังกลุ่มเป้าหมายที่ซ้ำซ้อนกันเพื่อหลีกเลี่ยงการนับผลประโยชน์ซ้ำซ้อน (Double-counting)</p>
       `,
     },
     3: {
       title: 'ขั้นตอนที่ 3: ผลลัพธ์และตัวแทนทางการเงิน',
       body: `
-        <p>แยกแยะความแตกต่างระหว่าง:</p>
+        <p><strong>กิจกรรม vs ผลลัพธ์:</strong></p>
         <ul>
-          <li><strong>กิจกรรม (Activity):</strong> จัดอบรม 500 ชั่วโมง</li>
-          <li><strong>ผลผลิต (Output):</strong> มีผู้เข้าร่วมอบรม 200 คน</li>
-          <li><strong>ผลลัพธ์ (Outcome):</strong> ทักษะและรายได้ของผู้เข้าอบรมเพิ่มขึ้นจริง</li>
+          <li><strong>กิจกรรม (Activity):</strong> จัดอบรม 500 ชม.</li>
+          <li><strong>ผลผลิต (Output):</strong> ผู้เข้าอบรม 200 คน</li>
+          <li><strong>ผลลัพธ์ (Outcome):</strong> ทักษะและรายได้เพิ่มขึ้นจริง</li>
         </ul>
-        <div class="formula-box">มูลค่ารวม = จำนวนผู้ได้รับผล × ตัวแทนทางการเงิน (Proxy)</div>
-        <p><strong>ตัวแทนทางการเงิน (Proxy):</strong> การประมาณมูลค่าเงินตราของคุณค่าที่เกิดขึ้น ซึ่งไม่จำเป็นต้องเป็นรายได้ที่เป็นตัวเงินจริง</p>
-        <p><strong>ผลลัพธ์เชิงลบ:</strong> บันทึกความเสียหายหรือผลเสียด้วยเครื่องหมายลบ เพื่อหักออกจากผลกระทบรวม</p>
+        <div class="formula-box">มูลค่าขั้นต้น = จำนวนผู้ได้รับผล × ตัวแทนทางการเงิน (Proxy)</div>
+        <p><strong>ตัวแทนทางการเงิน (Proxy):</strong> มูลค่าประมาณการของคุณค่าทางสังคม เช่น ค่าคอร์สอบรมในตลาด หรือค่ารักษาพยาบาลที่ประหยัดได้</p>
       `,
     },
     4: {
       title: 'ขั้นตอนที่ 4: การปรับปรุงผลกระทบ',
       body: `
-        <p>ตรวจสอบเพื่อให้แน่ใจว่าจะไม่กล่าวอ้างผลลัพธ์เกินจริง:</p>
+        <p>หักลบส่วนที่ไม่ใช่ผลงานของโครงการจริง เพื่อความน่าเชื่อถือทางวิชาการ:</p>
         <ul>
-          <li><strong>Deadweight:</strong> ผลที่น่าจะเกิดขึ้นอยู่แล้วแม้ไม่มีโครงการ</li>
-          <li><strong>Attribution:</strong> ผลที่เกิดจากบุคคลหรือหน่วยงานอื่น</li>
-          <li><strong>Displacement:</strong> ผลที่เพียงแค่ย้ายจากที่หนึ่งไปอีกที่หนึ่ง</li>
+          <li><strong>Deadweight:</strong> สิ่งที่น่าจะเกิดขึ้นอยู่แล้วแม้ไม่มีโครงการ</li>
+          <li><strong>Attribution:</strong> สิ่งที่เกิดจากหน่วยงานอื่นหรือภาคีร่วม</li>
+          <li><strong>Displacement:</strong> ผลลัพธ์ที่ไปย้ายปัญหาหรือสร้างผลเสียให้กลุ่มอื่น</li>
           <li><strong>Drop-off:</strong> อัตราการลดทอนของผลลัพธ์ในแต่ละปี</li>
         </ul>
-        <div class="formula-box">ผลสุทธิ = ผลลัพธ์ × (1-Deadweight) × (1-Attribution) × (1-Displacement)</div>
+        <div class="formula-box">ผลสุทธิ = มูลค่าขั้นต้น × (1-Deadweight) × (1-Attribution) × (1-Displacement)</div>
       `,
     },
     5: {
       title: 'ขั้นตอนที่ 5: ทบทวนและแบบจำลองสถานการณ์',
       body: `
-        <p>ทดสอบความอ่อนไหวของผลลัพธ์ก่อนสรุปผล:</p>
+        <p>ตรวจสอบความสมบูรณ์ของข้อมูลก่อนประมวลผลจริง:</p>
         <ul>
-          <li><strong>แบบระมัดระวัง (Conservative):</strong> ประเมินจำนวนต่ำกว่า, Deadweight สูงกว่า</li>
-          <li><strong>สถานการณ์ปกติ (Base Case):</strong> สมมติฐานหลักตามหลักฐานเชิงประจักษ์</li>
-          <li><strong>สถานการณ์เชิงบวก (Optimistic):</strong> การเข้าถึงและผลลัพธ์ระดับสูงสุดที่เป็นไปได้</li>
+          <li><strong>การแก้ไขจุดติดขัด:</strong> หากมีข้อมูลจำเป็นที่ยังขาด สามารถคลิกปุ่มนำทางเพื่อกลับไปแก้ไขได้ทันที</li>
+          <li><strong>การทดสอบสถานการณ์:</strong> ทดสอบความอ่อนไหวในสถานการณ์ระมัดระวัง (Conservative) หรือเชิงบวก (Optimistic)</li>
+          <li><strong>Tornado Analysis:</strong> ดูว่าตัวแปรใดส่งผลต่ออัตราส่วน SROI มากที่สุด</li>
         </ul>
-        <p><strong>Tornado Analysis:</strong> แสดงให้เห็นว่าตัวแปรใด (อัตราคิดลด, ตัวแทนทางการเงิน, Deadweight) ส่งผลต่ออัตราส่วน SROI มากที่สุด</p>
       `,
     },
     6: {
       title: 'ขั้นตอนที่ 6: แดชบอร์ดและรายงานสรุป',
       body: `
         <div class="formula-box">อัตราส่วน SROI = มูลค่าปัจจุบันของผลประโยชน์รวม ÷ เงินลงทุนรวม</div>
-        <p><strong>มูลค่าปัจจุบันสุทธิ (NPV):</strong> มูลค่าปัจจุบันของผลประโยชน์ − เงินลงทุนรวม</p>
-        <p><strong>การตรวจสอบ (Audit Trail):</strong> ส่งออกรายงานสรุปแบบเป็นทางการ (PDF, Excel) พร้อมบันทึกสมมติฐานและระเบียบวิธีครบถ้วน</p>
+        <p><strong>มูลค่าปัจจุบันสุทธิ (NPV):</strong> มูลค่าผลประโยชน์ทางสังคมรวม − เงินลงทุนทั้งหมด</p>
+        <p><strong>การรายงานผล:</strong> อัตราส่วน SROI ควรนำเสนอควบคู่กับเรื่องเล่าเชิงคุณภาพและพันธกิจของมหาวิทยาลัยเสมอ</p>
       `,
     },
   },
   en: {
+    0: {
+      title: 'Overview & Preparation',
+      body: `
+        <p>Welcome to NU SROI Analytics assessment platform.</p>
+        <p><strong>What is SROI?</strong> A framework for measuring societal value generated per ฿1 of resources invested.</p>
+        <p><strong>3 Things to Prepare:</strong></p>
+        <ul>
+          <li>Project budget and timeline</li>
+          <li>Key people affected (beneficiaries, staff)</li>
+          <li>Actual meaningful changes created</li>
+        </ul>
+      `,
+    },
     1: {
       title: 'Step 1: Scope & Investment',
       body: `
-        <p>Establish the project's boundaries, evaluation timeframe, and all resources invested.</p>
-        <div class="formula-box">Total Investment = Σ (Item Amount × Exchange Rate)</div>
-        <p><strong>Nominal vs Present Value:</strong> If project costs occur in future years, choose whether to compare nominal expenditure or discount investment into present-value terms.</p>
-        <p><strong>In-Kind Inputs:</strong> Volunteer time and donated resources can be included to reflect total societal investment.</p>
+        <p>Establish project boundaries, evaluation timeframe, and all resources invested.</p>
+        <div class="formula-box">Total Investment = Σ Cash Costs + In-Kind Inputs</div>
+        <p><strong>What counts as investment?</strong> Operating budget, equipment, personnel time, and volunteer contributions.</p>
       `,
     },
     2: {
       title: 'Step 2: Stakeholder Mapping',
       body: `
-        <p>Identify all individuals, communities, and organizations that experience material change from the initiative.</p>
-        <p><strong>Principle:</strong> Involve stakeholders to understand what changes for them—both positive benefits and unintended harms.</p>
-        <p><strong>Safeguard:</strong> Watch for overlapping groups to avoid double-counting the same societal value.</p>
+        <p>Identify all individuals, communities, and organizations grouped into S1–S4:</p>
+        <ul>
+          <li><strong>S1:</strong> Primary beneficiaries (students, patients, public)</li>
+          <li><strong>S2:</strong> Project operators (faculty, researchers, staff)</li>
+          <li><strong>S3:</strong> Internal supporters (faculties, university funds)</li>
+          <li><strong>S4:</strong> External partners (local government, clinics)</li>
+        </ul>
       `,
     },
     3: {
       title: 'Step 3: Outcomes & Financial Proxies',
       body: `
-        <p>Differentiate between:</p>
+        <p>Differentiate between Activities and Outcomes:</p>
         <ul>
-          <li><strong>Activity:</strong> Deliver 500 hours tutoring</li>
-          <li><strong>Output:</strong> 200 students attended</li>
-          <li><strong>Outcome:</strong> Measurable improvement in grades</li>
+          <li><strong>Activity:</strong> 500 hours tutoring delivered</li>
+          <li><strong>Output:</strong> 200 participants attended</li>
+          <li><strong>Outcome:</strong> Measurable improvement in skills or income</li>
         </ul>
         <div class="formula-box">Gross Value = Quantity × Financial Proxy</div>
-        <p><strong>Proxy:</strong> An estimate of the monetary value of a change. It is not necessarily cash income.</p>
-        <p><strong>Negative Outcomes:</strong> Record monetized harms with negative polarity so they subtract from total impact.</p>
       `,
     },
     4: {
       title: 'Step 4: Impact Adjustments',
       body: `
-        <p>Ensure the analysis does not over-claim change:</p>
+        <p>Deduct non-additional effects for credibility:</p>
         <ul>
-          <li><strong>Deadweight:</strong> Would have happened anyway without the project.</li>
-          <li><strong>Attribution:</strong> Caused by other programs or people.</li>
-          <li><strong>Displacement:</strong> Merely moved from somewhere else.</li>
-          <li><strong>Drop-off:</strong> Annual fade of the outcome effect.</li>
+          <li><strong>Deadweight:</strong> Would have happened anyway</li>
+          <li><strong>Attribution:</strong> Caused by other partners</li>
+          <li><strong>Displacement:</strong> Moved problems elsewhere</li>
+          <li><strong>Drop-off:</strong> Annual fade of outcome effect</li>
         </ul>
-        <div class="formula-box">Adjusted = Retained × (1-Deadweight) × (1-Attribution) × (1-Displacement)</div>
       `,
     },
     5: {
       title: 'Step 5: Review & Scenarios',
       body: `
-        <p>Test the sensitivity of the results before finalizing:</p>
+        <p>Verify data completeness before calculating:</p>
         <ul>
-          <li><strong>Conservative:</strong> Lower quantities, higher deadweight, shorter horizon.</li>
-          <li><strong>Base case:</strong> Central evidence-based assumptions.</li>
-          <li><strong>Optimistic:</strong> Higher plausible outcome reach.</li>
+          <li><strong>Blocker Resolution:</strong> Click direct links to resolve missing items</li>
+          <li><strong>Scenarios:</strong> Compare Conservative vs Optimistic assumptions</li>
+          <li><strong>Tornado:</strong> Identify parameters with largest swing</li>
         </ul>
-        <p><strong>Tornado Analysis:</strong> Shows which assumption swings (discount rate, proxies, deadweight) most heavily influence the SROI ratio.</p>
       `,
     },
     6: {
       title: 'Step 6: Dashboard & Reports',
       body: `
         <div class="formula-box">SROI Ratio = Present Value of Impact ÷ Total Investment</div>
-        <p><strong>Net Social Value:</strong> Total Present Value − Total Investment.</p>
-        <p><strong>Audit Trail:</strong> Export a formal reproducible report snapshot (PDF, Excel) with complete methodology notes.</p>
+        <p><strong>Net Social Value:</strong> Total Impact Present Value − Total Investment</p>
+        <p><strong>Governance:</strong> SROI estimates should always be paired with qualitative narrative context.</p>
       `,
     },
   },
@@ -142,8 +173,10 @@ const HELP_CONTENT = {
 
 export function renderHelpPanel(container, stepNumber = 1) {
   const lang = getLanguage();
+  const isTh = lang !== 'en';
   const langDict = HELP_CONTENT[lang] || HELP_CONTENT.th;
   const content = langDict[stepNumber] || langDict[1];
+
   container.innerHTML = `
     <div class="help-drawer">
       <div class="help-drawer-title">
@@ -155,6 +188,15 @@ export function renderHelpPanel(container, stepNumber = 1) {
         <span>${content.title}</span>
       </div>
       <div class="help-drawer-body">${content.body}</div>
+      <div style="margin-top: var(--sp-md); pt: var(--sp-sm); border-top: 1px dashed var(--outline); padding-top: 10px;">
+        <button type="button" class="btn btn-secondary btn-drawer-glossary" style="width: 100%; font-size: 0.75rem; justify-content: center;">
+          📖 ${isTh ? 'เปิดพจนานุกรมคำศัพท์ SROI' : 'Open SROI Glossary'}
+        </button>
+      </div>
     </div>
   `;
+
+  container.querySelector('.btn-drawer-glossary')?.addEventListener('click', () => {
+    openGlossaryModal();
+  });
 }

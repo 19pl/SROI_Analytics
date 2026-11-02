@@ -75,7 +75,8 @@ export const translations = {
 
     // Projects Workspace
     projects_title: 'รายการโครงการ',
-    projects_subtitle: 'จัดการการประเมินความคุ้มค่าทางสังคม (SROI) และเลือกแผนงานเพื่อดำเนินการวิเคราะห์',
+    projects_subtitle:
+      'จัดการการประเมินความคุ้มค่าทางสังคม (SROI) และเลือกแผนงานเพื่อดำเนินการวิเคราะห์',
     btn_new_plan: 'สร้างแผนงาน SROI ใหม่',
     filter_org: 'สถาบัน',
     filter_faculty: 'ตัวกรองคณะ',
@@ -110,9 +111,24 @@ export const translations = {
     field_currency: 'สกุลเงิน',
     field_discount_rate: 'อัตราคิดลดต่อปี (%) *',
     field_analysis_period: 'ระยะเวลาประเมิน (ปี) *',
-    alert_double_count_safe: 'ระบบมีกลไกป้องกันการนับซ้ำ: แต่ละแผนงานเป็นของคณะหรือภาควิชาเพียงระดับเดียวเท่านั้น',
+    alert_double_count_safe:
+      'ระบบมีกลไกป้องกันการนับซ้ำ: แต่ละแผนงานเป็นของคณะหรือภาควิชาเพียงระดับเดียวเท่านั้น',
 
-    // Stepper (6 Stages)
+    // Stepper (Guided Stages)
+    step0_title: '0. บทนำและเตรียมข้อมูล',
+    step0_desc: 'ภาพรวมและข้อควรเตรียม',
+    step0_nav_label: '0. บทนำและเตรียมข้อมูล',
+    status_saving: 'กำลังบันทึก...',
+    status_all_saved: 'บันทึกข้อมูลเรียบร้อยแล้ว',
+    glossary_quick_btn: 'พจนานุกรมคำศัพท์ SROI',
+    wizard_nav_aria: 'การนำทางขั้นตอนการประเมิน',
+    btn_back_to: 'ย้อนกลับ:',
+    btn_continue_to: 'บันทึกและไปต่อ:',
+    btn_finish_assessment: 'เสร็จสิ้นการประเมิน',
+    no_active_project_title: 'ยังไม่ได้เลือกแผนงานที่ต้องการประเมิน',
+    no_active_project_desc:
+      'กรุณาเลือกโครงการจากรายการโครงการ หรือสร้างแผนงานใหม่เพื่อเริ่มต้นการประเมิน SROI',
+    go_to_projects: 'ไปยังรายการโครงการ (Projects Workspace)',
     step1_title: '1. ขอบเขตและเงินลงทุน',
     step1_desc: 'ขอบเขตและการลงทุน',
     step2_title: '2. ผู้มีส่วนได้ส่วนเสีย',
@@ -190,10 +206,12 @@ export const translations = {
     step2_heading: 'ขั้นตอนที่ 2: การระบุผู้มีส่วนได้ส่วนเสีย',
     step2_subheading: 'ระบุกลุ่มคนที่เกิดการเปลี่ยนแปลงจากโครงการ ไม่ว่าทางตรงหรือทางอ้อม',
     stk_workspace_title: 'พื้นที่ทำงานผู้มีส่วนได้ส่วนเสีย',
-    stk_workspace_desc: 'ระบุบุคคล กลุ่มคน หรือหน่วยงานที่เกิดการเปลี่ยนแปลงอย่างมีนัยสำคัญ (ทั้งเชิงบวกหรือเชิงลบ)',
+    stk_workspace_desc:
+      'ระบุบุคคล กลุ่มคน หรือหน่วยงานที่เกิดการเปลี่ยนแปลงอย่างมีนัยสำคัญ (ทั้งเชิงบวกหรือเชิงลบ)',
     btn_add_stakeholder: 'เพิ่มกลุ่มผู้มีส่วนได้ส่วนเสีย',
     no_stk_yet: 'ยังไม่มีการระบุผู้มีส่วนได้ส่วนเสีย',
-    no_stk_sub: 'SROI เริ่มต้นจากผู้คน ระบุกลุ่มหลักที่ได้รับผลกระทบจากโครงการนี้ (เช่น นิสิต, ชุมชน, ผู้ป่วย)',
+    no_stk_sub:
+      'SROI เริ่มต้นจากผู้คน ระบุกลุ่มหลักที่ได้รับผลกระทบจากโครงการนี้ (เช่น นิสิต, ชุมชน, ผู้ป่วย)',
     btn_map_first_stk: 'ระบุผู้มีส่วนได้ส่วนเสียแรก',
     stk_reach: 'จำนวนผู้ได้รับผล (ประมาณการ):',
     stk_role: 'บทบาท:',
@@ -217,7 +235,8 @@ export const translations = {
     step3_heading: 'ขั้นตอนที่ 3: ผลลัพธ์และตัวแทนทางการเงิน (Financial Proxies)',
     step3_subheading: 'ระบุผลลัพธ์ที่เกิดการเปลี่ยนแปลงจริง และกำหนดมูลค่าทางการเงินที่เทียบเท่า',
     toc_banner_title: 'ทฤษฎีการเปลี่ยนแปลง (Theory of Change):',
-    toc_banner_desc: 'วัดผลที่ <em>ผลลัพธ์ (Outcomes)</em> ซึ่งคือการเปลี่ยนแปลงที่เกิดขึ้นจริงกับผู้คน ไม่ใช่เพียง <em>กิจกรรม (Activities)</em> หรือ <em>ผลผลิต (Outputs)</em> เช่น จำนวนชั่วโมงอบรม',
+    toc_banner_desc:
+      'วัดผลที่ <em>ผลลัพธ์ (Outcomes)</em> ซึ่งคือการเปลี่ยนแปลงที่เกิดขึ้นจริงกับผู้คน ไม่ใช่เพียง <em>กิจกรรม (Activities)</em> หรือ <em>ผลผลิต (Outputs)</em> เช่น จำนวนชั่วโมงอบรม',
     btn_build_outcome: 'สร้างผลลัพธ์ใหม่',
     outcome_registry_title: 'ทะเบียนผลลัพธ์และตัวแทนทางการเงิน',
     outcome_registry_desc: 'แปลงผลลัพธ์ที่วัดได้ให้เป็นมูลค่าทางการเงินที่น่าเชื่อถือและตรวจสอบได้',
@@ -261,11 +280,15 @@ export const translations = {
     step4_heading: 'ขั้นตอนที่ 4: การปรับปรุงผลกระทบ (Impact Adjustments)',
     step4_subheading: 'หักผลลัพธ์ที่ไม่ควรนับรวม เพื่อป้องกันการกล่าวอ้างคุณค่าเกินจริง',
     adj_card_title: 'การหักลดผลกระทบและการสร้างคุณค่าเพิ่ม (Additionality)',
-    adj_card_desc: 'ห้ามกล่าวอ้างผลลัพธ์ทั้งหมดเป็นของโครงการเพียงฝ่ายเดียว หัก Deadweight, Attribution และ Displacement ออกตามหลักการคูณ',
-    adj_formula: 'ผลกระทบสุทธิ = มูลค่ารวม × (1 − Deadweight) × (1 − Attribution) × (1 − Displacement)',
-    adj_note: '* หมายเหตุ: กรอกเป็นร้อยละ (เช่น 20 สำหรับ 20%) ระบบแปลงเป็นทศนิยมในการคำนวณ หากไม่ประเมินจะถือเป็น 0% และแสดงข้อความเตือนในการตรวจสอบ',
+    adj_card_desc:
+      'ห้ามกล่าวอ้างผลลัพธ์ทั้งหมดเป็นของโครงการเพียงฝ่ายเดียว หัก Deadweight, Attribution และ Displacement ออกตามหลักการคูณ',
+    adj_formula:
+      'ผลกระทบสุทธิ = มูลค่ารวม × (1 − Deadweight) × (1 − Attribution) × (1 − Displacement)',
+    adj_note:
+      '* หมายเหตุ: กรอกเป็นร้อยละ (เช่น 20 สำหรับ 20%) ระบบแปลงเป็นทศนิยมในการคำนวณ หากไม่ประเมินจะถือเป็น 0% และแสดงข้อความเตือนในการตรวจสอบ',
     adj_matrix_title: 'ตารางกำหนดสัดส่วนการหักลดผลกระทบ',
-    adj_matrix_desc: 'กำหนด Deadweight, Attribution, Displacement และอัตราลดลงรายปี (Drop-off) สำหรับแต่ละผลลัพธ์',
+    adj_matrix_desc:
+      'กำหนด Deadweight, Attribution, Displacement และอัตราลดลงรายปี (Drop-off) สำหรับแต่ละผลลัพธ์',
     field_deadweight: 'Deadweight % (ผลที่เกิดขึ้นเองได้)',
     field_attribution: 'Attribution % (ผลจากหน่วยงาน/ปัจจัยอื่น)',
     field_displacement: 'Displacement % (การย้ายที่ของผลกระทบ)',
@@ -282,7 +305,8 @@ export const translations = {
     step5_subheading: 'ทดสอบความอ่อนไหวของผลลัพธ์ตามสมมติฐานที่หลากหลาย',
     ready_to_calc: '✅ พร้อมสำหรับการคำนวณ',
     blockers_identified: '⚠️ พบข้อจำกัดที่ต้องแก้ไขก่อนคำนวณ',
-    ready_desc: 'พารามิเตอร์พื้นฐานที่จำเป็นครบถ้วนแล้ว สามารถตรวจสอบคำเตือนและทดสอบสถานการณ์จำลองด้านล่างได้',
+    ready_desc:
+      'พารามิเตอร์พื้นฐานที่จำเป็นครบถ้วนแล้ว สามารถตรวจสอบคำเตือนและทดสอบสถานการณ์จำลองด้านล่างได้',
     blockers_desc: 'กรุณากรอกข้อมูลที่จำเป็นให้ครบถ้วนก่อนดูผลลัพธ์สุดท้าย',
     btn_proceed_dash: 'ไปยังแดชบอร์ดผลลัพธ์ →',
     checklist_title: 'รายการตรวจสอบความครบถ้วนของข้อมูล',
@@ -359,17 +383,21 @@ export const translations = {
     role_viewer: 'ผู้ดู (อ่านอย่างเดียว)',
     role_editor: 'ผู้จัดทำ (บันทึกและประเมินผล)',
     role_owner: 'ผู้ดูแลระบบ (สิทธิ์เต็ม)',
-    confirm_delete_fac: 'คุณแน่ใจหรือไม่ว่าต้องการลบคณะนี้? หากคณะหรือภาควิชามีแผนงานที่เป็นเจ้าของอยู่ ระบบจะป้องกันการลบเพื่อรักษาความปลอดภัยของข้อมูล',
-    confirm_delete_dept: 'คุณแน่ใจหรือไม่ว่าต้องการลบภาควิชานี้? หากมีแผนงานที่เป็นเจ้าของอยู่ ระบบจะไม่อนุญาตให้ลบ',
+    confirm_delete_fac:
+      'คุณแน่ใจหรือไม่ว่าต้องการลบคณะนี้? หากคณะหรือภาควิชามีแผนงานที่เป็นเจ้าของอยู่ ระบบจะป้องกันการลบเพื่อรักษาความปลอดภัยของข้อมูล',
+    confirm_delete_dept:
+      'คุณแน่ใจหรือไม่ว่าต้องการลบภาควิชานี้? หากมีแผนงานที่เป็นเจ้าของอยู่ ระบบจะไม่อนุญาตให้ลบ',
 
     // Faculty Consolidated Report View
     faculty_report_title: 'รายงานสรุปผลตอบแทนทางสังคมระดับคณะ',
-    faculty_report_subtitle: 'การวิเคราะห์พอร์ตการประเมิน SROI ทั้งแผนงานระดับคณะและระดับภาควิชาในสังกัด',
+    faculty_report_subtitle:
+      'การวิเคราะห์พอร์ตการประเมิน SROI ทั้งแผนงานระดับคณะและระดับภาควิชาในสังกัด',
     btn_print_pdf: 'พิมพ์ / ส่งออก PDF',
     back_to_org: '← กลับไปหน้าโครงสร้างคณะและภาควิชา',
     conso_title_prefix: 'รายงานภาพรวมคณะ:',
     anti_double_count_title: '🛡️ ระเบียบวิธีการป้องกันการนับซ้ำและการกำกับดูแลรายงาน (Governance)',
-    anti_double_count_desc: 'ทุกแผนงานภายใต้คณะนี้มี <strong>หน่วยงานเจ้าของโดยตรงเพียงระดับเดียว</strong>: คือ คณะ หรือ ภาควิชาในสังกัด อัตราส่วน SROI <em>ไม่เคยถูกนำมาหาค่าเฉลี่ยข้ามแผนงาน</em> แต่คำนวณจากผลรวมของเงินลงทุนทั้งหมดและมูลค่าปัจจุบันสุทธิที่เกิดขึ้นจริงของแต่ละโครงการอย่างเป็นอิสระ',
+    anti_double_count_desc:
+      'ทุกแผนงานภายใต้คณะนี้มี <strong>หน่วยงานเจ้าของโดยตรงเพียงระดับเดียว</strong>: คือ คณะ หรือ ภาควิชาในสังกัด อัตราส่วน SROI <em>ไม่เคยถูกนำมาหาค่าเฉลี่ยข้ามแผนงาน</em> แต่คำนวณจากผลรวมของเงินลงทุนทั้งหมดและมูลค่าปัจจุบันสุทธิที่เกิดขึ้นจริงของแต่ละโครงการอย่างเป็นอิสระ',
     metric_total_plans: 'แผนงานทั้งหมด',
     metric_faculty_direct: 'แผนงานระดับคณะ',
     metric_dept_direct: 'แผนงานระดับภาควิชา',
@@ -417,19 +445,22 @@ export const translations = {
     no_reports_yet: 'ยังไม่มีรายงานที่ถูกสร้าง ไปที่ขั้นตอนที่ 6 แดชบอร์ดเพื่อสร้างรายงาน',
     no_runs_yet: 'ยังไม่มีประวัติการคำนวณที่บันทึกไว้',
     btn_open_calc_dash: 'เปิดแดชบอร์ดเครื่องคำนวณ →',
-    alert_select_project_first: 'กรุณาเลือกโครงการจากหน้า <a href="#/projects" style="color: inherit; text-decoration: underline; font-weight: 600;">พื้นที่ทำงานโครงการ</a> เพื่อดูรายงาน',
+    alert_select_project_first:
+      'กรุณาเลือกโครงการจากหน้า <a href="#/projects" style="color: inherit; text-decoration: underline; font-weight: 600;">พื้นที่ทำงานโครงการ</a> เพื่อดูรายงาน',
 
     // Methodology (About)
     about_eyebrow: 'SOCIAL RETURN ON INVESTMENT',
     about_hero_title: 'วัดคุณค่าที่โครงการสร้างให้สังคม',
-    about_hero_desc: 'SROI (Social Return on Investment) คือแนวทางประเมินคุณค่าทางสังคม เศรษฐกิจ และสิ่งแวดล้อมที่เกิดจากโครงการ โดยเปรียบเทียบมูลค่าผลลัพธ์ที่เกิดขึ้นกับเงินลงทุน',
+    about_hero_desc:
+      'SROI (Social Return on Investment) คือแนวทางประเมินคุณค่าทางสังคม เศรษฐกิจ และสิ่งแวดล้อมที่เกิดจากโครงการ โดยเปรียบเทียบมูลค่าผลลัพธ์ที่เกิดขึ้นกับเงินลงทุน',
     about_q_title: 'SROI ช่วยให้เราเข้าใจอะไร?',
     about_q_desc: 'มองให้ไกลกว่าตัวเลขรายรับและรายจ่าย',
     about_read_title: 'อ่านค่า SROI อย่างไร?',
     about_read_desc: 'ตัวอย่างการตีความอัตราส่วน',
     about_ratio_sample: '3 : 1',
     about_ratio_label: 'ตัวอย่างอัตราส่วน SROI',
-    about_ratio_explain: 'หมายถึง ทุกการลงทุน 1 บาท สร้างมูลค่าผลลัพธ์ทางสังคมที่ประเมินได้ประมาณ 3 บาท ภายใต้สมมติฐานและวิธีประเมินของโครงการนั้น',
+    about_ratio_explain:
+      'หมายถึง ทุกการลงทุน 1 บาท สร้างมูลค่าผลลัพธ์ทางสังคมที่ประเมินได้ประมาณ 3 บาท ภายใต้สมมติฐานและวิธีประเมินของโครงการนั้น',
     about_ratio_note: 'อัตราส่วนนี้เป็นเพียงตัวอย่าง ไม่ใช่ผลการประเมินของโครงการใดโดยเฉพาะ',
     about_steps_title: 'ประเมิน SROI อย่างไร?',
     about_steps_desc: 'ขั้นตอนหลักในการประเมินผลตอบแทนทางสังคม',
@@ -473,7 +504,8 @@ export const translations = {
 
     // Sheet mode (กรอกแบบ Excel)
     sheet_title: 'ตารางประเมิน SROI',
-    sheet_subtitle: 'กรอกทีละกลุ่ม: ผู้มีส่วนได้ส่วนเสีย → ทรัพยากร → ผลลัพธ์ → มูลค่า → การจัดปรับ',
+    sheet_subtitle:
+      'กรอกทีละกลุ่ม: ผู้มีส่วนได้ส่วนเสีย → ทรัพยากร → ผลลัพธ์ → มูลค่า → การจัดปรับ',
     sheet_scope: 'ตั้งค่าการประเมิน',
     sheet_y0: 'ปีดำเนินงาน (Y0)',
     sheet_y1: 'ปีประมาณการณ์ (Y1)',
@@ -489,16 +521,19 @@ export const translations = {
     sheet_sroi: 'SROI',
     sheet_sroi_unadj: 'SROI ก่อนจัดปรับ',
     sheet_net: 'มูลค่าสุทธิ',
-    sheet_formula_note: 'SROI = รวมผลลัพธ์ (Y0+Y1) ÷ รวมทรัพยากร (Y0+Y1) · ไม่มีการคิดลด · ช่องตัวเลขพิมพ์สูตรได้ เช่น =63999000/20',
+    sheet_formula_note:
+      'SROI = รวมผลลัพธ์ (Y0+Y1) ÷ รวมทรัพยากร (Y0+Y1) · ไม่มีการคิดลด · ช่องตัวเลขพิมพ์สูตรได้ เช่น =63999000/20',
     sheet_band_stakeholder: 'ผู้มีส่วนได้ส่วนเสีย',
     sheet_band_input: 'ทรัพยากร/งบประมาณ (INPUTS)',
     sheet_band_outcome: 'ผลลัพธ์/การเปลี่ยนแปลง (Outcome) และมูลค่า (Valuation)',
     sheet_band_adjust: 'การจัดปรับผลลัพธ์ (Adjustment)',
-    sheet_fixed_note: 'กลุ่มหลัก S1–S4 ตามไฟล์ Excel (เพิ่ม/ลบกลุ่มหลักไม่ได้) — กด “เพิ่มผู้มีส่วนได้ส่วนเสีย” ในแต่ละกลุ่ม แล้วกรอกทรัพยากรและผลลัพธ์ของแต่ละรายการ',
+    sheet_fixed_note:
+      'กลุ่มหลัก S1–S4 ตามไฟล์ Excel (เพิ่ม/ลบกลุ่มหลักไม่ได้) — กด “เพิ่มผู้มีส่วนได้ส่วนเสีย” ในแต่ละกลุ่ม แล้วกรอกทรัพยากรและผลลัพธ์ของแต่ละรายการ',
     sheet_jump: 'ไปที่กลุ่ม',
     sheet_subgroup_label: 'กลุ่มย่อย',
     sheet_subgroups_title: 'กลุ่มย่อยของ',
-    sheet_sub_hint: 'ยังไม่มีกลุ่มย่อย — ถ้าต้องการแยกผู้มีส่วนได้ส่วนเสียออกเป็นกลุ่มเล็กๆ (เช่น แยกตามคณะ) ให้กดปุ่มด้านล่าง แต่ละกลุ่มย่อยมีตารางของตัวเองครบทุกส่วน',
+    sheet_sub_hint:
+      'ยังไม่มีกลุ่มย่อย — ถ้าต้องการแยกผู้มีส่วนได้ส่วนเสียออกเป็นกลุ่มเล็กๆ (เช่น แยกตามคณะ) ให้กดปุ่มด้านล่าง แต่ละกลุ่มย่อยมีตารางของตัวเองครบทุกส่วน',
     sheet_add_sub_btn: 'เพิ่มกลุ่มย่อยใน',
     sheet_add_sub_small: 'ระบบจะตั้งรหัสให้อัตโนมัติ คุณเพียงตั้งชื่อ',
     sheet_sub_modal_title: 'เพิ่มผู้มีส่วนได้ส่วนเสีย',
@@ -513,7 +548,8 @@ export const translations = {
     sheet_stk_name: 'ชื่อผู้มีส่วนได้ส่วนเสีย (ระบุ)',
     sheet_stk_name_ph: 'ชื่อผู้มีส่วนได้ส่วนเสีย',
     sheet_stk_list_title: 'ผู้มีส่วนได้ส่วนเสียใน',
-    sheet_stk_empty: 'ยังไม่มีผู้มีส่วนได้ส่วนเสียในกลุ่มนี้ — กดปุ่มด้านล่างเพื่อเพิ่ม แต่ละรายการมีทรัพยากร ผลลัพธ์ มูลค่า และการจัดปรับของตัวเอง',
+    sheet_stk_empty:
+      'ยังไม่มีผู้มีส่วนได้ส่วนเสียในกลุ่มนี้ — กดปุ่มด้านล่างเพื่อเพิ่ม แต่ละรายการมีทรัพยากร ผลลัพธ์ มูลค่า และการจัดปรับของตัวเอง',
     sheet_stk_empty_primary_beneficiary: 'เช่น ชาวบ้านที่มารับบริการ, นิสิต, อาจารย์',
     sheet_stk_empty_project_operator: 'เช่น อาจารย์ จนท. นิสิต',
     sheet_stk_empty_project_supporter: 'เช่น คณะสหเวชศาสตร์, อบต.',
@@ -524,8 +560,10 @@ export const translations = {
     sheet_stk_ph_other_agency: 'เช่น ชมรมผู้สูงอายุ',
     sheet_add_stk_btn: 'เพิ่มผู้มีส่วนได้ส่วนเสียใน',
     sheet_add_stk_small: 'กรอกชื่อ จำนวน หน่วย และกิจกรรม — รหัส (เช่น S1.1) ระบบตั้งให้อัตโนมัติ',
-    sheet_stk_modal_foot: 'ทรัพยากร (Input) และผลลัพธ์ (Outcome) กรอกต่อในการ์ดของรายการนี้หลังเพิ่มเสร็จ',
-    sheet_direct_note: 'ข้อมูลที่กรอกไว้โดยตรงในกลุ่มนี้ (วิธีกรอกแบบเดิม) — ยังคงนับรวมในผลรวม แก้ไขได้ตามปกติ',
+    sheet_stk_modal_foot:
+      'ทรัพยากร (Input) และผลลัพธ์ (Outcome) กรอกต่อในการ์ดของรายการนี้หลังเพิ่มเสร็จ',
+    sheet_direct_note:
+      'ข้อมูลที่กรอกไว้โดยตรงในกลุ่มนี้ (วิธีกรอกแบบเดิม) — ยังคงนับรวมในผลรวม แก้ไขได้ตามปกติ',
     sheet_sec_outcome: 'ผลลัพธ์/การเปลี่ยนแปลง (Outcome)',
     sheet_band_valuation: 'การให้มูลค่า (Valuation)',
     sheet_no_inputs: 'ยังไม่มีรายการทรัพยากร',
@@ -568,10 +606,12 @@ export const translations = {
     sheet_add_subgroup: '+ กลุ่มย่อย',
     sheet_add_group: '+ กลุ่มหลัก',
     sheet_add_column: 'เพิ่มหัวข้อ',
-    sheet_adj_hint: 'เว้นว่างไว้จนกว่าจะประเมิน — ว่าง = นับเต็มมูลค่าและแสดงเป็นยังไม่ได้ประเมิน (ไม่ถือเป็น 0%)',
+    sheet_adj_hint:
+      'เว้นว่างไว้จนกว่าจะประเมิน — ว่าง = นับเต็มมูลค่าและแสดงเป็นยังไม่ได้ประเมิน (ไม่ถือเป็น 0%)',
     sheet_formula_hint: 'พิมพ์ตัวเลขหรือสูตร เช่น =1300000/20+49000 หรือ =(904840+123500)*9%',
     sheet_empty_title: 'เริ่มจากแม่แบบของไฟล์ Excel',
-    sheet_empty_desc: 'สร้างกลุ่ม S1 ผู้รับผลประโยชน์หลัก, S2 ผู้ดำเนินโครงการ, S3 ผู้สนับสนุนโครงการ, S4 หน่วยงานอื่นๆ แล้วกรอกต่อได้ทันที',
+    sheet_empty_desc:
+      'สร้างกลุ่ม S1 ผู้รับผลประโยชน์หลัก, S2 ผู้ดำเนินโครงการ, S3 ผู้สนับสนุนโครงการ, S4 หน่วยงานอื่นๆ แล้วกรอกต่อได้ทันที',
     sheet_empty_btn: 'สร้างกลุ่ม S1–S4',
     sheet_save_run: 'บันทึกผลการคำนวณ',
     sheet_saved_run: 'บันทึกผลการคำนวณแล้ว',
@@ -580,7 +620,8 @@ export const translations = {
     sheet_no_issues: 'ไม่มีข้อสังเกต',
     sheet_group_total_in: 'ทรัพยากร',
     sheet_group_total_out: 'ผลลัพธ์',
-    sheet_tip: 'พิมพ์ตัวเลขหรือสูตรในช่องตัวเลขได้ เช่น =63999000/20 — ทุกช่องบันทึกอัตโนมัติเมื่อกดออกจากช่อง',
+    sheet_tip:
+      'พิมพ์ตัวเลขหรือสูตรในช่องตัวเลขได้ เช่น =63999000/20 — ทุกช่องบันทึกอัตโนมัติเมื่อกดออกจากช่อง',
     sheet_raw_ph: 'ตัวเลข หรือ =สูตร',
     sheet_toggle: 'ย่อ / ขยาย',
     sheet_fold_all: 'ย่อทุกรายการ',
@@ -597,7 +638,8 @@ export const translations = {
     sheet_delete_line: 'ลบรายการนี้',
     sheet_delete_group: 'ลบผู้มีส่วนได้ส่วนเสียรายการนี้ (รวมทรัพยากรและผลลัพธ์ทั้งหมดของรายการ)',
     sheet_confirm_delete_line: 'ต้องการลบรายการนี้หรือไม่?',
-    sheet_confirm_delete_group: 'ต้องการลบผู้มีส่วนได้ส่วนเสียรายการนี้พร้อมทรัพยากรและผลลัพธ์ทั้งหมดหรือไม่?',
+    sheet_confirm_delete_group:
+      'ต้องการลบผู้มีส่วนได้ส่วนเสียรายการนี้พร้อมทรัพยากรและผลลัพธ์ทั้งหมดหรือไม่?',
     sheet_include: 'นับรวมในผลรวม',
     sheet_col_modal_title: 'หัวข้อที่เพิ่มเอง',
     sheet_col_label: 'ชื่อหัวข้อ',
@@ -637,7 +679,8 @@ export const translations = {
     grp_hint_s3: 'ผู้ให้เงินหรือสถานที่ เช่น คณะ มหาวิทยาลัย — กรอกเงินทุนในฟอร์มเดียวกันได้เลย',
     grp_hint_s4: 'หน่วยงานภายนอก เช่น อบต. โรงพยาบาล — กรอกเงินทุนในฟอร์มเดียวกันได้เลย',
     in_step2_title: 'กรอกผู้มีส่วนได้ส่วนเสียครั้งเดียวจบ',
-    in_step2_desc: 'เลือกกลุ่ม (S1–S4) แล้วกรอกผู้มีส่วนได้ส่วนเสียพร้อมเงินทุนที่เขาให้ในฟอร์มเดียวกัน เงินทุนจะไปแสดงในขั้นที่ 1 อัตโนมัติ และขั้นที่ 3 แค่เลือกชื่อจากรายการ',
+    in_step2_desc:
+      'เลือกกลุ่ม (S1–S4) แล้วกรอกผู้มีส่วนได้ส่วนเสียพร้อมเงินทุนที่เขาให้ในฟอร์มเดียวกัน เงินทุนจะไปแสดงในขั้นที่ 1 อัตโนมัติ และขั้นที่ 3 แค่เลือกชื่อจากรายการ',
     in_add_to: 'เพิ่มใน',
     in_empty_group: 'ยังไม่มีรายการในกลุ่มนี้ กดปุ่ม “เพิ่มใน” ด้านบนขวา',
     in_code: 'รหัส',
@@ -652,7 +695,8 @@ export const translations = {
     in_unlinked_hint: 'ไปที่ขั้นที่ 1 แล้วเลือกผู้ให้ทุนได้ (ไม่บังคับ)',
     in_go_step1: 'ไปขั้นที่ 1',
     in_go_step2: 'ไปขั้นที่ 2',
-    in_confirm_delete_funded: 'ลบผู้มีส่วนได้ส่วนเสียนี้? รายการเงินทุนของเขาจะยังอยู่ในขั้นที่ 1 แต่จะไม่ระบุผู้ให้ทุน',
+    in_confirm_delete_funded:
+      'ลบผู้มีส่วนได้ส่วนเสียนี้? รายการเงินทุนของเขาจะยังอยู่ในขั้นที่ 1 แต่จะไม่ระบุผู้ให้ทุน',
     in_cannot_delete: 'ลบไม่ได้',
     in_group_pick: 'กลุ่ม (S1–S4 เหมือนใน Excel)',
     in_name: 'ชื่อผู้มีส่วนได้ส่วนเสีย',
@@ -672,11 +716,13 @@ export const translations = {
     in_fund_inkind: 'ไม่ใช่เงินสด',
     in_fund_inkind_hint: 'ติ๊กเมื่อไม่ใช่เงินสด เช่น แรงงานอาสา สถานที่ อุปกรณ์',
     in_fund_add: 'เพิ่มรายการเงินทุน',
-    in_fund_none: 'ยังไม่มีรายการเงินทุน — เพิ่มได้ถ้าผู้มีส่วนได้ส่วนเสียรายนี้ให้เงินหรือทรัพยากร',
+    in_fund_none:
+      'ยังไม่มีรายการเงินทุน — เพิ่มได้ถ้าผู้มีส่วนได้ส่วนเสียรายนี้ให้เงินหรือทรัพยากร',
     in_save_add: 'บันทึกและเพิ่มรายการถัดไป',
     in_err_group: 'กรุณาเลือกกลุ่ม (S1–S4)',
     in_row_err: 'รายการเงินทุนแถวที่ {n}: กรอกรายการและมูลค่าให้ครบ (หรือกด ✕ เพื่อลบแถว)',
-    in_step1_tip: 'เงินทุนของ S2/S3/S4 (คณะ ผู้สนับสนุน หน่วยงาน) กรอกพร้อมผู้มีส่วนได้ส่วนเสียได้ที่ขั้นที่ 2 — จะแสดงในตารางนี้อัตโนมัติ',
+    in_step1_tip:
+      'เงินทุนของ S2/S3/S4 (คณะ ผู้สนับสนุน หน่วยงาน) กรอกพร้อมผู้มีส่วนได้ส่วนเสียได้ที่ขั้นที่ 2 — จะแสดงในตารางนี้อัตโนมัติ',
     in_funder: 'ผู้ให้ทุน / แหล่งที่มา',
     in_funder_hint: 'ใครเป็นผู้ให้ — ไม่บังคับ',
     in_funder_none: '— ไม่ระบุ —',
@@ -685,7 +731,8 @@ export const translations = {
     in_pick_stk: '— เลือกผู้มีส่วนได้ส่วนเสีย —',
     in_save_add_outcome: 'บันทึกและเพิ่มผลลัพธ์ถัดไป',
     in_dup: 'ทำซ้ำ (คัดลอกรายละเอียดเป็นแถวใหม่)',
-    in_adj_desc: 'พิมพ์ในตารางได้เลย ระบบบันทึกให้อัตโนมัติ ช่องว่าง = ยังไม่ได้ประเมิน (ไม่นับเป็น 0%)',
+    in_adj_desc:
+      'พิมพ์ในตารางได้เลย ระบบบันทึกให้อัตโนมัติ ช่องว่าง = ยังไม่ได้ประเมิน (ไม่นับเป็น 0%)',
     in_adj_bulk: 'ค่าเดียวกันหลายผลลัพธ์?',
     in_adj_bulk_hint: 'กรอกครั้งเดียวแล้วเติมเฉพาะช่องที่ยังว่าง — ไม่ทับค่าที่คุณกรอกไว้แล้ว',
     in_adj_bulk_btn: 'เติมช่องที่ว่าง',
@@ -696,10 +743,6 @@ export const translations = {
     in_adj_incomplete: 'ยังไม่ประเมิน',
     in_adj_progress: 'ประเมินแล้ว',
   },
-
-
-
-
 
   en: {
     // Navigation
@@ -766,7 +809,8 @@ export const translations = {
 
     // Projects Workspace
     projects_title: 'Projects list',
-    projects_subtitle: 'Manage social return on investment assessments and select plans for evaluation',
+    projects_subtitle:
+      'Manage social return on investment assessments and select plans for evaluation',
     btn_new_plan: 'New SROI Plan',
     filter_org: 'Institution',
     filter_faculty: 'Faculty Filter',
@@ -801,9 +845,23 @@ export const translations = {
     field_currency: 'Currency',
     field_discount_rate: 'Annual Discount Rate (%) *',
     field_analysis_period: 'Analysis Horizon (Years) *',
-    alert_double_count_safe: 'Anti-double-counting safeguard active: Each plan is directly owned by exactly one entity level.',
+    alert_double_count_safe:
+      'Anti-double-counting safeguard active: Each plan is directly owned by exactly one entity level.',
 
-    // Stepper (6 Stages)
+    // Stepper (Guided Stages)
+    step0_title: '0. Welcome & Prep',
+    step0_desc: 'Overview & Preparation',
+    step0_nav_label: '0. Welcome & Preparation',
+    status_saving: 'Saving...',
+    status_all_saved: 'All changes saved',
+    glossary_quick_btn: 'SROI Glossary',
+    wizard_nav_aria: 'Assessment Step Navigation',
+    btn_back_to: 'Back:',
+    btn_continue_to: 'Save & Continue:',
+    btn_finish_assessment: 'Finish Assessment',
+    no_active_project_title: 'No Active Project Selected',
+    no_active_project_desc: 'Please select a project from workspace or create a new plan to start.',
+    go_to_projects: 'Go to Projects Workspace',
     step1_title: '1. Project & Costs',
     step1_desc: 'Scope & Investment',
     step2_title: '2. Stakeholders',
@@ -819,7 +877,8 @@ export const translations = {
 
     // Wizard Step 1: Project & Costs
     step1_heading: 'Step 1: Scope & Investment',
-    step1_subheading: 'Define the evaluation horizon, boundary, and record all project investment inputs.',
+    step1_subheading:
+      'Define the evaluation horizon, boundary, and record all project investment inputs.',
     live_inv_baseline: 'Live Investment Baseline',
     live_inv_desc: 'Resources and capital allocated across the project lifespan',
     inv_basis_label: 'Valuation Basis',
@@ -835,7 +894,8 @@ export const translations = {
     stat_discount_rate: 'Discount Rate',
     stat_unset: 'Unset',
     scope_card_title: 'Project Scope & Baseline Parameters',
-    scope_card_desc: 'Define evaluation type, evaluation horizon, discount rate, and analytical assumptions',
+    scope_card_desc:
+      'Define evaluation type, evaluation horizon, discount rate, and analytical assumptions',
     btn_save_settings: 'Save Settings',
     field_project_name: 'Project / Plan Name *',
     field_org_name: 'Institution / Organization',
@@ -858,7 +918,8 @@ export const translations = {
     opt_yes_inkind: 'Yes (Include volunteer time & donations)',
     opt_no_inkind: 'No (Cash expenditures only)',
     field_rationale: 'Rationale for Baseline Assumptions',
-    field_rationale_ph: 'Explain sources for discount rate, boundaries, and baseline assumptions...',
+    field_rationale_ph:
+      'Explain sources for discount rate, boundaries, and baseline assumptions...',
     inv_items_title: 'Investment & Cost Registry',
     inv_items_desc: 'Itemized financial outlays and resource inputs',
     btn_add_cost: 'Add Cost Item',
@@ -879,12 +940,15 @@ export const translations = {
 
     // Wizard Step 2: Stakeholders
     step2_heading: 'Step 2: Stakeholder Identification',
-    step2_subheading: 'Identify all groups experiencing material change as a result of the initiative.',
+    step2_subheading:
+      'Identify all groups experiencing material change as a result of the initiative.',
     stk_workspace_title: 'Stakeholder Workspace',
-    stk_workspace_desc: 'Identify individuals, groups, or entities that experience material changes (positive or negative)',
+    stk_workspace_desc:
+      'Identify individuals, groups, or entities that experience material changes (positive or negative)',
     btn_add_stakeholder: 'Add Stakeholder Group',
     no_stk_yet: 'No stakeholders mapped yet',
-    no_stk_sub: 'SROI begins with people. Add the primary groups affected by this project (e.g., Students, Families, Community).',
+    no_stk_sub:
+      'SROI begins with people. Add the primary groups affected by this project (e.g., Students, Families, Community).',
     btn_map_first_stk: 'Map First Stakeholder',
     stk_reach: 'Estimated Reach:',
     stk_role: 'Role:',
@@ -906,9 +970,11 @@ export const translations = {
 
     // Wizard Step 3: Outcomes & Proxies
     step3_heading: 'Step 3: Outcomes & Financial Proxies',
-    step3_subheading: 'Record measurable changes experienced by stakeholders and apply monetary proxy values.',
+    step3_subheading:
+      'Record measurable changes experienced by stakeholders and apply monetary proxy values.',
     toc_banner_title: 'Theory of Change:',
-    toc_banner_desc: 'Measure <em>outcomes</em> (real change experienced by people), not just <em>activities</em> or <em>outputs</em> (e.g. hours delivered).',
+    toc_banner_desc:
+      'Measure <em>outcomes</em> (real change experienced by people), not just <em>activities</em> or <em>outputs</em> (e.g. hours delivered).',
     btn_build_outcome: 'Build Outcome',
     outcome_registry_title: 'Outcome & Financial Proxy Registry',
     outcome_registry_desc: 'Translate measured changes into defensible monetary proxies',
@@ -952,11 +1018,15 @@ export const translations = {
     step4_heading: 'Step 4: Impact Adjustments (Additionality)',
     step4_subheading: 'Deduct factors to ensure the analysis does not over-claim change.',
     adj_card_title: 'Impact Deductions & Additionality',
-    adj_card_desc: 'Do not claim all observed change. Deduct deadweight, attribution, and displacement multiplicatively.',
-    adj_formula: 'Adjusted Impact = Gross Value × (1 − Deadweight) × (1 − Attribution) × (1 − Displacement)',
-    adj_note: '* Note: Percentages are entered as integers (e.g. 20 for 20%), converted to fractions for calculation. Unassessed adjustments default to 0% and trigger audit warnings.',
+    adj_card_desc:
+      'Do not claim all observed change. Deduct deadweight, attribution, and displacement multiplicatively.',
+    adj_formula:
+      'Adjusted Impact = Gross Value × (1 − Deadweight) × (1 − Attribution) × (1 − Displacement)',
+    adj_note:
+      '* Note: Percentages are entered as integers (e.g. 20 for 20%), converted to fractions for calculation. Unassessed adjustments default to 0% and trigger audit warnings.',
     adj_matrix_title: 'Outcome Adjustment Matrix',
-    adj_matrix_desc: 'Configure Deadweight, Attribution, Displacement, and Annual Drop-off for each outcome',
+    adj_matrix_desc:
+      'Configure Deadweight, Attribution, Displacement, and Annual Drop-off for each outcome',
     field_deadweight: 'Deadweight % (Would have happened anyway)',
     field_attribution: 'Attribution % (Caused by other contributors)',
     field_displacement: 'Displacement % (Displaced from elsewhere)',
@@ -970,10 +1040,12 @@ export const translations = {
 
     // Wizard Step 5: Review & Scenarios
     step5_heading: 'Step 5: Review & Scenario Analysis',
-    step5_subheading: 'Test the sensitivity of the SROI results against varied plausible assumptions.',
+    step5_subheading:
+      'Test the sensitivity of the SROI results against varied plausible assumptions.',
     ready_to_calc: '✅ Ready to Calculate',
     blockers_identified: '⚠️ Calculation Blockers Identified',
-    ready_desc: 'All mandatory baseline parameters are satisfied. Review audit warnings and test scenarios below.',
+    ready_desc:
+      'All mandatory baseline parameters are satisfied. Review audit warnings and test scenarios below.',
     blockers_desc: 'Please resolve the following required inputs before generating final results.',
     btn_proceed_dash: 'Proceed to Dashboard →',
     checklist_title: 'Data Completeness Checklist',
@@ -990,7 +1062,8 @@ export const translations = {
 
     // Wizard Step 6: Dashboard & Reports
     step6_heading: 'Step 6: SROI Analytics Dashboard',
-    step6_subheading: 'Comprehensive social return ratio, net value created, and stakeholder distribution.',
+    step6_subheading:
+      'Comprehensive social return ratio, net value created, and stakeholder distribution.',
     dash_title: 'Impact Analytics Dashboard',
     btn_save_run: '💾 Save Auditable Run',
     btn_export_report: '📥 Export Report',
@@ -1009,12 +1082,14 @@ export const translations = {
     btn_export_pdf: 'Export PDF Report',
     btn_export_excel: 'Export Excel Workbook',
     yearly_pv_title: 'Annual Present Value Trends',
-    yearly_pv_desc: 'Net discounted benefit values after deducting deadweight, attribution, and drop-off.',
+    yearly_pv_desc:
+      'Net discounted benefit values after deducting deadweight, attribution, and drop-off.',
     modal_export_title: 'Export SROI Assessment Report',
 
     // Org (Faculties & Depts)
     org_title: 'Faculties & Departments Hierarchy',
-    org_subtitle: 'Manage university organizational structure and configure SROI plan ownership at Naresuan University',
+    org_subtitle:
+      'Manage university organizational structure and configure SROI plan ownership at Naresuan University',
     btn_add_faculty: 'Add Faculty',
     btn_add_department: 'Add Department',
     fac_and_dept_count: 'Faculties & Departments',
@@ -1050,17 +1125,21 @@ export const translations = {
     role_viewer: 'Viewer (Read-only)',
     role_editor: 'Editor (Manage plans & assessments)',
     role_owner: 'Owner (Full administrative rights)',
-    confirm_delete_fac: 'Are you sure you want to delete this faculty? If it or its departments own any plans, deletion will be blocked to protect data.',
-    confirm_delete_dept: 'Are you sure you want to delete this department? If it owns any plans, deletion will be blocked.',
+    confirm_delete_fac:
+      'Are you sure you want to delete this faculty? If it or its departments own any plans, deletion will be blocked to protect data.',
+    confirm_delete_dept:
+      'Are you sure you want to delete this department? If it owns any plans, deletion will be blocked.',
 
     // Faculty Consolidated Report View
     faculty_report_title: 'Faculty Consolidated SROI Report',
-    faculty_report_subtitle: 'Multi-plan portfolio analysis across faculty-owned and department-owned SROI assessments',
+    faculty_report_subtitle:
+      'Multi-plan portfolio analysis across faculty-owned and department-owned SROI assessments',
     btn_print_pdf: 'Print / Export PDF',
     back_to_org: '← Back to Organizational Structure',
     conso_title_prefix: 'Consolidated Report:',
     anti_double_count_title: '🛡️ Anti-Double-Counting Methodology & Reporting Governance',
-    anti_double_count_desc: 'Every plan in this faculty has exactly <strong>one direct owner</strong>: either the Faculty itself or one of its constituent Departments. SROI ratios are <em>never averaged across plans</em>. Consolidated metrics are derived strictly from the aggregate investment capital and the aggregate present value of monetized outcomes across distinct non-overlapping assessment scopes.',
+    anti_double_count_desc:
+      'Every plan in this faculty has exactly <strong>one direct owner</strong>: either the Faculty itself or one of its constituent Departments. SROI ratios are <em>never averaged across plans</em>. Consolidated metrics are derived strictly from the aggregate investment capital and the aggregate present value of monetized outcomes across distinct non-overlapping assessment scopes.',
     metric_total_plans: 'Total Plans',
     metric_faculty_direct: 'Faculty direct',
     metric_dept_direct: 'Dept direct',
@@ -1095,7 +1174,8 @@ export const translations = {
 
     // Reports View
     reports_title: 'Reports & Audit Log',
-    reports_subtitle: 'Audit trail of model snapshots, sensitivity checks, and formal export records',
+    reports_subtitle:
+      'Audit trail of model snapshots, sensitivity checks, and formal export records',
     pub_reports_title: 'Published Impact Reports',
     audit_runs_title: 'Auditable Calculation Runs',
     col_report_title: 'Report Title',
@@ -1108,20 +1188,24 @@ export const translations = {
     no_reports_yet: 'No reports generated yet. Go to Step 6 Dashboard to generate a report.',
     no_runs_yet: 'No saved calculation runs recorded yet.',
     btn_open_calc_dash: 'Open Calculator Dashboard →',
-    alert_select_project_first: 'Please select a project from the <a href="#/projects" style="color: inherit; text-decoration: underline; font-weight: 600;">Projects Workspace</a> to view its reports.',
+    alert_select_project_first:
+      'Please select a project from the <a href="#/projects" style="color: inherit; text-decoration: underline; font-weight: 600;">Projects Workspace</a> to view its reports.',
 
     // Methodology (About)
     about_eyebrow: 'SOCIAL RETURN ON INVESTMENT',
     about_hero_title: 'Measuring Societal Impact and Value',
-    about_hero_desc: 'SROI (Social Return on Investment) is an internationally recognized framework that accounts for broader social, environmental, and economic value relative to resources invested.',
+    about_hero_desc:
+      'SROI (Social Return on Investment) is an internationally recognized framework that accounts for broader social, environmental, and economic value relative to resources invested.',
     about_q_title: 'What Does SROI Help Us Understand?',
     about_q_desc: 'Looking beyond traditional revenue and accounting expenditures.',
     about_read_title: 'How to Interpret SROI Ratios?',
     about_read_desc: 'Example interpretation of return ratios.',
     about_ratio_sample: '3 : 1',
     about_ratio_label: 'Example SROI Ratio',
-    about_ratio_explain: 'Indicates that every 1 Baht invested generated approximately 3 Baht in verified social and economic value, under the project’s specific evidence and assumptions.',
-    about_ratio_note: 'This ratio is illustrative and does not represent any specific individual project.',
+    about_ratio_explain:
+      'Indicates that every 1 Baht invested generated approximately 3 Baht in verified social and economic value, under the project’s specific evidence and assumptions.',
+    about_ratio_note:
+      'This ratio is illustrative and does not represent any specific individual project.',
     about_steps_title: 'How is SROI Evaluated?',
     about_steps_desc: 'Key stages in the social return evaluation methodology.',
     about_terms_title: 'Key Adjustment Definitions',
@@ -1129,7 +1213,8 @@ export const translations = {
 
     // Auth View
     auth_title: 'User Account & Organization',
-    auth_subtitle: 'Role-based access control and institutional workspace administration for Naresuan University',
+    auth_subtitle:
+      'Role-based access control and institutional workspace administration for Naresuan University',
     auth_signed_in_as: 'Signed in as:',
     btn_sign_out: 'Sign Out',
     btn_go_projects: 'Go to Projects Workspace →',
@@ -1144,7 +1229,8 @@ export const translations = {
     guest_badge: 'Guest · Sign in',
     btn_signing_in: 'Signing in…',
     btn_browse_as_guest: 'Browse without signing in',
-    auth_guest_help: 'Accounts are issued by the SROI administrator. If you do not have one, please contact them.',
+    auth_guest_help:
+      'Accounts are issued by the SROI administrator. If you do not have one, please contact them.',
     auth_session_expired: 'Your session has expired. Please sign in again.',
     auth_enter_both: 'Please enter your email and password.',
     field_email: 'Institutional Email (@nu.ac.th)',
@@ -1152,7 +1238,8 @@ export const translations = {
     ph_fac_desc: 'Brief description or faculty unit code (optional)',
     ph_dept_desc: 'Brief department description (optional)',
     ph_stk_desc: 'Who are they and how are they engaged with the project?',
-    ph_adj_justification: 'Explain why these specific percentages represent plausible additionality for this outcome',
+    ph_adj_justification:
+      'Explain why these specific percentages represent plausible additionality for this outcome',
     ph_qty_default: 'Default quantity',
     ph_dropoff_default: 'Default %',
     ph_scenario_rate: 'Leave blank to use base rate',
@@ -1164,7 +1251,8 @@ export const translations = {
 
     // Sheet mode (Excel-style entry)
     sheet_title: 'SROI Sheet',
-    sheet_subtitle: 'Work one group at a time: stakeholder → inputs → outcomes → value → adjustment',
+    sheet_subtitle:
+      'Work one group at a time: stakeholder → inputs → outcomes → value → adjustment',
     sheet_scope: 'Assessment settings',
     sheet_y0: 'Operating year (Y0)',
     sheet_y1: 'Projection year (Y1)',
@@ -1180,16 +1268,19 @@ export const translations = {
     sheet_sroi: 'SROI',
     sheet_sroi_unadj: 'SROI before adjustment',
     sheet_net: 'Net value',
-    sheet_formula_note: 'SROI = total outcome (Y0+Y1) ÷ total input (Y0+Y1) · no discounting · number cells accept formulas such as =63999000/20',
+    sheet_formula_note:
+      'SROI = total outcome (Y0+Y1) ÷ total input (Y0+Y1) · no discounting · number cells accept formulas such as =63999000/20',
     sheet_band_stakeholder: 'Stakeholders',
     sheet_band_input: 'Resources / budget (INPUTS)',
     sheet_band_outcome: 'Outcome / change and valuation',
     sheet_band_adjust: 'Adjustment',
-    sheet_fixed_note: 'The main groups S1–S4 follow the Excel workbook and are fixed. Press “Add a stakeholder” in each group, then fill in that row’s inputs and outcomes.',
+    sheet_fixed_note:
+      'The main groups S1–S4 follow the Excel workbook and are fixed. Press “Add a stakeholder” in each group, then fill in that row’s inputs and outcomes.',
     sheet_jump: 'Go to',
     sheet_subgroup_label: 'Sub-group',
     sheet_subgroups_title: 'Sub-groups of',
-    sheet_sub_hint: 'No sub-groups yet. To split this group into smaller ones (for example by faculty), press the button below. Each sub-group gets its own full set of tables.',
+    sheet_sub_hint:
+      'No sub-groups yet. To split this group into smaller ones (for example by faculty), press the button below. Each sub-group gets its own full set of tables.',
     sheet_add_sub_btn: 'Add a sub-group to',
     sheet_add_sub_small: 'The code is assigned automatically — you only type a name',
     sheet_sub_modal_title: 'Add a stakeholder',
@@ -1204,8 +1295,10 @@ export const translations = {
     sheet_stk_name: 'Stakeholder name',
     sheet_stk_name_ph: 'Stakeholder name',
     sheet_stk_list_title: 'Stakeholders in',
-    sheet_stk_empty: 'No stakeholders in this group yet — press the button below to add one. Each has its own inputs, outcomes, valuation and adjustment.',
-    sheet_stk_empty_primary_beneficiary: 'e.g. villagers receiving the service, students, lecturers',
+    sheet_stk_empty:
+      'No stakeholders in this group yet — press the button below to add one. Each has its own inputs, outcomes, valuation and adjustment.',
+    sheet_stk_empty_primary_beneficiary:
+      'e.g. villagers receiving the service, students, lecturers',
     sheet_stk_empty_project_operator: 'e.g. lecturers, staff, students',
     sheet_stk_empty_project_supporter: 'e.g. the faculty, the sub-district administration (อบต.)',
     sheet_stk_empty_other_agency: 'e.g. an elderly club, a local authority',
@@ -1214,9 +1307,12 @@ export const translations = {
     sheet_stk_ph_project_supporter: 'e.g. Faculty of Allied Health Sciences',
     sheet_stk_ph_other_agency: 'e.g. Elderly club',
     sheet_add_stk_btn: 'Add a stakeholder to',
-    sheet_add_stk_small: 'Type the name, count, unit and activity — the code (e.g. S1.1) is assigned automatically',
-    sheet_stk_modal_foot: 'Inputs and outcomes are filled in on this stakeholder’s card right after it is added.',
-    sheet_direct_note: 'Entered directly on this group (older entry style) — still counted in the totals and fully editable.',
+    sheet_add_stk_small:
+      'Type the name, count, unit and activity — the code (e.g. S1.1) is assigned automatically',
+    sheet_stk_modal_foot:
+      'Inputs and outcomes are filled in on this stakeholder’s card right after it is added.',
+    sheet_direct_note:
+      'Entered directly on this group (older entry style) — still counted in the totals and fully editable.',
     sheet_sec_outcome: 'Outcomes (what changed)',
     sheet_band_valuation: 'Valuation',
     sheet_no_inputs: 'No input lines yet',
@@ -1259,10 +1355,12 @@ export const translations = {
     sheet_add_subgroup: '+ Sub-group',
     sheet_add_group: '+ Group',
     sheet_add_column: 'Add topic',
-    sheet_adj_hint: 'Leave empty until assessed. Empty = counted at full value and shown as not assessed (never treated as 0%).',
+    sheet_adj_hint:
+      'Leave empty until assessed. Empty = counted at full value and shown as not assessed (never treated as 0%).',
     sheet_formula_hint: 'Type a number or a formula, e.g. =1300000/20+49000 or =(904840+123500)*9%',
     sheet_empty_title: 'Start from the Excel template',
-    sheet_empty_desc: 'Creates the four groups S1 primary beneficiaries, S2 project operators, S3 supporters, S4 other agencies, ready to fill in.',
+    sheet_empty_desc:
+      'Creates the four groups S1 primary beneficiaries, S2 project operators, S3 supporters, S4 other agencies, ready to fill in.',
     sheet_empty_btn: 'Create groups S1–S4',
     sheet_save_run: 'Save calculation',
     sheet_saved_run: 'Calculation saved',
@@ -1271,14 +1369,16 @@ export const translations = {
     sheet_no_issues: 'No notes',
     sheet_group_total_in: 'Input',
     sheet_group_total_out: 'Outcome',
-    sheet_tip: 'You can type a number or a formula in any number field, e.g. =63999000/20 — every field saves automatically when you leave it',
+    sheet_tip:
+      'You can type a number or a formula in any number field, e.g. =63999000/20 — every field saves automatically when you leave it',
     sheet_raw_ph: 'number or =formula',
     sheet_toggle: 'Fold / unfold',
     sheet_fold_all: 'Collapse all',
     sheet_unfold_all: 'Expand all',
     sheet_sec_stk_desc: 'Name, headcount and activity of this stakeholder group',
     sheet_sec_input_desc: 'Resources or budget used — add as many lines as you need',
-    sheet_sec_outcome_desc: 'Fill each outcome in 3 parts: what changed → its value → its adjustment',
+    sheet_sec_outcome_desc:
+      'Fill each outcome in 3 parts: what changed → its value → its adjustment',
     sheet_add_input_btn: 'Add an input line',
     sheet_add_outcome_btn: 'Add an outcome',
     sheet_blk_change: 'What changed',
@@ -1324,11 +1424,15 @@ export const translations = {
     grp_s4: 'S4 Other agencies',
     grp_none: 'Unclassified',
     grp_hint_s1: 'People who experience the change directly, e.g. villagers served, students.',
-    grp_hint_s2: 'Those who run the project, e.g. lecturers, staff, departments — they often use resources.',
-    grp_hint_s3: 'Providers of money or venue, e.g. faculty, university — enter their funding in the same form.',
-    grp_hint_s4: 'External bodies, e.g. local administrations, hospitals — enter their funding in the same form.',
+    grp_hint_s2:
+      'Those who run the project, e.g. lecturers, staff, departments — they often use resources.',
+    grp_hint_s3:
+      'Providers of money or venue, e.g. faculty, university — enter their funding in the same form.',
+    grp_hint_s4:
+      'External bodies, e.g. local administrations, hospitals — enter their funding in the same form.',
     in_step2_title: 'Enter each stakeholder once.',
-    in_step2_desc: 'Pick the group (S1–S4), then fill the stakeholder and the funding they provide in the same form. Funding appears in Step 1 automatically; in Step 3 you only pick the stakeholder from a list.',
+    in_step2_desc:
+      'Pick the group (S1–S4), then fill the stakeholder and the funding they provide in the same form. Funding appears in Step 1 automatically; in Step 3 you only pick the stakeholder from a list.',
     in_add_to: 'Add to',
     in_empty_group: 'Nothing here yet — use the “Add to” button at the top right.',
     in_code: 'Code',
@@ -1343,7 +1447,8 @@ export const translations = {
     in_unlinked_hint: 'open Step 1 and choose a funder for each one (optional).',
     in_go_step1: 'Go to Step 1',
     in_go_step2: 'Go to Step 2',
-    in_confirm_delete_funded: 'Delete this stakeholder? Its funding lines are kept in Step 1 but become unlinked.',
+    in_confirm_delete_funded:
+      'Delete this stakeholder? Its funding lines are kept in Step 1 but become unlinked.',
     in_cannot_delete: 'Cannot delete',
     in_group_pick: 'Group (S1–S4 as in the Excel)',
     in_name: 'Stakeholder name',
@@ -1366,8 +1471,10 @@ export const translations = {
     in_fund_none: 'No funding lines. Add one if this stakeholder provides money or resources.',
     in_save_add: 'Save & add next',
     in_err_group: 'Please choose a group (S1–S4).',
-    in_row_err: 'Funding line {n}: enter both the item and a valid amount (or press ✕ to remove the line).',
-    in_step1_tip: 'Funding from S2/S3/S4 (faculty, supporters, agencies) can be entered together with the stakeholder in Step 2 — it shows up here automatically.',
+    in_row_err:
+      'Funding line {n}: enter both the item and a valid amount (or press ✕ to remove the line).',
+    in_step1_tip:
+      'Funding from S2/S3/S4 (faculty, supporters, agencies) can be entered together with the stakeholder in Step 2 — it shows up here automatically.',
     in_funder: 'Funder / source',
     in_funder_hint: 'who provides it — optional',
     in_funder_none: '— not specified —',
@@ -1376,9 +1483,11 @@ export const translations = {
     in_pick_stk: '— choose a stakeholder —',
     in_save_add_outcome: 'Save & add another outcome',
     in_dup: 'Duplicate (same details, new row)',
-    in_adj_desc: 'Type straight into the table — every change is saved automatically. An empty box means “not assessed yet” (it is never counted as 0 %).',
+    in_adj_desc:
+      'Type straight into the table — every change is saved automatically. An empty box means “not assessed yet” (it is never counted as 0 %).',
     in_adj_bulk: 'Same values for many outcomes?',
-    in_adj_bulk_hint: 'Enter them once and fill only the boxes that are still empty — nothing you already typed is overwritten.',
+    in_adj_bulk_hint:
+      'Enter them once and fill only the boxes that are still empty — nothing you already typed is overwritten.',
     in_adj_bulk_btn: 'Fill empty boxes',
     in_adj_reason_ph: 'Why these percentages?',
     in_adj_source_ph: 'Source',
