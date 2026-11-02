@@ -5,7 +5,7 @@
  * Fully bilingual (Thai & English).
  */
 
-import { getState, setActiveScenario, addScenario } from '../../store.js';
+import { getState } from '../../store.js';
 import { openModal, closeModal } from '../../components/modal.js';
 import { formatBaht, formatRatio } from '../../utils/format.js';
 import { escapeHtml } from '../../utils/html.js';
@@ -220,39 +220,6 @@ export function renderStep5(container) {
         </div>
       </div>
 
-      <!-- Scenario Analysis Controls -->
-      <div class="card">
-        <div class="card-head">
-          <div>
-            <h2 class="card-title">${t('scenarios_title', 'การทดสอบแบบจำลองสถานการณ์ (Scenario Testing)')}</h2>
-            <p class="muted" style="font-size: 0.8125rem;">
-              ${isTh ? 'เปรียบเทียบผลลัพธ์ในสถานการณ์แบบระมัดระวัง (Conservative), ปกติ (Base Case), และเชิงบวก (Optimistic)' : 'Compare Conservative, Base case, and Optimistic assumptions'}
-            </p>
-          </div>
-          <button class="btn btn-secondary" id="btnAddScenario">${t('btn_add_scenario', '+ สร้างสถานการณ์ใหม่')}</button>
-        </div>
-
-        <div id="scenarioComparisonContainer">
-          <div class="muted">${t('loading', 'กำลังโหลดข้อมูลสถานการณ์...')}</div>
-        </div>
-      </div>
-
-      <!-- Tornado Sensitivity Analysis -->
-      <div class="card">
-        <div class="card-head">
-          <div>
-            <h2 class="card-title">${t('tornado_analysis', 'การวิเคราะห์ความอ่อนไหว (Tornado Sensitivity Analysis)')}</h2>
-            <p class="muted" style="font-size: 0.8125rem;">
-              ${isTh ? 'แสดงให้เห็นว่าตัวแปรหรือสมมติฐานใดส่งผลต่อความแกว่งของอัตราส่วน SROI มากที่สุด' : 'Identifies which individual assumptions create the largest swings in the final result'}
-            </p>
-          </div>
-        </div>
-
-        <div id="sensitivityContainer">
-          <div class="muted">${t('loading', 'กำลังโหลดการวิเคราะห์ความอ่อนไหว...')}</div>
-        </div>
-      </div>
-
       <!-- Sticky Wizard Footer Navigation -->
       ${wizardFooterHtml(5, {
         canProceed: isReady,
@@ -262,123 +229,6 @@ export function renderStep5(container) {
       })}
     </div>
   `;
-
-  // Load Scenario Comparison
-  api.getScenarioComparison(project.id).then((res) => {
-    const list = res?.data || [];
-    const target = document.getElementById('scenarioComparisonContainer');
-    if (!target) return;
-
-    if (list.length === 0) {
-      target.innerHTML = `<div class="muted" style="padding: 16px;">${t('no_data', 'No scenarios configured yet.')}</div>`;
-      return;
-    }
-
-    target.innerHTML = `
-      <div class="table-wrap">
-        <table class="table">
-          <thead>
-            <tr>
-              <th>${t('col_scenario', 'ชื่อสถานการณ์')}</th>
-              <th>${t('col_eval_type', 'ลักษณะ')}</th>
-              <th class="num">${t('col_sroi_ratio', 'อัตราส่วน SROI')}</th>
-              <th class="num">${t('col_present_value', 'มูลค่าปัจจุบัน (PV)')}</th>
-              <th class="num">${t('col_investment', 'เงินลงทุน')}</th>
-              <th class="num">${t('card_net_social_value', 'มูลค่าปัจจุบันสุทธิ (NPV)')}</th>
-              <th>${t('col_actions', 'จัดการ')}</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${list
-              .map((sc) => {
-                const isSelected = sc.id === activeScenarioId || (!activeScenarioId && sc.is_base);
-                return `
-                <tr style="${isSelected ? 'background: var(--primary-soft);' : ''}">
-                  <td class="strong">${escapeHtml(sc.name)}</td>
-                  <td><span class="badge badge-planned">${escapeHtml(sc.kind)}</span></td>
-                  <td class="num strong" style="color: var(--primary); font-size: 1.125rem;">
-                    ${sc.sroi_ratio !== null ? `${sc.sroi_ratio.toFixed(2)} : 1` : '-'}
-                  </td>
-                  <td class="num">${project.currency} ${formatBaht(sc.present_value)}</td>
-                  <td class="num">${project.currency} ${formatBaht(sc.investment)}</td>
-                  <td class="num strong">${project.currency} ${formatBaht(sc.net_social_value)}</td>
-                  <td>
-                    ${
-                      isSelected
-                        ? `<span class="badge badge-production">${isTh ? 'ใช้งานอยู่' : 'Active'}</span>`
-                        : `<button class="btn btn-secondary" data-select-scenario="${sc.id}" style="height: 28px; font-size: 0.75rem;">${isTh ? 'สลับมาใช้' : 'Switch'}</button>`
-                    }
-                  </td>
-                </tr>
-              `;
-              })
-              .join('')}
-          </tbody>
-        </table>
-      </div>
-    `;
-
-    target.querySelectorAll('[data-select-scenario]').forEach((btn) => {
-      btn.addEventListener('click', async () => {
-        const scId = Number(btn.dataset.selectScenario);
-        await setActiveScenario(scId);
-        renderStep5(container);
-      });
-    });
-  });
-
-  // Load Tornado Sensitivity Analysis
-  api.getSensitivity(project.id).then((res) => {
-    const rows = res?.data?.rows || [];
-    const target = document.getElementById('sensitivityContainer');
-    if (!target) return;
-
-    if (rows.length === 0) {
-      target.innerHTML = `<div class="muted" style="padding: 16px;">${isTh ? 'การวิเคราะห์ความอ่อนไหวต้องการผลลัพธ์ที่ประเมินมูลค่าอย่างน้อย 1 รายการ' : 'Sensitivity analysis requires at least one monetized outcome.'}</div>`;
-      return;
-    }
-
-    target.innerHTML = `
-      <div class="table-wrap">
-        <table class="table">
-          <thead>
-            <tr>
-              <th>${isTh ? 'ตัวแปรสมมติฐาน' : 'Parameter'}</th>
-              <th>${t('col_outcome_name', 'ผลลัพธ์ / บริบท')}</th>
-              <th class="num">${isTh ? 'กรณีต่ำสุด (Low)' : 'Low Value Ratio'}</th>
-              <th class="num">${isTh ? 'กรณีสูงสุด (High)' : 'High Value Ratio'}</th>
-              <th class="num">${isTh ? 'ช่วงความแกว่ง (มูลค่า PV)' : 'Swing (Present Value)'}</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${rows
-              .slice(0, 10)
-              .map(
-                (r) => `
-              <tr>
-                <td class="strong">${escapeHtml(r.parameter)}</td>
-                <td>${escapeHtml(r.label || '-')}</td>
-                <td class="num">${r.sroi_ratio_low !== null ? `${r.sroi_ratio_low.toFixed(2)} : 1` : '-'}</td>
-                <td class="num">${r.sroi_ratio_high !== null ? `${r.sroi_ratio_high.toFixed(2)} : 1` : '-'}</td>
-                <td class="num strong" style="color: var(--primary);">
-                  ${project.currency} ${formatBaht(r.swing_present_value)}
-                </td>
-              </tr>
-            `,
-              )
-              .join('')}
-          </tbody>
-        </table>
-      </div>
-    `;
-  });
-
-  document.getElementById('btnAddScenario')?.addEventListener('click', () => {
-    openAddScenarioModal({
-      project,
-      onSaved: () => renderStep5(container),
-    });
-  });
 
   attachWizardFooterEvents(container);
 }

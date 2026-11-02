@@ -65,42 +65,6 @@ export function renderStep1(container) {
         </div>
       </div>
 
-      <!-- Live Investment Summary Card -->
-      <div class="card has-stripe" style="background: linear-gradient(180deg, var(--surface-card) 0%, var(--surface-soft) 100%); --stripe: var(--primary);">
-        <div class="card-head">
-          <div>
-            <h2 class="card-title">${t('live_inv_baseline', 'ฐานข้อมูลเงินลงทุนโครงการ (Investment Baseline)')}</h2>
-            <p class="muted" style="font-size: 0.8125rem;">${t('live_inv_desc', 'ทรัพยากรและงบประมาณที่ใช้จริงตลอดช่วงอายุโครงการ')}</p>
-          </div>
-          <span class="badge ${project.investment_basis === 'present_value' ? 'badge-integrated' : 'badge-planned'}">
-            ${t('inv_basis_label', 'เกณฑ์')}: ${project.investment_basis === 'present_value' ? t('inv_basis_pv', 'มูลค่าปัจจุบัน (PV)') : t('inv_basis_nominal', 'ตามมูลค่าเงินสด')}
-          </span>
-        </div>
-        <div class="stat-grid-4" style="margin-bottom: 0;">
-          <div class="stat-card">
-            <div class="stat-label">${t('stat_total_inv', 'เงินลงทุนรวมทั้งหมด')}</div>
-            <div class="stat-val" style="color: var(--primary);">
-              ${project.currency} ${formatBaht(summary.nominal_total || 0)}
-            </div>
-            <div class="stat-sub">${t('col_present_value', 'Present Value')}: ${project.currency} ${formatBaht(summary.present_value_total || 0)}</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-label">${t('stat_cash_exp', 'ค่าใช้จ่ายเงินสด')}</div>
-            <div class="stat-val">${project.currency} ${formatBaht(summary.cash_total || 0)}</div>
-            <div class="stat-sub">${t('stat_direct_outlay', 'การจ่ายเงินสดจริง')}</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-label">${t('stat_inkind', 'สิ่งสนับสนุน / อาสาสมัคร (In-Kind)')}</div>
-            <div class="stat-val">${project.currency} ${formatBaht(summary.in_kind_total || 0)}</div>
-            <div class="stat-sub">${project.include_in_kind ? t('stat_inkind_included', 'รวมในการวิเคราะห์') : t('stat_inkind_excluded', 'ไม่รวมในการคำนวณ')}</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-label">${t('stat_horizon', 'ระยะเวลาประเมินผลกระทบ')}</div>
-            <div class="stat-val">${project.analysis_period_years || 1} ${t('years', 'ปี')}</div>
-            <div class="stat-sub">${t('stat_discount_rate', 'อัตราคิดลด')}: ${project.discount_rate !== null ? (project.discount_rate * 100).toFixed(1) + '%' : t('stat_unset', '0%')}</div>
-          </div>
-        </div>
-      </div>
 
       <!-- Core Project Information Card -->
       <div class="card">
@@ -242,8 +206,13 @@ export function renderStep1(container) {
       <div class="card">
         <div class="card-head">
           <div>
-            <h2 class="card-title">${isTh ? 'รายการเงินลงทุนและค่าใช้จ่าย (Investment & Resource Inputs)' : 'Investment & Cost Registry'}</h2>
-            <p class="muted" style="font-size: 0.8125rem;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <h2 class="card-title" style="margin-bottom: 0;">${isTh ? 'รายการเงินลงทุนและค่าใช้จ่าย (Investment & Resource Inputs)' : 'Investment & Cost Registry'}</h2>
+              <span class="badge badge-integrated" style="font-size: 0.75rem; font-weight: 600;">
+                ${costs.length} ${isTh ? 'รายการ' : 'items'} · ${project.currency} ${formatBaht(summary.nominal_total || 0)}
+              </span>
+            </div>
+            <p class="muted" style="font-size: 0.8125rem; margin-top: 4px; margin-bottom: 0;">
               ${isTh ? 'บันทึกค่าใช้จ่ายจริง งบประมาณดำเนินงาน หรือสิ่งสนับสนุนที่ใช้ในโครงการ' : 'Itemized financial outlays, staff costs, and volunteer inputs'}
             </p>
           </div>

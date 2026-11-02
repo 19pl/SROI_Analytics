@@ -78,78 +78,86 @@ export function renderStep4(container) {
         </div>
       </div>
 
-      <!-- 4 Concepts Educational Grid -->
-      <div class="card">
-        <div class="card-head" style="margin-bottom: var(--sp-sm);">
-          <div>
-            <h2 class="card-title">${isTh ? '💡 4 ตัวปรับปรุงผลกระทบที่คุณต้องรู้ (SROI Impact Deductions)' : '💡 The 4 Impact Adjustments Explained'}</h2>
-            <p class="muted" style="font-size: 0.8125rem;">
-              ${isTh ? 'ตอบคำถาม 4 ข้อง่ายๆ เพื่อประเมินสัดส่วนร้อยละ (%) สำหรับแต่ละผลลัพธ์:' : 'Ask these 4 practical questions to determine the percentages:'}
-            </p>
+      <!-- 4 Concepts Educational Grid (Collapsible) -->
+      <details class="card" style="border-left: 4px solid var(--accent);">
+        <summary style="padding: var(--sp-md); cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 1.25rem;">💡</span>
+            <div>
+              <strong style="color: var(--on-background); font-size: 0.9375rem;">
+                ${isTh ? '4 ตัวปรับปรุงผลกระทบที่คุณต้องรู้ (Deadweight, Attribution, Displacement, Drop-off) — คลิกเพื่อดูคำอธิบาย' : 'The 4 Impact Deductions Explained (Click to Expand)'}
+              </strong>
+              <div class="muted" style="font-size: 0.75rem;">
+                ${isTh ? 'ตอบคำถาม 4 ข้อง่ายๆ เพื่อประเมินสัดส่วนร้อยละ (%) สำหรับแต่ละผลลัพธ์' : 'Practical guidance to determine percentages'}
+              </div>
+            </div>
           </div>
-        </div>
+          <span class="badge badge-planned" style="font-size: 0.6875rem;">${isTh ? 'ดูคำอธิบาย' : 'Guidance'} ▼</span>
+        </summary>
 
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: var(--sp-md); margin-bottom: var(--sp-md);">
-          <!-- Concept 1: Deadweight -->
-          <div style="background: var(--surface-soft); padding: 12px; border-radius: var(--radius-md); border-left: 3px solid #1976d2;">
-            <strong style="font-size: 0.875rem; color: #1976d2; display: block; margin-bottom: 4px;">
-              1. Deadweight (เกิดอยู่แล้ว)
-            </strong>
-            <p style="font-size: 0.75rem; color: var(--on-background); margin-bottom: 6px; line-height: 1.4;">
-              <em>"${isTh ? 'การเปลี่ยนแปลงนี้จะเกิดขึ้นอยู่แล้วหรือไม่ แม้ไม่มีโครงการ?' : 'Would this have happened anyway without your project?'}"</em>
-            </p>
-            <div style="font-size: 0.6875rem; color: var(--muted); background: var(--surface); padding: 4px 6px; border-radius: var(--radius-sm);">
-              ${isTh ? 'ตัวอย่าง: ผู้เข้าร่วม 10% มีแนวโน้มพัฒนาทักษะได้เองอยู่แล้ว → 10%' : 'e.g. 10% of participants would improve on their own → 10%'}
+        <div style="padding: 0 var(--sp-md) var(--sp-md) var(--sp-md);">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: var(--sp-md); margin-bottom: var(--sp-md);">
+            <!-- Concept 1: Deadweight -->
+            <div style="background: var(--surface-soft); padding: 12px; border-radius: var(--radius-md); border-left: 3px solid #1976d2;">
+              <strong style="font-size: 0.875rem; color: #1976d2; display: block; margin-bottom: 4px;">
+                1. Deadweight (เกิดอยู่แล้ว)
+              </strong>
+              <p style="font-size: 0.75rem; color: var(--on-background); margin-bottom: 6px; line-height: 1.4;">
+                <em>"${isTh ? 'การเปลี่ยนแปลงนี้จะเกิดขึ้นอยู่แล้วหรือไม่ แม้ไม่มีโครงการ?' : 'Would this have happened anyway without your project?'}"</em>
+              </p>
+              <div style="font-size: 0.6875rem; color: var(--muted); background: var(--surface); padding: 4px 6px; border-radius: var(--radius-sm);">
+                ${isTh ? 'ตัวอย่าง: ผู้เข้าร่วม 10% มีแนวโน้มพัฒนาทักษะได้เองอยู่แล้ว → 10%' : 'e.g. 10% of participants would improve on their own → 10%'}
+              </div>
+            </div>
+
+            <!-- Concept 2: Attribution -->
+            <div style="background: var(--surface-soft); padding: 12px; border-radius: var(--radius-md); border-left: 3px solid #388e3c;">
+              <strong style="font-size: 0.875rem; color: #388e3c; display: block; margin-bottom: 4px;">
+                2. Attribution (เกิดจากผู้อื่น)
+              </strong>
+              <p style="font-size: 0.75rem; color: var(--on-background); margin-bottom: 6px; line-height: 1.4;">
+                <em>"${isTh ? 'มีหน่วยงานหรือผู้อื่นร่วมสร้างผลลัพธ์นี้ด้วยหรือไม่?' : 'Did other organizations also contribute to this change?'}"</em>
+              </p>
+              <div style="font-size: 0.6875rem; color: var(--muted); background: var(--surface); padding: 4px 6px; border-radius: var(--radius-sm);">
+                ${isTh ? 'ตัวอย่าง: มี รพ.สต. ร่วมจัดกิจกรรมสนับสนุน 25% → 25%' : 'e.g. Community clinic supported 25% of effort → 25%'}
+              </div>
+            </div>
+
+            <!-- Concept 3: Displacement -->
+            <div style="background: var(--surface-soft); padding: 12px; border-radius: var(--radius-md); border-left: 3px solid #f57c00;">
+              <strong style="font-size: 0.875rem; color: #f57c00; display: block; margin-bottom: 4px;">
+                3. Displacement (ย้ายปัญหา)
+              </strong>
+              <p style="font-size: 0.75rem; color: var(--on-background); margin-bottom: 6px; line-height: 1.4;">
+                <em>"${isTh ? 'โครงการสร้างผลเสียหรือย้ายปัญหาไปที่อื่นหรือไม่?' : 'Did the benefit displace problems or harm others elsewhere?'}"</em>
+              </p>
+              <div style="font-size: 0.6875rem; color: var(--muted); background: var(--surface); padding: 4px 6px; border-radius: var(--radius-sm);">
+                ${isTh ? 'ตัวอย่าง: หากไม่มียอดขายตกหรือผลกระทบทางลบต่อภายนอก → 0%' : 'e.g. If no external negative displacement occurs → 0%'}
+              </div>
+            </div>
+
+            <!-- Concept 4: Drop-off -->
+            <div style="background: var(--surface-soft); padding: 12px; border-radius: var(--radius-md); border-left: 3px solid #7b1fa2;">
+              <strong style="font-size: 0.875rem; color: #7b1fa2; display: block; margin-bottom: 4px;">
+                4. Drop-off (ลดทอนรายปี)
+              </strong>
+              <p style="font-size: 0.75rem; color: var(--on-background); margin-bottom: 6px; line-height: 1.4;">
+                <em>"${isTh ? 'ผลลัพธ์นี้ค่อยๆ เลือนหายหรือลดลงในแต่ละปีอย่างไร?' : 'Does the outcome effect fade over subsequent years?'}"</em>
+              </p>
+              <div style="font-size: 0.6875rem; color: var(--muted); background: var(--surface); padding: 4px 6px; border-radius: var(--radius-sm);">
+                ${isTh ? 'ตัวอย่าง: ความรู้ลดลงปีละ 15% หากไม่มีการฝึกฝนต่อ → 15%' : 'e.g. Knowledge fades by 15% per year without practice → 15%'}
+              </div>
             </div>
           </div>
 
-          <!-- Concept 2: Attribution -->
-          <div style="background: var(--surface-soft); padding: 12px; border-radius: var(--radius-md); border-left: 3px solid #388e3c;">
-            <strong style="font-size: 0.875rem; color: #388e3c; display: block; margin-bottom: 4px;">
-              2. Attribution (เกิดจากผู้อื่น)
-            </strong>
-            <p style="font-size: 0.75rem; color: var(--on-background); margin-bottom: 6px; line-height: 1.4;">
-              <em>"${isTh ? 'มีหน่วยงานหรือผู้อื่นร่วมสร้างผลลัพธ์นี้ด้วยหรือไม่?' : 'Did other organizations also contribute to this change?'}"</em>
-            </p>
-            <div style="font-size: 0.6875rem; color: var(--muted); background: var(--surface); padding: 4px 6px; border-radius: var(--radius-sm);">
-              ${isTh ? 'ตัวอย่าง: มี รพ.สต. ร่วมจัดกิจกรรมสนับสนุน 25% → 25%' : 'e.g. Community clinic supported 25% of effort → 25%'}
-            </div>
+          <div class="formula-box" style="font-weight: 600; font-size: 0.8125rem;">
+            ${t('adj_formula', 'ผลกระทบสุทธิที่ยอมรับได้ = มูลค่าขั้นต้น × (1 − Deadweight) × (1 − Attribution) × (1 − Displacement)')}
           </div>
-
-          <!-- Concept 3: Displacement -->
-          <div style="background: var(--surface-soft); padding: 12px; border-radius: var(--radius-md); border-left: 3px solid #f57c00;">
-            <strong style="font-size: 0.875rem; color: #f57c00; display: block; margin-bottom: 4px;">
-              3. Displacement (ย้ายปัญหา)
-            </strong>
-            <p style="font-size: 0.75rem; color: var(--on-background); margin-bottom: 6px; line-height: 1.4;">
-              <em>"${isTh ? 'โครงการสร้างผลเสียหรือย้ายปัญหาไปที่อื่นหรือไม่?' : 'Did the benefit displace problems or harm others elsewhere?'}"</em>
-            </p>
-            <div style="font-size: 0.6875rem; color: var(--muted); background: var(--surface); padding: 4px 6px; border-radius: var(--radius-sm);">
-              ${isTh ? 'ตัวอย่าง: หากไม่มียอดขายตกหรือผลกระทบทางลบต่อภายนอก → 0%' : 'e.g. If no external negative displacement occurs → 0%'}
-            </div>
-          </div>
-
-          <!-- Concept 4: Drop-off -->
-          <div style="background: var(--surface-soft); padding: 12px; border-radius: var(--radius-md); border-left: 3px solid #7b1fa2;">
-            <strong style="font-size: 0.875rem; color: #7b1fa2; display: block; margin-bottom: 4px;">
-              4. Drop-off (ลดทอนรายปี)
-            </strong>
-            <p style="font-size: 0.75rem; color: var(--on-background); margin-bottom: 6px; line-height: 1.4;">
-              <em>"${isTh ? 'ผลลัพธ์นี้ค่อยๆ เลือนหายหรือลดลงในแต่ละปีอย่างไร?' : 'Does the outcome effect fade over subsequent years?'}"</em>
-            </p>
-            <div style="font-size: 0.6875rem; color: var(--muted); background: var(--surface); padding: 4px 6px; border-radius: var(--radius-sm);">
-              ${isTh ? 'ตัวอย่าง: ความรู้ลดลงปีละ 15% หากไม่มีการฝึกฝนต่อ → 15%' : 'e.g. Knowledge fades by 15% per year without practice → 15%'}
-            </div>
+          <div style="font-size: 0.75rem; color: var(--muted); margin-top: var(--sp-xs);">
+            💡 <strong>${isTh ? 'ข้อสังเกตสำคัญ:' : 'Important Rule:'}</strong> ${isTh ? 'ช่องว่าง (–) หมายถึง "ยังไม่ได้ประเมิน" ระบบจะไม่แอบแปลงเป็น 0% เอง หากผลลัพธ์ใดไม่มีการหักลบ ให้กรอกเลข 0 อย่างชัดเจน' : 'A blank cell (–) means "not assessed yet" and is never treated as 0%. If no deduction applies, enter 0 explicitly.'}
           </div>
         </div>
-
-        <div class="formula-box" style="font-weight: 600; font-size: 0.8125rem;">
-          ${t('adj_formula', 'ผลกระทบสุทธิที่ยอมรับได้ = มูลค่าขั้นต้น × (1 − Deadweight) × (1 − Attribution) × (1 − Displacement)')}
-        </div>
-        <div style="font-size: 0.75rem; color: var(--muted); margin-top: var(--sp-xs);">
-          💡 <strong>${isTh ? 'ข้อสังเกตสำคัญ:' : 'Important Rule:'}</strong> ${isTh ? 'ช่องว่าง (–) หมายถึง "ยังไม่ได้ประเมิน" ระบบจะไม่แอบแปลงเป็น 0% เอง หากผลลัพธ์ใดไม่มีการหักลบ ให้กรอกเลข 0 อย่างชัดเจน' : 'A blank cell (–) means "not assessed yet" and is never treated as 0%. If no deduction applies, enter 0 explicitly.'}
-        </div>
-      </div>
+      </details>
 
       <!-- Adjustments Matrix Table -->
       <div class="card">

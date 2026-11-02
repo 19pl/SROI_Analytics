@@ -5,7 +5,7 @@
  * Fully bilingual (Thai & English).
  */
 
-import { getState, runCalculation, createReport, loadReports } from '../../store.js';
+import { getState, runCalculation, createReport, loadReports, setActiveScenario, addScenario } from '../../store.js';
 import {
   renderStakeholderChart,
   renderOutcomeBarChart,
@@ -18,6 +18,7 @@ import { icons } from '../../components/icons.js';
 import { api } from '../../api.js';
 import { t, getLanguage } from '../../i18n.js';
 import { wizardFooterHtml, attachWizardFooterEvents } from '../../components/wizardFooter.js';
+import { openCalculationTraceModal } from '../../components/calculationTraceModal.js';
 
 export function renderStep6(container) {
   const { project, dashboard, activeScenarioId, reports } = getState();
@@ -108,6 +109,9 @@ export function renderStep6(container) {
               ${ratio !== null ? `${ratio} : 1` : 'N/A'}
             </div>
             <div class="stat-sub">${isTh ? 'มูลค่าทางสังคมที่สร้างได้ ต่อเงินลงทุน 1 บาท' : 'Monetized social value per 1 invested.'}</div>
+            <button class="btn btn-secondary" id="traceBtn_sroi" style="margin-top: 10px; font-size: 0.75rem; height: 28px; padding: 0 10px;">
+              🔎 ${isTh ? 'ดูที่มาของตัวเลข' : 'How was this calculated?'}
+            </button>
           </div>
 
           <!-- Card 2: Present Value of Impact -->
@@ -119,6 +123,9 @@ export function renderStep6(container) {
             <div class="stat-sub">
               ${isTh ? 'ผลประโยชน์เชิงบวก' : 'Positive'}: ${formatBaht(summary.positive_present_value || 0)} | ${isTh ? 'ผลเสีย' : 'Harms'}: -${formatBaht(Math.abs(summary.negative_present_value || 0))}
             </div>
+            <button class="btn btn-secondary" id="traceBtn_pv" style="margin-top: 10px; font-size: 0.75rem; height: 28px; padding: 0 10px;">
+              🔎 ${isTh ? 'ดูที่มาของตัวเลข' : 'How was this calculated?'}
+            </button>
           </div>
 
           <!-- Card 3: Total Investment -->
@@ -128,6 +135,9 @@ export function renderStep6(container) {
               ${project.currency} ${formatBaht(summary.investment_used || 0)}
             </div>
             <div class="stat-sub">${t('inv_basis_label', 'เกณฑ์')}: ${project.investment_basis === 'present_value' ? t('inv_basis_pv', 'มูลค่าปัจจุบัน') : t('inv_basis_nominal', 'ตามมูลค่าเงินสด')}</div>
+            <button class="btn btn-secondary" id="traceBtn_inv" style="margin-top: 10px; font-size: 0.75rem; height: 28px; padding: 0 10px;">
+              🔎 ${isTh ? 'ดูที่มาของตัวเลข' : 'How was this calculated?'}
+            </button>
           </div>
 
           <!-- Card 4: Net Social Value -->
@@ -137,23 +147,26 @@ export function renderStep6(container) {
               ${(summary.net_social_value || 0) >= 0 ? '+' : ''}${project.currency} ${formatBaht(summary.net_social_value || 0)}
             </div>
             <div class="stat-sub">${isTh ? 'ผลตอบแทนทางสังคมสุทธิ:' : 'Net Return:'} ${summary.net_return_pct !== null && summary.net_return_pct !== undefined ? summary.net_return_pct + '%' : '-'}</div>
+            <button class="btn btn-secondary" id="traceBtn_nsv" style="margin-top: 10px; font-size: 0.75rem; height: 28px; padding: 0 10px;">
+              🔎 ${isTh ? 'ดูที่มาของตัวเลข' : 'How was this calculated?'}
+            </button>
           </div>
         </div>
 
         <!-- Visual Analytics Grid -->
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: var(--sp-lg);">
-          <!-- A. Stakeholder Value Distribution -->
+          <!-- A. Outcome Valuation Breakdown (most actionable — shown first) -->
           <div class="chart-card">
-            <div class="chart-title">A. ${isTh ? 'การกระจายมูลค่าทางสังคมตามกลุ่มผู้มีส่วนได้ส่วนเสีย' : 'Social Value by Stakeholder Group'}</div>
-            <div class="chart-subtitle">${isTh ? 'สัดส่วนคุณค่าที่ตกแก่กลุ่มเป้าหมาย นิสิต ชุมชน และมหาวิทยาลัย' : 'Distribution among affected beneficiaries'}</div>
-            ${renderStakeholderChart(stakeholders)}
-          </div>
-
-          <!-- B. Outcome Valuation Breakdown -->
-          <div class="chart-card">
-            <div class="chart-title">B. ${isTh ? 'การแจกแจงมูลค่าตามผลลัพธ์แต่ละด้าน' : 'Outcome Valuation Breakdown'}</div>
+            <div class="chart-title">A. ${isTh ? 'การแจกแจงมูลค่าตามผลลัพธ์แต่ละด้าน' : 'Outcome Valuation Breakdown'}</div>
             <div class="chart-subtitle">${isTh ? 'มูลค่าปัจจุบันสุทธิที่เกิดจากการเปลี่ยนแปลงแต่ละรายการ' : 'Net present value generated across outcomes'}</div>
             ${renderOutcomeBarChart(outcomeLines)}
+          </div>
+
+          <!-- B. Stakeholder Value Distribution -->
+          <div class="chart-card">
+            <div class="chart-title">B. ${isTh ? 'การกระจายมูลค่าทางสังคมตามกลุ่มผู้มีส่วนได้ส่วนเสีย' : 'Social Value by Stakeholder Group'}</div>
+            <div class="chart-subtitle">${isTh ? 'สัดส่วนคุณค่าที่ตกแก่กลุ่มเป้าหมาย นิสิต ชุมชน และมหาวิทยาลัย' : 'Distribution among affected beneficiaries'}</div>
+            ${renderStakeholderChart(stakeholders)}
           </div>
         </div>
 
@@ -164,33 +177,36 @@ export function renderStep6(container) {
           ${renderAnnualTrendChart(annual)}
         </div>
 
-        <!-- Detailed Impact Composition Table -->
-        <div class="card">
-          <div class="card-head">
+        <!-- D. Detailed Impact Composition Table (collapsed by default — deep dive) -->
+        <details class="card" style="padding: 0;">
+          <summary style="cursor: pointer; padding: var(--sp-md) var(--sp-lg); display: flex; justify-content: space-between; align-items: center; list-style: none; gap: var(--sp-sm);">
             <div>
-              <h2 class="card-title">D. ${isTh ? 'ตารางตรวจสอบความโปร่งใสของผลลัพธ์ (Impact Audit Table)' : 'Detailed Impact Composition Table'}</h2>
-              <p class="muted" style="font-size: 0.8125rem;">
-                ${isTh ? 'แจกแจงตั้งแต่การประมาณมูลค่าขั้นต้น หักลบ Deadweight/Attribution จนถึงมูลค่าปัจจุบันสุทธิ' : 'Outcome-by-outcome audit breakdown from Gross value to Discounted Present Value'}
-              </p>
+              <span style="font-weight: 700; font-size: 0.9375rem; color: var(--on-background);">
+                D. ${isTh ? 'ตารางตรวจสอบความโปร่งใสของผลลัพธ์ (Impact Audit Table)' : 'Detailed Impact Composition Table'}
+              </span>
+              <span class="muted" style="font-size: 0.8125rem; display: block; margin-top: 2px;">
+                ${isTh ? 'คลิกเพื่อดูรายละเอียด — แจกแจงตั้งแต่มูลค่าขั้นต้น หักลบ Deadweight/Attribution จนถึงมูลค่าปัจจุบันสุทธิ' : 'Click to expand — outcome-by-outcome audit from Gross to Discounted PV'}
+              </span>
             </div>
-          </div>
-
-          <div class="table-wrap">
-            <table class="table">
-              <thead>
-                <tr>
-                  <th>${t('col_outcome_name', 'ผลลัพธ์')}</th>
-                  <th class="num">${t('col_gross_annual', 'มูลค่าขั้นต้น')}</th>
-                  <th class="num">${t('col_net_retained', 'สัดส่วนสุทธิ')}</th>
-                  <th class="num">${isTh ? 'มูลค่าสุทธิ' : 'Retained Value'}</th>
-                  <th class="num">${t('col_present_value', 'มูลค่าปัจจุบัน (PV)')}</th>
-                  <th>${t('col_eval_type', 'รูปแบบ')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${outcomeLines
-                  .map(
-                    (l) => `
+            <span class="badge badge-planned" style="flex-shrink: 0;">${outcomeLines.length} ${isTh ? 'ผลลัพธ์' : 'outcomes'}</span>
+          </summary>
+          <div style="padding: 0 var(--sp-lg) var(--sp-lg);">
+            <div class="table-wrap">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>${t('col_outcome_name', 'ผลลัพธ์')}</th>
+                    <th class="num">${t('col_gross_annual', 'มูลค่าขั้นต้น')}</th>
+                    <th class="num">${t('col_net_retained', 'สัดส่วนสุทธิ')}</th>
+                    <th class="num">${isTh ? 'มูลค่าสุทธิ' : 'Retained Value'}</th>
+                    <th class="num">${t('col_present_value', 'มูลค่าปัจจุบัน (PV)')}</th>
+                    <th>${t('col_eval_type', 'รูปแบบ')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${outcomeLines
+                    .map(
+                      (l) => `
                   <tr>
                     <td class="strong">
                       ${escapeHtml(l.name)}
@@ -207,14 +223,47 @@ export function renderStep6(container) {
                     <td><span class="badge badge-planned">${escapeHtml(l.projection_model)}</span></td>
                   </tr>
                 `,
-                  )
-                  .join('')}
-              </tbody>
-            </table>
+                    )
+                    .join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </details>
+
+
+        <!-- E. Scenario Analysis & Sensitivity (relocated from Step 5) -->
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <h2 class="card-title">${t('scenarios_title', 'การทดสอบแบบจำลองสถานการณ์ (Scenario Testing)')}</h2>
+              <p class="muted" style="font-size: 0.8125rem;">
+                ${isTh ? 'เปรียบเทียบผลลัพธ์ในสถานการณ์แบบระมัดระวัง (Conservative), ปกติ (Base Case), และเชิงบวก (Optimistic)' : 'Compare Conservative, Base case, and Optimistic assumptions'}
+              </p>
+            </div>
+            <button class="btn btn-secondary" id="btnAddScenarioDash">${t('btn_add_scenario', '+ สร้างสถานการณ์ใหม่')}</button>
+          </div>
+          <div id="scenarioComparisonContainerDash">
+            <div class="muted">${t('loading', 'กำลังโหลดข้อมูลสถานการณ์...')}</div>
           </div>
         </div>
 
-        <!-- Institutional Limitations & Governance Disclaimer Card -->
+        <!-- F. Tornado Sensitivity Analysis -->
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <h2 class="card-title">${t('tornado_analysis', 'การวิเคราะห์ความอ่อนไหว (Tornado Sensitivity Analysis)')}</h2>
+              <p class="muted" style="font-size: 0.8125rem;">
+                ${isTh ? 'แสดงให้เห็นว่าตัวแปรหรือสมมติฐานใดส่งผลต่อความแกว่งของอัตราส่วน SROI มากที่สุด' : 'Identifies which individual assumptions create the largest swings in the final result'}
+              </p>
+            </div>
+          </div>
+          <div id="sensitivityContainerDash">
+            <div class="muted">${t('loading', 'กำลังโหลดการวิเคราะห์ความอ่อนไหว...')}</div>
+          </div>
+        </div>
+
+                <!-- Institutional Limitations & Governance Disclaimer Card -->
         <div class="card" style="background: var(--surface-soft); border-left: 4px solid var(--accent);">
           <div style="display: flex; gap: var(--sp-md); align-items: flex-start;">
             <div style="font-size: 1.5rem; line-height: 1;">🛡️</div>
@@ -259,6 +308,125 @@ export function renderStep6(container) {
   });
 
   attachWizardFooterEvents(container);
+
+  // Wire [🔎 ดูที่มา] trace buttons on the 4 metric cards
+  if (isReady) {
+    document.getElementById('traceBtn_sroi')?.addEventListener('click', () => {
+      openCalculationTraceModal({ metricType: 'sroi_ratio', project, result: dashboard?.result });
+    });
+    document.getElementById('traceBtn_pv')?.addEventListener('click', () => {
+      openCalculationTraceModal({ metricType: 'present_value', project, result: dashboard?.result });
+    });
+    document.getElementById('traceBtn_inv')?.addEventListener('click', () => {
+      openCalculationTraceModal({ metricType: 'total_investment', project, result: dashboard?.result });
+    });
+    document.getElementById('traceBtn_nsv')?.addEventListener('click', () => {
+      openCalculationTraceModal({ metricType: 'sroi_ratio', project, result: dashboard?.result });
+    });
+
+    // Load Scenario Comparison into Dashboard
+    api.getScenarioComparison(project.id).then((res) => {
+      const list = res?.data || [];
+      const target = document.getElementById('scenarioComparisonContainerDash');
+      if (!target) return;
+      const isTh = getLanguage() !== 'en';
+      if (list.length === 0) {
+        target.innerHTML = `<div class="muted" style="padding: 16px;">${t('no_data', 'No scenarios configured yet.')}</div>`;
+        return;
+      }
+      target.innerHTML = `
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>${t('col_scenario', 'ชื่อสถานการณ์')}</th>
+                <th>${t('col_eval_type', 'ลักษณะ')}</th>
+                <th class="num">${t('col_sroi_ratio', 'อัตราส่วน SROI')}</th>
+                <th class="num">${t('col_present_value', 'มูลค่าปัจจุบัน (PV)')}</th>
+                <th class="num">${t('col_investment', 'เงินลงทุน')}</th>
+                <th class="num">${t('card_net_social_value', 'มูลค่าปัจจุบันสุทธิ (NPV)')}</th>
+                <th>${t('col_actions', 'จัดการ')}</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${list.map((sc) => {
+                const isSelected = sc.id === activeScenarioId || (!activeScenarioId && sc.is_base);
+                return `
+                <tr style="${isSelected ? 'background: var(--primary-soft);' : ''}">
+                  <td class="strong">${escapeHtml(sc.name)}</td>
+                  <td><span class="badge badge-planned">${escapeHtml(sc.kind)}</span></td>
+                  <td class="num strong" style="color: var(--primary); font-size: 1.125rem;">
+                    ${sc.sroi_ratio !== null ? `${sc.sroi_ratio.toFixed(2)} : 1` : '-'}
+                  </td>
+                  <td class="num">${project.currency} ${formatBaht(sc.present_value)}</td>
+                  <td class="num">${project.currency} ${formatBaht(sc.investment)}</td>
+                  <td class="num strong">${project.currency} ${formatBaht(sc.net_social_value)}</td>
+                  <td>
+                    ${isSelected
+                      ? `<span class="badge badge-production">${isTh ? 'ใช้งานอยู่' : 'Active'}</span>`
+                      : `<button class="btn btn-secondary" data-select-scenario="${sc.id}" style="height: 28px; font-size: 0.75rem;">${isTh ? 'สลับมาใช้' : 'Switch'}</button>`
+                    }
+                  </td>
+                </tr>
+              `;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+      `;
+      target.querySelectorAll('[data-select-scenario]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const scId = Number(btn.dataset.selectScenario);
+          await setActiveScenario(scId);
+          renderStep6(container);
+        });
+      });
+    });
+
+    // Load Tornado Sensitivity into Dashboard
+    api.getSensitivity(project.id).then((res) => {
+      const rows = res?.data?.rows || [];
+      const target = document.getElementById('sensitivityContainerDash');
+      if (!target) return;
+      const isTh = getLanguage() !== 'en';
+      if (rows.length === 0) {
+        target.innerHTML = `<div class="muted" style="padding: 16px;">${isTh ? 'การวิเคราะห์ความอ่อนไหวต้องการผลลัพธ์ที่ประเมินมูลค่าอย่างน้อย 1 รายการ' : 'Sensitivity analysis requires at least one monetized outcome.'}</div>`;
+        return;
+      }
+      target.innerHTML = `
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>${isTh ? 'ตัวแปรสมมติฐาน' : 'Parameter'}</th>
+                <th>${t('col_outcome_name', 'ผลลัพธ์ / บริบท')}</th>
+                <th class="num">${isTh ? 'กรณีต่ำสุด (Low)' : 'Low Value Ratio'}</th>
+                <th class="num">${isTh ? 'กรณีสูงสุด (High)' : 'High Value Ratio'}</th>
+                <th class="num">${isTh ? 'ช่วงความแกว่ง (มูลค่า PV)' : 'Swing (Present Value)'}</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rows.slice(0, 10).map((r) => `
+                <tr>
+                  <td class="strong">${escapeHtml(r.parameter)}</td>
+                  <td>${escapeHtml(r.label || '-')}</td>
+                  <td class="num">${r.sroi_ratio_low !== null ? `${r.sroi_ratio_low.toFixed(2)} : 1` : '-'}</td>
+                  <td class="num">${r.sroi_ratio_high !== null ? `${r.sroi_ratio_high.toFixed(2)} : 1` : '-'}</td>
+                  <td class="num strong" style="color: var(--primary);">
+                    ${project.currency} ${formatBaht(r.swing_present_value)}
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      `;
+    });
+
+    document.getElementById('btnAddScenarioDash')?.addEventListener('click', () => {
+      openAddScenarioModal({ project, onSaved: () => renderStep6(container) });
+    });
+  }
 }
 
 function openExportReportModal({ project, activeScenarioId }) {
@@ -387,6 +555,82 @@ function openExportReportModal({ project, activeScenarioId }) {
       }
     } catch (err) {
       alert(`Failed to create share link: ${err.message}`);
+    }
+  });
+}
+function openAddScenarioModal({ project, onSaved }) {
+  const isTh = getLanguage() !== 'en';
+
+  const formHtml = `
+    <form id="scenarioFormDash" class="stack" style="gap: var(--sp-md);">
+      <div class="field">
+        <label class="field-label">${t('col_scenario', 'ชื่อสถานการณ์')} *</label>
+        <input type="text" name="name" class="input" required placeholder="${isTh ? 'เช่น สถานการณ์แบบระมัดระวัง (ลดทอนผลลัพธ์ 20%)' : 'e.g. Conservative Cohort Retention'}" />
+      </div>
+      <div class="form-grid">
+        <div class="field">
+          <label class="field-label">${t('col_eval_type', 'ประเภทสถานการณ์')} *</label>
+          <select name="kind" class="input" required>
+            <option value="conservative">${isTh ? 'สถานการณ์แบบระมัดระวัง (Conservative)' : 'Conservative Scenario'}</option>
+            <option value="optimistic">${isTh ? 'สถานการณ์เชิงบวก (Optimistic)' : 'Optimistic Scenario'}</option>
+            <option value="custom">${isTh ? 'สถานการณ์เฉพาะนโยบาย (Custom Policy)' : 'Custom Policy Scenario'}</option>
+          </select>
+        </div>
+        <div class="field">
+          <label class="field-label">${isTh ? 'อัตราคิดลดเฉพาะสถานการณ์นี้ (%)' : 'Global Discount Rate Override (%)'}</label>
+          <input type="number" name="discount_rate" step="0.1" min="0" max="100" class="input" placeholder="${isTh ? 'เว้นว่างเพื่อใช้อัตราตามโครงการเดิม' : 'Leave blank to use base rate'}" />
+        </div>
+      </div>
+      <div class="field">
+        <label class="field-label">${t('description', 'คำอธิบายและสมมติฐาน')}</label>
+        <textarea name="description" class="input" rows="2" placeholder="${isTh ? 'ระบุเหตุผลและสมมติฐานของการทดสอบสถานการณ์นี้' : 'Document the purpose of this sensitivity scenario'}"></textarea>
+      </div>
+      <div id="scenarioDashModalError" class="alert alert-danger" style="display: none;"></div>
+    </form>
+  `;
+
+  openModal({
+    title: isTh ? 'สร้างแบบจำลองสถานการณ์ใหม่ (Add Scenario)' : 'Create Alternative Scenario',
+    body: formHtml,
+    footer: `
+      <button class="btn btn-secondary" data-modal-close>${t('cancel', 'ยกเลิก')}</button>
+      <button class="btn btn-primary" id="btnSaveScenarioDash">${isTh ? 'บันทึกสถานการณ์' : 'Create Scenario'}</button>
+    `,
+  });
+
+  document.getElementById('btnSaveScenarioDash')?.addEventListener('click', async () => {
+    const form = document.getElementById('scenarioFormDash');
+    const errBox = document.getElementById('scenarioDashModalError');
+    if (!form) return;
+
+    const rateVal = form.discount_rate.value ? parseFloat(form.discount_rate.value) / 100 : null;
+    const data = {
+      name: form.name.value.trim(),
+      kind: form.kind.value,
+      description: form.description.value.trim(),
+      assumptions: {
+        global: rateVal !== null ? { discount_rate: rateVal } : {},
+        outcomes: {},
+      },
+    };
+
+    if (!data.name) {
+      if (errBox) {
+        errBox.textContent = isTh ? 'กรุณาระบุชื่อสถานการณ์' : 'Please enter a scenario name.';
+        errBox.style.display = 'block';
+      }
+      return;
+    }
+
+    try {
+      await addScenario(data);
+      closeModal();
+      onSaved();
+    } catch (err) {
+      if (errBox) {
+        errBox.textContent = err.message;
+        errBox.style.display = 'block';
+      }
     }
   });
 }

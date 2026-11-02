@@ -1,7 +1,7 @@
 /**
  * Step 3: Outcomes & Financial Proxies: What Changed & Its Value?
- * Guided, beginner-friendly experience for university employees.
- * Teaches the difference between Activity, Output, and Outcome.
+ * Guided, beginner-friendly experience with progressive micro-steps.
+ * Features a primary Dropdown for "การเปลี่ยนแปลงที่เกิดขึ้น" with an "อื่นๆ" button/text reveal.
  * Fully bilingual (Thai & English).
  */
 
@@ -22,6 +22,16 @@ import { wizardFooterHtml, attachWizardFooterEvents } from '../../components/wiz
 
 let lastStakeholderId = null;
 
+export const OUTCOME_PRESETS = [
+  { id: 'income', th: 'มีรายได้เพิ่มขึ้น / ลดรายจ่ายในครัวเรือน', en: 'Increased Income / Cost Savings', polarity: 'positive', defaultProxy: 3500, unit: 'คน / เดือน' },
+  { id: 'health', th: 'สุขภาพดีขึ้น / ป้องกันภาวะเจ็บป่วยและลดความเสี่ยงหกล้ม', en: 'Improved Health & Prevented Illness', polarity: 'positive', defaultProxy: 2500, unit: 'คน / ปี' },
+  { id: 'skills', th: 'ได้รับความรู้และทักษะใหม่ นำไปประกอบอาชีพได้', en: 'New Professional Skills & Career Growth', polarity: 'positive', defaultProxy: 4000, unit: 'คน' },
+  { id: 'time', th: 'ประหยัดเวลา / เพิ่มความสะดวกในการทำงาน', en: 'Time Saved & Daily Efficiency', polarity: 'positive', defaultProxy: 1500, unit: 'คน / ปี' },
+  { id: 'env', th: 'สิ่งแวดล้อมดีขึ้น / ลดปริมาณขยะและมลพิษ', en: 'Environmental Quality & Waste Reduction', polarity: 'positive', defaultProxy: 1200, unit: 'ตัน / ปี' },
+  { id: 'harm', th: 'มีภาระค่าใช้จ่ายหรือเวลาสูญเสียเพิ่มขึ้น (ผลกระทบทางลบ)', en: 'Increased Burden / Time Loss (Negative Impact)', polarity: 'negative', defaultProxy: 1000, unit: 'คน / ปี' },
+  { id: '__other__', th: '✏️ อื่นๆ (ระบุเอง...)', en: '✏️ Other (Specify...)', polarity: 'positive', defaultProxy: null, unit: 'คน / ปี' },
+];
+
 export function renderStep3(container) {
   const { project, stakeholders, outcomes } = getState();
   const lang = getLanguage();
@@ -36,101 +46,70 @@ export function renderStep3(container) {
   stakeholders.forEach((s) => (stakeById[s.id] = stakeholderLabel(s)));
 
   container.innerHTML = `
-    <div class="stack" style="gap: var(--sp-xl);">
-      <!-- Guidance Header -->
-      <div class="alert alert-info in-banner" style="background: rgba(25, 118, 210, 0.08); border-left: 4px solid var(--primary); padding: var(--sp-md);">
+    <div class="stack" style="gap: var(--sp-lg);">
+      <!-- Clean, Short Header -->
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: var(--sp-md);">
         <div>
-          <strong style="font-size: 0.9375rem; color: var(--primary); display: block; margin-bottom: 2px;">
-            ${isTh ? 'ขั้นตอนที่ 3: ระบุการเปลี่ยนแปลงที่เกิดขึ้นและประเมินมูลค่า (Outcomes & Financial Proxies)' : 'Step 3: Identify What Changed & Value the Outcomes'}
-          </strong>
-          <span style="font-size: 0.8125rem; color: var(--on-background);">
-            ${
-              isTh
-                ? 'ระบุการเปลี่ยนแปลงจริงที่มีความหมายต่อชีวิตของผู้คน (ผลลัพธ์) ไม่ใช่เพียงกิจกรรมที่จัดขึ้น แล้วประมาณการมูลค่าด้วยตัวแทนทางการเงิน'
-                : 'Identify meaningful changes experienced by beneficiaries (outcomes) rather than just project activities, and value them using financial proxies.'
-            }
-          </span>
+          <h1 class="page-title" style="margin-bottom: 2px;">
+            ${isTh ? 'ขั้นตอนที่ 3: ระบุผลลัพธ์และมูลค่าทางสังคม (Outcomes)' : 'Step 3: Outcomes & Valuation'}
+          </h1>
+          <p class="muted page-sub" style="margin-bottom: 0;">
+            ${isTh ? 'ระบุการเปลี่ยนแปลงที่เกิดขึ้นจริงกับผู้คน และประเมินมูลค่าด้วยตัวแทนทางการเงิน' : 'Identify meaningful changes and assign monetary proxies.'}
+          </p>
         </div>
+        <button class="btn btn-primary" id="btnAddOutcome" style="font-weight: 600;">
+          ${icons.plus} ${isTh ? '+ เพิ่มผลลัพธ์ใหม่' : '+ Build Outcome'}
+        </button>
       </div>
 
-      <!-- Activity vs Output vs Outcome Educational Card -->
-      <div class="card" style="border-left: 4px solid var(--positive);">
-        <div class="card-head" style="margin-bottom: var(--sp-sm);">
-          <div>
-            <h2 class="card-title" style="color: var(--positive); display: flex; align-items: center; gap: 6px;">
-              💡 ${isTh ? 'ทำความเข้าใจ: "กิจกรรม" แตกต่างจาก "ผลลัพธ์" อย่างไร?' : 'Understanding: Activity vs Output vs Outcome'}
-            </h2>
-            <p class="muted" style="font-size: 0.8125rem;">
-              ${isTh ? 'หัวใจสำคัญของ SROI คือการวัด "การเปลี่ยนแปลงที่เกิดขึ้นจริง" ไม่ใช่วัดเพียงสิ่งที่โครงการทำ' : 'SROI measures actual change experienced by people, not just activities delivered.'}
-            </p>
+      <!-- Collapsed Educational Guide -->
+      <details class="card" style="padding: 0; border-left: 4px solid var(--positive);">
+        <summary style="padding: var(--sp-md); cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 1.125rem;">💡</span>
+            <div>
+              <strong style="color: var(--positive); font-size: 0.875rem;">
+                ${isTh ? 'ทำความเข้าใจ: "กิจกรรม" แตกต่างจาก "ผลลัพธ์" อย่างไร? (คลิกเพื่อดูตัวอย่าง)' : 'Guide: Activity vs Output vs Outcome (Click to view)'}
+              </strong>
+            </div>
           </div>
+          <span class="badge badge-planned" style="font-size: 0.6875rem;">${isTh ? 'ตัวอย่าง' : 'Examples'} ▼</span>
+        </summary>
+        <div style="padding: 0 var(--sp-md) var(--sp-md) var(--sp-md);">
+          <table class="edu-compare-table" style="font-size: 0.8125rem;">
+            <thead>
+              <tr>
+                <th>${isTh ? 'กิจกรรม (Activity)' : 'Activity'}</th>
+                <th>${isTh ? 'ผลผลิต (Output)' : 'Output'}</th>
+                <th>${isTh ? 'ผลลัพธ์ (Outcome) ★ วัด SROI' : 'Outcome ★ SROI Focus'}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>${isTh ? 'จัดฝึกอบรมทักษะอาชีพ 3 วัน' : '3-day workshop'}</td>
+                <td>${isTh ? 'ผู้เข้าอบรม 120 คน' : '120 participants'}</td>
+                <td style="color: var(--positive); font-weight: 600;">${isTh ? 'ผู้เข้าอบรมมีรายได้เพิ่มขึ้นเฉลี่ย ฿3,500/เดือน' : 'Participants earn ฿3,500/mo extra'}</td>
+              </tr>
+              <tr>
+                <td>${isTh ? 'ตรวจคัดกรองสายตาผู้สูงอายุ' : 'Eye screening'}</td>
+                <td>${isTh ? 'ตรวจผู้สูงอายุ 500 ราย' : '500 screened'}</td>
+                <td style="color: var(--positive); font-weight: 600;">${isTh ? 'ป้องกันภาวะสูญเสียการมองเห็น และลดความเสี่ยงหกล้ม' : 'Prevented blindness & falls'}</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
-
-        <table class="edu-compare-table">
-          <thead>
-            <tr>
-              <th style="width: 28%;">${isTh ? 'กิจกรรม (Activity)' : 'Activity (What you do)'}</th>
-              <th style="width: 28%;">${isTh ? 'ผลผลิต (Output)' : 'Output (Immediate delivery)'}</th>
-              <th style="width: 44%;">${isTh ? 'ผลลัพธ์ (Outcome) ★ สิ่งที่ SROI ต้องการ' : 'Outcome (Real change) ★ What SROI measures'}</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>
-                <span class="badge-activity">${isTh ? 'สิ่งที่โครงการลงมือทำ' : 'Effort / action'}</span>
-                <div style="margin-top: 4px; font-weight: 500;">${isTh ? 'จัดฝึกอบรมทักษะอาชีพ 3 วัน' : 'Deliver 3-day job skills workshop'}</div>
-              </td>
-              <td>
-                <span class="muted">${isTh ? 'จำนวนสิ่งที่นับได้ทันที' : 'Immediate count'}</span>
-                <div style="margin-top: 4px;">${isTh ? 'ผู้เข้าร่วมอบรม 120 คน' : '120 participants attended'}</div>
-              </td>
-              <td>
-                <span class="badge-outcome">${isTh ? 'การเปลี่ยนแปลงที่มีความหมาย' : 'Meaningful change'}</span>
-                <div style="margin-top: 4px; font-weight: 600; color: var(--positive);">
-                  ${isTh ? 'ผู้เข้าอบรมนำทักษะไปประกอบอาชีพและมีรายได้เพิ่มขึ้นเฉลี่ย ฿3,500/เดือน' : 'Participants gain employment with average income increase of ฿3,500/month'}
-                </div>
-              </td>
-            </tr>
-            <tr>
-              <td>
-                <div style="font-weight: 500;">${isTh ? 'ตรวจคัดกรองสายตาและสุขภาพผู้สูงอายุ' : 'Free eye screening for community elderly'}</div>
-              </td>
-              <td>
-                <div>${isTh ? 'ผู้สูงอายุได้รับการตรวจ 500 ราย' : '500 elderly screened'}</div>
-              </td>
-              <td>
-                <div style="font-weight: 600; color: var(--positive);">
-                  ${isTh ? 'ผู้สูงอายุกลับมามองเห็นชัดเจน ป้องกันภาวะสูญเสียการมองเห็น และลดความเสี่ยงการหกล้ม' : 'Restored vision, prevented blindness, and reduced risk of traumatic falls'}
-                </div>
-              </td>
-            </tr>
-            <tr>
-              <td>
-                <div style="font-weight: 500;">${isTh ? 'จัดกิจกรรมรณรงค์คัดแยกขยะในมหาวิทยาลัย' : 'Campus recycling & waste campaign'}</div>
-              </td>
-              <td>
-                <div>${isTh ? 'จุดแยกขยะ 15 จุด และผู้เข้าร่วม 800 คน' : '15 bins placed, 800 participants'}</div>
-              </td>
-              <td>
-                <div style="font-weight: 600; color: var(--positive);">
-                  ${isTh ? 'ปริมาณขยะส่งกำจัดลดลง 20 ตัน/ปี และมหาวิทยาลัยประหยัดค่าธรรมเนียมจัดการขยะ' : 'Waste reduced by 20 tons/yr, saving university municipal disposal fees'}
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+      </details>
 
       <!-- Outcomes & Financial Proxies Registry Card -->
       <div class="card">
-        <div class="card-head">
+        <div class="card-head" style="margin-bottom: var(--sp-sm);">
           <div>
-            <h2 class="card-title">${t('outcome_registry_title', 'รายการผลลัพธ์และตัวแทนทางการเงิน (Outcome Registry)')}</h2>
-            <p class="muted" style="font-size: 0.8125rem;">
+            <h2 class="card-title" style="font-size: 1rem;">${t('outcome_registry_title', 'รายการผลลัพธ์และตัวแทนทางการเงิน (Outcome Registry)')}</h2>
+            <p class="muted" style="font-size: 0.75rem; margin-bottom: 0;">
               ${isTh ? 'บันทึกการเปลี่ยนแปลงและมูลค่าเทียบเคียงทางการเงินของแต่ละผลลัพธ์' : 'Translate measured changes into defensible monetary proxies'}
             </p>
           </div>
-          <button class="btn btn-primary" id="btnAddOutcome">${icons.plus} ${isTh ? '+ เพิ่มผลลัพธ์ใหม่' : '+ Build Outcome'}</button>
+          <span class="badge badge-planned">${outcomes.length} ${isTh ? 'ผลลัพธ์' : 'outcomes'}</span>
         </div>
 
         <div class="table-wrap">
@@ -154,7 +133,7 @@ export function renderStep3(container) {
                       <div style="font-size: 1.5rem; margin-bottom: 6px;">✨</div>
                       <div class="strong" style="margin-bottom: 4px;">${isTh ? 'ยังไม่มีผลลัพธ์ที่บันทึกไว้' : 'No outcomes created yet'}</div>
                       <div class="muted" style="font-size: 0.8125rem; margin-bottom: 12px;">
-                        ${isTh ? 'คลิกปุ่ม "+ เพิ่มผลลัพธ์ใหม่" เพื่อระบุการเปลี่ยนแปลงที่เกิดขึ้นจากโครงการของคุณ' : 'Click "+ Build Outcome" to map your first change'}
+                        ${isTh ? 'คลิกปุ่ม "+ เพิ่มผลลัพธ์ใหม่" เพื่อระบุการเปลี่ยนแปลงที่เกิดขึ้น' : 'Click "+ Build Outcome" to map your first change'}
                       </div>
                     </td></tr>`
                   : outcomes
@@ -169,48 +148,45 @@ export function renderStep3(container) {
                   <tr data-id="${o.id}">
                     <td>
                       <div class="strong" style="font-size: 0.9375rem; color: var(--on-background);">${escapeHtml(o.name)}</div>
-                      ${o.indicator ? `<span class="muted" style="font-size: 0.75rem;">${t('col_outcome_indicator', 'ตัวชี้วัด')}: ${escapeHtml(o.indicator)}</span>` : ''}
+                      <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-top: 2px;">
+                        ${o.activity ? `<span class="badge badge-integrated" style="font-size: 0.6875rem;">📁 ${escapeHtml(o.activity)}</span>` : ''}
+                        ${o.indicator ? `<span class="muted" style="font-size: 0.75rem;">${t('col_outcome_indicator', 'ตัวชี้วัด')}: ${escapeHtml(o.indicator)}</span>` : ''}
+                      </div>
                     </td>
-                    <td>
-                      <span class="badge badge-planned">${escapeHtml(stkName)}</span>
-                    </td>
+                    <td>${escapeHtml(stkName)}</td>
                     <td>
                       <span class="polarity-badge ${o.polarity === 'negative' ? 'polarity-negative' : 'polarity-positive'}">
-                        ${o.polarity === 'negative' ? t('polarity_negative', '- ผลเสีย / เชิงลบ') : t('polarity_positive', '+ ผลดี / เชิงบวก')}
+                        ${o.polarity === 'negative' ? t('polarity_negative', '- ผลเสีย') : t('polarity_positive', '+ ผลดี')}
                       </span>
                     </td>
-                    <td class="num">${Number(o.quantity).toLocaleString()}</td>
+                    <td class="num strong">${Number(o.quantity).toLocaleString()}</td>
                     <td class="num">
                       ${
                         o.proxy_value !== null
-                          ? `${project.currency} ${formatBaht(o.proxy_value)} <small class="muted">/${escapeHtml(o.proxy_unit || t('unit', 'หน่วย'))}</small>`
-                          : `<span class="muted">${t('unmonetized', 'ยังไม่ประเมินมูลค่า')}</span>`
+                          ? `${project.currency} ${formatBaht(o.proxy_value)} <span class="muted" style="font-size: 0.75rem;">/${escapeHtml(o.proxy_unit || '')}</span>`
+                          : '<span class="muted">–</span>'
                       }
                     </td>
-                    <td class="num strong" style="color: ${o.polarity === 'negative' ? 'var(--negative)' : 'var(--positive)'}; font-size: 0.9375rem;">
-                      ${gross !== null ? `${project.currency} ${formatBaht(gross)}` : '-'}
+                    <td class="num strong" style="color: ${gross !== null && gross < 0 ? 'var(--negative)' : 'var(--positive)'}; font-size: 0.9375rem;">
+                      ${gross !== null ? `${project.currency} ${formatBaht(gross)}` : '<span class="muted">–</span>'}
                     </td>
                     <td>
-                      <span class="badge badge-${o.evidence_quality === 'measured' ? 'production' : o.evidence_quality === 'external' ? 'integrated' : 'planned'}">
-                        ${escapeHtml(o.evidence_quality)}
-                      </span>
+                      <span class="badge badge-planned" style="font-size: 0.6875rem;">${escapeHtml(o.evidence_quality || 'assumed')}</span>
                     </td>
                     <td>
                       <div style="display: flex; gap: 4px;">
-                        <button class="btn-icon" data-edit-outcome="${o.id}" title="${t('edit', 'Edit Outcome')}">
+                        <button class="btn-icon" data-edit-outcome="${o.id}" title="${t('edit', 'Edit')}">
                           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
                         </button>
-                        <button class="btn-icon" data-dup-outcome="${o.id}" title="${t('in_dup', 'Duplicate')}">⧉</button>
-                        <button class="btn-icon" data-evidence-outcome="${o.id}" title="${t('field_rationale', 'Evidence')}">
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>
+                        <button class="btn-icon" data-evidence-outcome="${o.id}" title="${isTh ? 'แนบหลักฐาน (Evidence)' : 'Attach Evidence'}">
+                          📎
                         </button>
-                        <button class="btn-icon" data-remove-outcome="${o.id}" title="${t('delete', 'Delete Outcome')}">
+                        <button class="btn-icon" data-remove-outcome="${o.id}" title="${t('delete', 'Delete')}">
                           ${icons.trash}
                         </button>
                       </div>
                     </td>
-                  </tr>
-                `;
+                  </tr>`;
                       })
                       .join('')
               }
@@ -226,18 +202,9 @@ export function renderStep3(container) {
           ? 'บันทึกและไปต่อ: ปรับปรุงผลกระทบส่วนเกิน (Step 4) →'
           : 'Continue: Impact Adjustments (Step 4) →',
       })}
-    </div>
-  `;
+    </div>`;
 
   document.getElementById('btnAddOutcome')?.addEventListener('click', () => {
-    if (stakeholders.length === 0) {
-      alert(
-        isTh
-          ? 'กรุณาเพิ่มผู้มีส่วนได้ส่วนเสียในขั้นตอนที่ 2 อย่างน้อย 1 กลุ่มก่อนเพิ่มผลลัพธ์'
-          : 'Please add at least one stakeholder in Step 2 before mapping outcomes.',
-      );
-      return;
-    }
     openOutcomeModal({
       project,
       stakeholders,
@@ -249,25 +216,11 @@ export function renderStep3(container) {
     btn.addEventListener('click', () => {
       const oId = Number(btn.dataset.editOutcome);
       const target = outcomes.find((o) => o.id === oId);
-      if (target) {
-        openOutcomeModal({
-          project,
-          stakeholders,
-          initialData: target,
-          onSaved: () => renderStep3(container),
-        });
-      }
-    });
-  });
-
-  container.querySelectorAll('[data-dup-outcome]').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const target = outcomes.find((o) => o.id === Number(btn.dataset.dupOutcome));
       if (target)
         openOutcomeModal({
           project,
           stakeholders,
-          prefill: target,
+          initialData: target,
           onSaved: () => renderStep3(container),
         });
     });
@@ -305,6 +258,11 @@ export function renderStep3(container) {
   attachWizardFooterEvents(container);
 }
 
+/**
+ * Progressive Micro-Step Outcome Builder Modal
+ * Step 1: Who & What Changed? (Stakeholder + Outcome Dropdown with "อื่นๆ" reveal)
+ * Step 2: Quantity & Financial Proxy Valuation
+ */
 function openOutcomeModal({ project, stakeholders, initialData = null, prefill = null, onSaved }) {
   const isEdit = !!initialData;
   const lang = getLanguage();
@@ -318,148 +276,276 @@ function openOutcomeModal({ project, stakeholders, initialData = null, prefill =
       : stakeholders[0]?.id || null);
   const startCount = stakeholders.find((s) => s.id === startStk)?.estimated_count;
 
+  // Determine if initial name matches any preset
+  const matchedPreset = initialData
+    ? OUTCOME_PRESETS.find((p) => p.th === initialData.name || p.en === initialData.name)
+    : OUTCOME_PRESETS[0];
+  const initialPresetVal = matchedPreset ? matchedPreset.id : (initialData ? '__other__' : OUTCOME_PRESETS[0].id);
+
   const formHtml = `
-    <form id="outcomeBuilderForm" class="stack" style="gap: var(--sp-lg);" autocomplete="off">
-      <!-- Section 1: Describe the Change -->
-      <div class="card" style="padding: var(--sp-md); background: var(--surface-soft); border: 1px solid var(--outline);">
-        <h3 style="font-size: 0.9375rem; font-weight: 700; color: var(--primary); margin-bottom: 4px;">
-          1️⃣ ${isTh ? 'ระบุการเปลี่ยนแปลงที่เกิดขึ้น (Describe the Change)' : 'Step 1: Describe the Change'}
-        </h3>
-        <p class="muted" style="font-size: 0.75rem; margin-bottom: var(--sp-md);">
-          ${isTh ? 'ใครเป็นผู้ได้รับผลประโยชน์ และเกิดอะไรที่ดีขึ้นหรือแย่ลงเพราะโครงการของคุณ?' : 'Who experienced the change and what happened as a direct result?'}
-        </p>
-
-        <div class="form-grid">
-          <div class="field">
-            <label class="field-label">${isTh ? 'ผู้มีส่วนได้ส่วนเสียที่เกิดการเปลี่ยนแปลง *' : 'Stakeholder Affected *'}</label>
-            <select name="stakeholder_id" class="input" required>
-              ${stakeholderOptionsHtml(stakeholders, startStk, escapeHtml)}
-            </select>
-          </div>
-
-          <div class="field">
-            <label class="field-label">${isTh ? 'ลักษณะผลลัพธ์ *' : 'Polarity *'}</label>
-            <select name="polarity" class="input">
-              <option value="positive" ${src?.polarity !== 'negative' ? 'selected' : ''}>${isTh ? '＋ ผลประโยชน์เชิงบวก (Positive Benefit)' : '+ Positive Benefit'}</option>
-              <option value="negative" ${src?.polarity === 'negative' ? 'selected' : ''}>${isTh ? '－ ผลกระทบทางลบ / ความเสียหาย (Negative Harm)' : '- Negative Harm / Cost'}</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="field" style="margin-top: var(--sp-sm);">
-          <label class="field-label">${isTh ? 'การเปลี่ยนแปลงที่เกิดขึ้นคืออะไร? (ชื่อผลลัพธ์) *' : 'What changed? (Outcome Name) *'}</label>
-          <input type="text" name="name" class="input" value="${escapeHtml(src?.name || '')}" required placeholder="${isTh ? 'เช่น ผู้สูงอายุป้องกันภาวะสูญเสียการมองเห็นและลดความเสี่ยงหกล้ม' : 'e.g. Prevented vision loss and restored independence'}" />
-          <span class="muted" style="font-size: 0.75rem; margin-top: 4px; display: block;">
-            ${isTh ? '💡 ระบุการเปลี่ยนแปลงที่เกิดขึ้นจริงกับผู้คน ไม่ใช่ระบุเพียงกิจกรรมที่จัดขึ้น' : 'Describe the actual meaningful change, not just what activity was conducted.'}
-          </span>
-        </div>
-
-        <div class="form-grid" style="margin-top: var(--sp-sm);">
-          <div class="field">
-            <label class="field-label">${isTh ? 'จำนวนคนที่เกิดการเปลี่ยนแปลง (คน/หน่วย) *' : 'Quantity Experiencing Change *'}</label>
-            <input type="number" name="quantity" min="0" step="1" class="input" value="${src?.quantity ?? startCount ?? ''}" required />
-          </div>
-          <div class="field">
-            <label class="field-label">${isTh ? 'ตัวชี้วัดการเปลี่ยนแปลง (Indicator)' : 'Indicator of Change'}</label>
-            <input type="text" name="indicator" class="input" value="${escapeHtml(src?.indicator || '')}" placeholder="${isTh ? 'เช่น ผลตรวจการมองเห็นหลังได้รับแว่นตา' : 'e.g. Visual acuity score post-intervention'}" />
-          </div>
-        </div>
+    <div class="stack" style="gap: var(--sp-md);">
+      <!-- Step Indicator Bar -->
+      <div style="display: flex; gap: 8px; align-items: center; border-bottom: 1px solid var(--outline); padding-bottom: 12px; margin-bottom: 4px;">
+        <span id="ocStepBadge1" class="badge badge-production" style="font-weight: 700; font-size: 0.8125rem; padding: 4px 10px;">
+          1. ${isTh ? 'ใครและเกิดผลอะไร' : '1. Who & What Changed'}
+        </span>
+        <span class="muted" style="font-size: 0.75rem;">➔</span>
+        <span id="ocStepBadge2" class="badge" style="background: var(--surface-soft); color: var(--muted); font-size: 0.8125rem; padding: 4px 10px;">
+          2. ${isTh ? 'จำนวนและมูลค่าตัวแทน' : '2. Quantity & Value'}
+        </span>
       </div>
 
-      <!-- Section 2: Financial Proxy & Valuation -->
-      <div class="card" style="padding: var(--sp-md); background: var(--surface-card); border: 1px solid var(--outline);">
-        <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: var(--sp-sm); margin-bottom: var(--sp-sm);">
-          <div>
-            <h3 style="font-size: 0.9375rem; font-weight: 700; color: var(--primary); margin-bottom: 2px;">
-              2️⃣ ${isTh ? 'ประเมินมูลค่าผลลัพธ์ (Financial Proxy Valuation)' : 'Step 2: Value the Change (Financial Proxy)'}
-            </h3>
-            <p class="muted" style="font-size: 0.75rem; margin: 0;">
-              ${isTh ? 'ประมาณมูลค่าทางการเงินของคุณค่าทางสังคมนี้ เพื่อให้สามารถเปรียบเทียบกับเงินลงทุนได้' : 'Approximate the monetary value of this social benefit to compare against investment.'}
-            </p>
-          </div>
-          <button type="button" class="btn btn-secondary" id="btnPickProxyFromLib" style="font-size: 0.8125rem;">
-            📚 ${isTh ? 'เลือกจากคลังตัวแทนทางการเงิน' : 'Pick from Proxy Library'}
-          </button>
-        </div>
-
-        <div style="background: var(--surface-soft); padding: 8px 12px; border-radius: var(--radius-sm); font-size: 0.75rem; margin-bottom: var(--sp-md); border-left: 3px solid var(--accent);">
-          💡 <strong>${isTh ? 'ตัวแทนทางการเงินคืออะไร?' : 'What is a Financial Proxy?'}</strong> ${isTh ? 'ประโยชน์ทางสังคมส่วนใหญ่ไม่มีราคาตลาดตรงๆ เช่น สุขภาพหรือทักษะ เราจึงใช้มูลค่าเทียบเคียง เช่น ค่าคอร์สอบรมในตลาด หรือค่ารักษาพยาบาลที่ประหยัดได้' : 'Most social changes lack market prices. Proxies estimate value using market equivalents, such as training fees or medical costs avoided.'}
-        </div>
-
-        <div class="form-grid">
-          <div class="field">
-            <label class="field-label">${isTh ? 'มูลค่าตัวแทนต่อหน่วย (บาท) *' : 'Proxy Value per Unit *'} (${project.currency})</label>
-            <input type="number" name="proxy_value" min="0" step="0.01" class="input" value="${src?.proxy_value ?? ''}" placeholder="${isTh ? 'เช่น 2500' : 'e.g. 2500'}" />
-          </div>
-          <div class="field">
-            <label class="field-label">${isTh ? 'หน่วยนับของตัวแทน' : 'Proxy Unit of Measure'}</label>
-            <input type="text" name="proxy_unit" class="input" value="${escapeHtml(src?.proxy_unit || (isTh ? 'คน / ปี' : 'person / year'))}" placeholder="${isTh ? 'เช่น คน / ปี, โครงการ / ปี' : 'e.g. person / year'}" />
-          </div>
-        </div>
-
-        <div class="field" style="margin-top: var(--sp-sm);">
-          <label class="field-label">${isTh ? 'แหล่งที่มาของมูลค่าอ้างอิง *' : 'Evidence / Benchmark Source *'}</label>
-          <input type="text" name="proxy_source" class="input" value="${escapeHtml(src?.proxy_source || '')}" required placeholder="${isTh ? 'เช่น อัตราค่าบริการรักษาพยาบาล รพ.มหาวิทยาลัยนเรศวร, รายงาน SROI' : 'e.g. University hospital fee schedule, published SROI benchmark'}" />
-        </div>
-
-        <!-- Collapsible Advanced Settings -->
-        <details class="in-more" style="margin-top: var(--sp-md);">
-          <summary style="font-size: 0.8125rem; font-weight: 600; cursor: pointer; color: var(--muted);">
-            ⚙️ ${isTh ? 'การตั้งค่าขั้นสูง (ระยะเวลา, ความคงอยู่, คุณภาพหลักฐาน)' : 'Advanced Details (Duration, Persistence, Evidence)'}
-          </summary>
-          <div class="form-grid" style="margin-top: var(--sp-sm);">
+      <form id="outcomeBuilderForm" class="stack" style="gap: var(--sp-md);" autocomplete="off">
+        <!-- ==================== PANE 1: WHO & WHAT ==================== -->
+        <div id="ocPane1" class="stack" style="gap: var(--sp-md);">
+          <div class="form-grid">
             <div class="field">
-              <label class="field-label">${isTh ? 'ผลลัพธ์นี้คงอยู่กี่ปี? (Duration)' : 'Outcome Duration (Years)'}</label>
-              <input type="number" name="duration_years" min="1" max="${period}" class="input" value="${src?.duration_years || 1}" />
-            </div>
-            <div class="field">
-              <label class="field-label">${isTh ? 'รูปแบบความคงอยู่ของผลลัพธ์' : 'Outcome Persistence Model'}</label>
-              <select name="projection_model" class="input">
-                <option value="cohort" ${src?.projection_model === 'cohort' ? 'selected' : ''}>${isTh ? 'Single Cohort (กลุ่มเดียว ค่อยๆ ลดลงตามปี)' : 'Single Cohort (persists over time)'}</option>
-                <option value="recurring_cohorts" ${src?.projection_model === 'recurring_cohorts' ? 'selected' : ''}>${isTh ? 'Recurring Cohorts (มีกลุ่มใหม่เข้ารับบริการทุกปี)' : 'Recurring Cohorts (new entrants yearly)'}</option>
-                <option value="independent" ${src?.projection_model === 'independent' ? 'selected' : ''}>${isTh ? 'Independent (วัดผลแยกรายปีอิสระ)' : 'Independent (annual measured quantities)'}</option>
+              <label class="field-label" style="font-weight: 700;">
+                ${isTh ? 'ผู้มีส่วนได้ส่วนเสียที่เกิดการเปลี่ยนแปลง *' : 'Stakeholder Affected *'}
+              </label>
+              <select name="stakeholder_id" id="ocStakeholderSelect" class="input" required>
+                ${stakeholderOptionsHtml(stakeholders, startStk, escapeHtml)}
               </select>
             </div>
+
             <div class="field">
-              <label class="field-label">${isTh ? 'ระดับความน่าเชื่อถือของหลักฐาน' : 'Evidence Rigor Level'}</label>
-              <select name="evidence_quality" class="input">
-                <option value="measured" ${src?.evidence_quality === 'measured' ? 'selected' : ''}>${isTh ? 'Measured (เก็บข้อมูลวัดผลเชิงประจักษ์จริง)' : 'Measured (Empirical data collected)'}</option>
-                <option value="external" ${src?.evidence_quality === 'external' ? 'selected' : ''}>${isTh ? 'External (อ้างอิงจากงานวิจัย / สถิติภายนอก)' : 'External (Research citations)'}</option>
-                <option value="estimated" ${src?.evidence_quality === 'estimated' ? 'selected' : ''}>${isTh ? 'Estimated (ประมาณการตามเหตุผล)' : 'Estimated (Extrapolated)'}</option>
-                <option value="assumed" ${src?.evidence_quality === 'assumed' ? 'selected' : ''}>${isTh ? 'Assumed (สมมติฐานเบื้องต้น)' : 'Assumed (Hypothetical judgment)'}</option>
+              <label class="field-label" style="font-weight: 700;">
+                ${isTh ? 'ลักษณะผลลัพธ์ *' : 'Polarity *'}
+              </label>
+              <select name="polarity" id="ocPolaritySelect" class="input">
+                <option value="positive" ${src?.polarity !== 'negative' ? 'selected' : ''}>${isTh ? '＋ ผลประโยชน์เชิงบวก (Positive)' : '+ Positive Benefit'}</option>
+                <option value="negative" ${src?.polarity === 'negative' ? 'selected' : ''}>${isTh ? '－ ผลกระทบทางลบ (Negative)' : '- Negative Harm / Cost'}</option>
               </select>
             </div>
           </div>
-        </details>
-      </div>
 
-      <div id="outcomeModalError" class="alert alert-danger" style="display: none;"></div>
-    </form>
-  `;
+          <!-- Outcome Preset Dropdown with "อื่นๆ" button -->
+          <div class="field">
+            <label class="field-label" style="font-size: 0.9375rem; font-weight: 700; color: var(--on-background);">
+              ${isTh ? 'การเปลี่ยนแปลงที่เกิดขึ้นคืออะไร? (ผลลัพธ์ที่ได้รับจริง) *' : 'What changed? (Meaningful Outcome) *'}
+            </label>
+            <div style="display: flex; gap: var(--sp-sm); align-items: center;">
+              <select id="ocPresetSelect" class="input" style="flex: 1; font-size: 0.9375rem;">
+                ${OUTCOME_PRESETS.map((p) => `
+                  <option value="${p.id}" ${initialPresetVal === p.id ? 'selected' : ''}>
+                    ${escapeHtml(isTh ? p.th : p.en)}
+                  </option>
+                `).join('')}
+              </select>
+              <button type="button" class="btn btn-secondary" id="btnPickOtherOutcome" style="font-size: 0.8125rem;">
+                ✏️ ${isTh ? 'อื่นๆ' : 'Other'}
+              </button>
+            </div>
+          </div>
 
-  const footer = `
-    <button class="btn btn-secondary" data-modal-close>${t('cancel', 'ยกเลิก')}</button>
-    ${isEdit ? '' : `<button class="btn btn-secondary" id="btnSaveOutcomeNext">${isTh ? 'บันทึกและเพิ่มผลลัพธ์ต่อไป' : 'Save & add next'}</button>`}
-    <button class="btn btn-primary" id="btnSaveOutcome">${isEdit ? (isTh ? 'อัปเดตผลลัพธ์' : 'Update Outcome') : isTh ? 'บันทึกผลลัพธ์' : 'Save Outcome'}</button>
-  `;
+          <!-- Custom Outcome Name (Reveals when "อื่นๆ" is active) -->
+          <div id="customOutcomeRow" class="field" style="display: ${initialPresetVal === '__other__' ? 'grid' : 'none'};">
+            <label class="field-label" style="color: var(--primary); font-weight: 600;">
+              ${isTh ? 'ระบุการเปลี่ยนแปลงจริงที่เกิดขึ้น *' : 'Specify Outcome Name *'}
+            </label>
+            <input type="text" id="customOutcomeInput" name="name" class="input" value="${escapeHtml(src?.name || '')}" placeholder="${isTh ? 'เช่น ผู้สูงอายุเดินได้คล่องตัวขึ้น ลดการพึ่งพาผู้อื่น...' : 'e.g. Prevented vision loss...'}" />
+          </div>
+
+          <!-- Service / Activity Line (Optional) -->
+          <div class="field">
+            <label class="field-label" style="font-size: 0.8125rem;">${isTh ? 'กลุ่มบริการหรือกิจกรรม (Service / Activity Group)' : 'Service Line'}</label>
+            <input type="text" name="activity" class="input" list="serviceGroupSuggestions" value="${escapeHtml(src?.activity || '')}" placeholder="${isTh ? 'เช่น ตรวจคัดกรองสุขภาพ, ธาราบำบัด, อบรมอาชีพ...' : 'e.g. Health screening, training...'}" />
+            <datalist id="serviceGroupSuggestions">
+              <option value="${isTh ? 'บริการตรวจคัดกรองสุขภาพฟรี' : 'Free health screening services'}"></option>
+              <option value="${isTh ? 'บริการอาคารธาราบำบัด' : 'Hydrotherapy clinic services'}"></option>
+              <option value="${isTh ? 'กิจกรรม Open House และประชาสัมพันธ์มหาวิทยาลัย' : 'Open House'}"></option>
+              <option value="${isTh ? 'กิจกรรมบริการวิชาการและพัฒนาชุมชน' : 'Community engagement'}"></option>
+              <option value="${isTh ? 'การฝึกทักษะและเสริมสร้างสมรรถนะนิสิต' : 'Student training'}"></option>
+            </datalist>
+          </div>
+
+          <div style="display: flex; justify-content: flex-end; margin-top: var(--sp-sm);">
+            <button type="button" class="btn btn-primary" id="btnOcGotoPane2" style="padding: 10px 22px;">
+              ${isTh ? 'ต่อไป (ระบุจำนวนและมูลค่า) ➔' : 'Next (Quantity & Valuation) ➔'}
+            </button>
+          </div>
+        </div>
+
+        <!-- ==================== PANE 2: QUANTITY & FINANCIAL PROXY ==================== -->
+        <div id="ocPane2" class="stack" style="display: none; gap: var(--sp-md);">
+          <div style="background: var(--surface-soft); padding: 10px 14px; border-radius: var(--radius-sm); border-left: 3px solid var(--primary); font-size: 0.875rem;">
+            ${isTh ? 'ผลลัพธ์:' : 'Outcome:'} <strong id="pane2OutcomeLabel" style="color: var(--primary);"></strong>
+          </div>
+
+          <div class="form-grid">
+            <div class="field">
+              <label class="field-label" style="font-weight: 700;">
+                ${isTh ? 'จำนวนคนที่เกิดการเปลี่ยนแปลง (คน/หน่วย) *' : 'Quantity Experiencing Change *'}
+              </label>
+              <input type="number" name="quantity" min="0" step="1" class="input" value="${src?.quantity ?? startCount ?? ''}" required placeholder="เช่น 120" />
+            </div>
+            <div class="field">
+              <label class="field-label">${isTh ? 'ตัวชี้วัด (Indicator)' : 'Indicator'}</label>
+              <input type="text" name="indicator" class="input" value="${escapeHtml(src?.indicator || '')}" placeholder="${isTh ? 'เช่น แบบประเมินทักษะ, ผลตรวจ' : 'e.g. Assessment score'}" />
+            </div>
+          </div>
+
+          <!-- Proxy Valuation -->
+          <div class="card" style="padding: var(--sp-md); background: var(--surface-card); border: 1px solid var(--outline);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--sp-sm);">
+              <div>
+                <strong style="font-size: 0.875rem; color: var(--primary);">
+                  ${isTh ? 'มูลค่าตัวแทนทางการเงิน (Financial Proxy)' : 'Financial Proxy'}
+                </strong>
+                <p class="muted" style="font-size: 0.75rem; margin: 0;">${isTh ? 'มูลค่าเทียบเคียงในตลาดสำหรับประโยชน์นี้' : 'Market equivalent value'}</p>
+              </div>
+              <button type="button" class="btn btn-secondary" id="btnPickProxyFromLib" style="font-size: 0.75rem; height: 30px; padding: 0 10px;">
+                📚 ${isTh ? 'เลือกจากคลังตัวแทน' : 'Proxy Library'}
+              </button>
+            </div>
+
+            <div class="form-grid">
+              <div class="field">
+                <label class="field-label">${isTh ? 'มูลค่าต่อหน่วย (บาท) *' : 'Proxy Value *'} (${project.currency})</label>
+                <input type="number" name="proxy_value" min="0" step="0.01" class="input" value="${src?.proxy_value ?? ''}" placeholder="2500" />
+              </div>
+              <div class="field">
+                <label class="field-label">${isTh ? 'หน่วยนับ' : 'Unit'}</label>
+                <input type="text" name="proxy_unit" class="input" value="${escapeHtml(src?.proxy_unit || (isTh ? 'คน / ปี' : 'person / year'))}" placeholder="คน / ปี" />
+              </div>
+            </div>
+
+            <div class="field" style="margin-top: var(--sp-sm);">
+              <label class="field-label">${isTh ? 'แหล่งที่มาของมูลค่าอ้างอิง *' : 'Source / Citation *'}</label>
+              <input type="text" name="proxy_source" class="input" value="${escapeHtml(src?.proxy_source || '')}" placeholder="${isTh ? 'เช่น อัตราค่าบริการ รพ.มหาวิทยาลัยนเรศวร, รายงาน SROI' : 'e.g. University hospital fee schedule'}" />
+            </div>
+          </div>
+
+          <!-- Collapsible Advanced Settings -->
+          <details class="in-more">
+            <summary style="font-size: 0.8125rem; font-weight: 600; cursor: pointer; color: var(--muted);">
+              ⚙️ ${isTh ? 'การตั้งค่าขั้นสูง (ระยะเวลา, รูปแบบความคงอยู่)' : 'Advanced (Duration, Persistence)'}
+            </summary>
+            <div class="form-grid" style="margin-top: var(--sp-sm);">
+              <div class="field">
+                <label class="field-label">${isTh ? 'คงอยู่กี่ปี? (Duration)' : 'Duration (Years)'}</label>
+                <input type="number" name="duration_years" min="1" max="${period}" class="input" value="${src?.duration_years || 1}" />
+              </div>
+              <div class="field">
+                <label class="field-label">${isTh ? 'รูปแบบความคงอยู่' : 'Model'}</label>
+                <select name="projection_model" class="input">
+                  <option value="cohort" ${src?.projection_model === 'cohort' ? 'selected' : ''}>Single Cohort</option>
+                  <option value="recurring_cohorts" ${src?.projection_model === 'recurring_cohorts' ? 'selected' : ''}>Recurring Cohorts</option>
+                  <option value="independent" ${src?.projection_model === 'independent' ? 'selected' : ''}>Independent</option>
+                </select>
+              </div>
+              <div class="field">
+                <label class="field-label">${isTh ? 'ความน่าเชื่อถือ' : 'Rigor'}</label>
+                <select name="evidence_quality" class="input">
+                  <option value="measured" ${src?.evidence_quality === 'measured' ? 'selected' : ''}>Measured</option>
+                  <option value="external" ${src?.evidence_quality === 'external' ? 'selected' : ''}>External</option>
+                  <option value="estimated" ${src?.evidence_quality === 'estimated' ? 'selected' : ''}>Estimated</option>
+                  <option value="assumed" ${src?.evidence_quality === 'assumed' ? 'selected' : ''}>Assumed</option>
+                </select>
+              </div>
+            </div>
+          </details>
+
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: var(--sp-sm); flex-wrap: wrap; gap: var(--sp-sm);">
+            <button type="button" class="btn btn-secondary" id="btnOcBackToPane1">
+              ← ${isTh ? 'ย้อนกลับ' : 'Back'}
+            </button>
+            <button type="button" class="btn btn-primary" id="btnSaveOutcomeDirect">
+              ✓ ${isEdit ? (isTh ? 'อัปเดตผลลัพธ์' : 'Update Outcome') : (isTh ? 'บันทึกผลลัพธ์' : 'Save Outcome')}
+            </button>
+          </div>
+        </div>
+
+        <div id="outcomeModalError" class="alert alert-danger" style="display: none;"></div>
+      </form>
+    </div>`;
 
   openModal({
     title: isEdit
-      ? isTh
-        ? 'แก้ไขผลลัพธ์และตัวแทนทางการเงิน'
-        : 'Edit Outcome'
-      : isTh
-        ? 'เพิ่มผลลัพธ์และตัวแทนทางการเงิน (Build Outcome)'
-        : 'Add New Outcome',
+      ? (isTh ? 'แก้ไขผลลัพธ์และตัวแทนทางการเงิน' : 'Edit Outcome')
+      : (isTh ? 'เพิ่มผลลัพธ์และตัวแทนทางการเงิน (Build Outcome)' : 'Add New Outcome'),
     body: formHtml,
     size: 'lg',
-    footer,
   });
+
+  const form = document.getElementById('outcomeBuilderForm');
+  const errBox = document.getElementById('outcomeModalError');
+  const pane1 = document.getElementById('ocPane1');
+  const pane2 = document.getElementById('ocPane2');
+  const badge1 = document.getElementById('ocStepBadge1');
+  const badge2 = document.getElementById('ocStepBadge2');
+  const ocPresetSelect = document.getElementById('ocPresetSelect');
+  const btnPickOtherOutcome = document.getElementById('btnPickOtherOutcome');
+  const customOutcomeRow = document.getElementById('customOutcomeRow');
+  const customOutcomeInput = document.getElementById('customOutcomeInput');
+  const pane2OutcomeLabel = document.getElementById('pane2OutcomeLabel');
+  const ocPolaritySelect = document.getElementById('ocPolaritySelect');
+
+  const showErr = (msg) => {
+    errBox.textContent = msg;
+    errBox.style.display = 'block';
+    errBox.scrollIntoView({ block: 'nearest' });
+  };
+
+  const getEffectiveOutcomeName = () => {
+    if (ocPresetSelect.value === '__other__') {
+      return customOutcomeInput.value.trim();
+    }
+    const found = OUTCOME_PRESETS.find(p => p.id === ocPresetSelect.value);
+    return found ? (isTh ? found.th : found.en) : customOutcomeInput.value.trim();
+  };
+
+  const syncOutcomePresetUI = () => {
+    const isOther = ocPresetSelect.value === '__other__';
+    customOutcomeRow.style.display = isOther ? 'grid' : 'none';
+    if (isOther) {
+      customOutcomeInput.focus();
+    } else {
+      const found = OUTCOME_PRESETS.find(p => p.id === ocPresetSelect.value);
+      if (found) {
+        if (found.polarity) ocPolaritySelect.value = found.polarity;
+        if (found.defaultProxy && !form.proxy_value.value) form.proxy_value.value = found.defaultProxy;
+        if (found.unit) form.proxy_unit.value = found.unit;
+      }
+    }
+  };
+
+  ocPresetSelect.addEventListener('change', syncOutcomePresetUI);
+  btnPickOtherOutcome.addEventListener('click', () => {
+    ocPresetSelect.value = '__other__';
+    syncOutcomePresetUI();
+  });
+
+  const goToPane = (paneNum) => {
+    errBox.style.display = 'none';
+    pane1.style.display = paneNum === 1 ? 'flex' : 'none';
+    pane2.style.display = paneNum === 2 ? 'grid' : 'none';
+
+    badge1.className = paneNum === 1 ? 'badge badge-production' : 'badge';
+    badge1.style.background = paneNum === 1 ? '' : 'var(--surface-soft)';
+    badge1.style.color = paneNum === 1 ? '' : 'var(--muted)';
+
+    badge2.className = paneNum === 2 ? 'badge badge-production' : 'badge';
+    badge2.style.background = paneNum === 2 ? '' : 'var(--surface-soft)';
+    badge2.style.color = paneNum === 2 ? '' : 'var(--muted)';
+  };
+
+  document.getElementById('btnOcGotoPane2')?.addEventListener('click', () => {
+    const name = getEffectiveOutcomeName();
+    if (!name) {
+      showErr(isTh ? 'กรุณาระบุชื่อผลลัพธ์' : 'Please specify an outcome name.');
+      if (ocPresetSelect.value === '__other__') customOutcomeInput.focus();
+      return;
+    }
+    pane2OutcomeLabel.textContent = name;
+    goToPane(2);
+  });
+
+  document.getElementById('btnOcBackToPane1')?.addEventListener('click', () => goToPane(1));
 
   document.getElementById('btnPickProxyFromLib')?.addEventListener('click', () => {
     openProxyLibraryModal({
       onSelectProxy: (selectedProxy) => {
-        const form = document.getElementById('outcomeBuilderForm');
         if (form) {
           form.proxy_value.value = selectedProxy.value;
           form.proxy_unit.value = selectedProxy.unit;
@@ -469,20 +555,25 @@ function openOutcomeModal({ project, stakeholders, initialData = null, prefill =
     });
   });
 
-  const save = async (andNext) => {
-    const form = document.getElementById('outcomeBuilderForm');
-    const errBox = document.getElementById('outcomeModalError');
-    if (!form) return;
-    if (errBox) errBox.style.display = 'none';
+  const save = async () => {
+    errBox.style.display = 'none';
+    const name = getEffectiveOutcomeName();
+    if (!name) {
+      goToPane(1);
+      showErr(isTh ? 'กรุณาระบุชื่อผลลัพธ์' : 'Please enter an outcome name.');
+      return;
+    }
 
     const proxyVal = form.proxy_value.value ? parseFloat(form.proxy_value.value) : null;
+    const qty = parseFloat(form.quantity.value) || 0;
 
     const data = {
-      name: form.name.value.trim(),
+      name,
+      activity: form.activity?.value.trim() || null,
       stakeholder_id: parseInt(form.stakeholder_id.value, 10),
       polarity: form.polarity.value,
       indicator: form.indicator.value.trim(),
-      quantity: parseFloat(form.quantity.value) || 0,
+      quantity: qty,
       proxy_value: proxyVal,
       proxy_unit: form.proxy_unit.value.trim(),
       proxy_source: form.proxy_source.value.trim(),
@@ -491,13 +582,9 @@ function openOutcomeModal({ project, stakeholders, initialData = null, prefill =
       evidence_quality: form.evidence_quality.value,
     };
 
-    if (!data.name || !data.stakeholder_id || form.quantity.value === '' || isNaN(data.quantity)) {
-      if (errBox) {
-        errBox.textContent = isTh
-          ? 'กรุณาระบุชื่อผลลัพธ์และจำนวนคนที่เกิดการเปลี่ยนแปลง'
-          : 'Please enter an outcome name and valid quantity.';
-        errBox.style.display = 'block';
-      }
+    if (!data.stakeholder_id || form.quantity.value === '' || isNaN(qty)) {
+      goToPane(2);
+      showErr(isTh ? 'กรุณาระบุจำนวนคนที่เกิดการเปลี่ยนแปลง' : 'Please enter a valid quantity.');
       return;
     }
 
@@ -508,40 +595,15 @@ function openOutcomeModal({ project, stakeholders, initialData = null, prefill =
         await addOutcome(data);
       }
       lastStakeholderId = data.stakeholder_id;
-      if (andNext) {
-        ['name', 'indicator', 'proxy_value', 'proxy_unit', 'proxy_source'].forEach(
-          (n) => (form[n].value = ''),
-        );
-        form.quantity.value =
-          stakeholders.find((s) => s.id === data.stakeholder_id)?.estimated_count ?? '';
-        onSaved();
-        form.name.focus();
-        return;
-      }
       closeModal();
       onSaved();
     } catch (err) {
-      if (errBox) {
-        errBox.textContent = err.message;
-        errBox.style.display = 'block';
-      }
+      showErr(err.message);
     }
   };
 
-  document.getElementById('btnSaveOutcome')?.addEventListener('click', () => save(false));
-  document.getElementById('btnSaveOutcomeNext')?.addEventListener('click', () => save(true));
-
-  const f = document.getElementById('outcomeBuilderForm');
-  if (f) {
-    let qtyTouched = !!src || f.quantity.value !== '';
-    f.quantity.addEventListener('input', () => (qtyTouched = true));
-    f.stakeholder_id.addEventListener('change', () => {
-      const c = stakeholders.find((s) => s.id === Number(f.stakeholder_id.value))?.estimated_count;
-      if (!qtyTouched && c !== null && c !== undefined) f.quantity.value = c;
-    });
-    f.addEventListener('submit', (e) => e.preventDefault());
-    f.name.focus();
-  }
+  document.getElementById('btnSaveOutcomeDirect')?.addEventListener('click', save);
+  form.addEventListener('submit', (e) => e.preventDefault());
 }
 
 function openEvidenceModal({ project, outcome }) {
@@ -574,82 +636,106 @@ function openEvidenceModal({ project, outcome }) {
           <label class="field-label">${isTh ? 'ลิงก์ / การอ้างอิงเอกสาร' : 'Reference / URL'}</label>
           <input type="text" name="reference" class="input" placeholder="e.g. https://journal.org/paper-123 or DOI" />
         </div>
-        <div style="display: flex; justify-content: flex-end;">
-          <button type="button" class="btn btn-primary" id="btnSubmitEvidence" style="height: 32px; font-size: 0.75rem;">
-            + ${isTh ? 'แนบหลักฐาน' : 'Attach Evidence'}
-          </button>
+        <div class="field">
+          <label class="field-label">${t('description', 'คำอธิบายเพิ่มเติม')}</label>
+          <textarea name="description" class="input" rows="2" placeholder="${isTh ? 'ระบุข้อค้นพบที่สำคัญ' : 'Key findings'}"></textarea>
         </div>
+        <div style="display: flex; justify-content: flex-end;">
+          <button class="btn btn-primary" id="btnSaveEvidence">${isTh ? 'บันทึกหลักฐาน' : 'Add Evidence'}</button>
+        </div>
+        <div id="evidenceError" class="alert alert-danger" style="display: none;"></div>
       </form>
 
-      <div style="margin-top: var(--sp-md);">
-        <h4 style="font-size: 0.875rem; margin-bottom: var(--sp-sm);">${isTh ? 'เอกสารหลักฐานที่แนบไว้' : 'Attached Evidence'}</h4>
-        <div id="evidenceListContainer" class="stack" style="gap: var(--sp-xs);">
-          <div class="muted">${t('loading', 'กำลังโหลดข้อมูลหลักฐาน...')}</div>
-        </div>
+      <div id="evidenceListContainer" style="margin-top: var(--sp-sm);">
+        <div class="muted">${t('loading', 'Loading evidence...')}</div>
       </div>
     </div>
   `;
 
   openModal({
-    title: `${isTh ? 'แหล่งหลักฐานอ้างอิง — ' : 'Evidence Sources — '}${outcome.name}`,
+    title: isTh ? 'หลักฐานยืนยันผลลัพธ์ (Evidence)' : 'Outcome Evidence',
     body: modalHtml,
     size: 'lg',
-    footer: `<button class="btn btn-secondary" data-modal-close>${t('close', 'ปิด')}</button>`,
   });
 
-  const loadEvidence = async () => {
-    const list = document.getElementById('evidenceListContainer');
-    if (!list) return;
+  const loadList = async () => {
+    const box = document.getElementById('evidenceListContainer');
+    if (!box) return;
     try {
-      const res = await api.getEvidence(project.id);
-      const matched = (res.data || []).filter((e) => e.outcome_id === outcome.id);
-      if (matched.length === 0) {
-        list.innerHTML = `<div class="empty muted">${isTh ? 'ยังไม่มีหลักฐานแนบสำหรับผลลัพธ์นี้' : 'No evidence attached yet.'}</div>`;
+      const res = await api.listEvidence(project.id, outcome.id);
+      const list = res?.data || [];
+      if (list.length === 0) {
+        box.innerHTML = `<div class="muted" style="padding: 12px; background: var(--surface-soft); border-radius: var(--radius-sm);">${isTh ? 'ยังไม่มีหลักฐานแนบสำหรับผลลัพธ์นี้' : 'No evidence attached yet.'}</div>`;
         return;
       }
-      list.innerHTML = matched
-        .map(
-          (e) => `
-        <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; background: var(--surface); border: 1px solid var(--outline); border-radius: var(--radius-sm);">
-          <div>
-            <strong style="font-size: 0.8125rem;">${escapeHtml(e.title)}</strong>
-            <span class="badge badge-planned" style="font-size: 0.6875rem; margin-left: 6px;">${escapeHtml(e.kind)}</span>
-            ${e.reference ? `<div class="muted" style="font-size: 0.75rem;"><a href="${escapeHtml(e.reference)}" target="_blank" rel="noopener">${escapeHtml(e.reference)}</a></div>` : ''}
-          </div>
-          <button class="btn-icon" data-del-evidence="${e.id}" title="${t('delete', 'Delete')}">${icons.trash}</button>
+      box.innerHTML = `
+        <div class="table-wrap">
+          <table class="table" style="font-size: 0.8125rem;">
+            <thead>
+              <tr>
+                <th>${t('name', 'ชื่อหลักฐาน')}</th>
+                <th>${isTh ? 'ประเภท' : 'Type'}</th>
+                <th>${isTh ? 'การอ้างอิง' : 'Ref'}</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              ${list.map((ev) => `
+                <tr>
+                  <td class="strong">${escapeHtml(ev.title)}</td>
+                  <td><span class="badge badge-planned">${escapeHtml(ev.kind)}</span></td>
+                  <td>${ev.reference ? `<a href="${escapeHtml(ev.reference)}" target="_blank">${escapeHtml(ev.reference)}</a>` : '-'}</td>
+                  <td>
+                    <button class="btn-icon" data-del-evidence="${ev.id}" title="${t('delete', 'Delete')}">${icons.trash}</button>
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
         </div>
-      `,
-        )
-        .join('');
-
-      list.querySelectorAll('[data-del-evidence]').forEach((btn) => {
+      `;
+      box.querySelectorAll('[data-del-evidence]').forEach((btn) => {
         btn.addEventListener('click', async () => {
-          await api.deleteEvidence(project.id, Number(btn.dataset.delEvidence));
-          loadEvidence();
+          await api.deleteEvidence(project.id, outcome.id, Number(btn.dataset.delEvidence));
+          loadList();
         });
       });
     } catch (err) {
-      list.innerHTML = `<div class="alert alert-danger">${escapeHtml(err.message)}</div>`;
+      box.innerHTML = `<div class="alert alert-danger">${err.message}</div>`;
     }
   };
 
-  loadEvidence();
+  loadList();
 
-  document.getElementById('btnSubmitEvidence')?.addEventListener('click', async () => {
-    const f = document.getElementById('addEvidenceForm');
-    if (!f || !f.title.value.trim()) return;
+  document.getElementById('btnSaveEvidence')?.addEventListener('click', async (e) => {
+    e.preventDefault();
+    const form = document.getElementById('addEvidenceForm');
+    const errBox = document.getElementById('evidenceError');
+    if (!form) return;
+    if (errBox) errBox.style.display = 'none';
+
+    const payload = {
+      title: form.title.value.trim(),
+      kind: form.kind.value,
+      reference: form.reference.value.trim() || null,
+      description: form.description.value.trim() || null,
+    };
+    if (!payload.title) {
+      if (errBox) {
+        errBox.textContent = isTh ? 'กรุณาระบุชื่อหลักฐาน' : 'Please enter title.';
+        errBox.style.display = 'block';
+      }
+      return;
+    }
     try {
-      await api.addEvidence(project.id, {
-        outcome_id: outcome.id,
-        title: f.title.value.trim(),
-        kind: f.kind.value,
-        reference: f.reference.value.trim() || null,
-      });
-      f.title.value = '';
-      f.reference.value = '';
-      loadEvidence();
+      await api.createEvidence(project.id, outcome.id, payload);
+      form.reset();
+      loadList();
     } catch (err) {
-      alert(`Error: ${err.message}`);
+      if (errBox) {
+        errBox.textContent = err.message;
+        errBox.style.display = 'block';
+      }
     }
   });
 }
