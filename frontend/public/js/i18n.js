@@ -12,10 +12,10 @@ const listeners = new Set();
 export const translations = {
   th: {
     // Navigation
-    nav_projects: 'พื้นที่ทำงานโครงการ',
-    nav_calculator: 'เครื่องคำนวณ SROI',
+    nav_projects: 'รายการโครงการ',
+    nav_calculator: 'คำนวณ SROI',
     nav_org: 'คณะและภาควิชา',
-    nav_reports: 'รายงานและการตรวจสอบ',
+    nav_reports: 'รายงานและประวัติการคำนวณ',
     nav_about: 'ระเบียบวิธีและหลักการ',
     nav_auth: 'บัญชีและองค์กร',
     nav_faculty_report: 'รายงานระดับคณะ',
@@ -74,7 +74,7 @@ export const translations = {
     people: 'คน',
 
     // Projects Workspace
-    projects_title: 'พื้นที่ทำงานโครงการ (Projects)',
+    projects_title: 'รายการโครงการ',
     projects_subtitle: 'จัดการการประเมินความคุ้มค่าทางสังคม (SROI) และเลือกแผนงานเพื่อดำเนินการวิเคราะห์',
     btn_new_plan: 'สร้างแผนงาน SROI ใหม่',
     filter_org: 'สถาบัน',
@@ -403,7 +403,7 @@ export const translations = {
     field_proxy_unit_ph: 'เช่น บาท/คน/ปี, บาท/ตัน',
 
     // Reports View
-    reports_title: 'รายงานและการตรวจสอบ (Reports & Audit)',
+    reports_title: 'รายงานและประวัติการคำนวณ',
     reports_subtitle: 'ตรวจสอบประวัติการคำนวณและดาวน์โหลดรายงานการประเมินความคุ้มค่าทางสังคม',
     pub_reports_title: 'รายงานผลกระทบที่เผยแพร่แล้ว',
     audit_runs_title: 'ประวัติการคำนวณที่ตรวจสอบได้ (Auditable Runs)',
@@ -629,12 +629,16 @@ export const translations = {
     sheet_new_group: 'กลุ่มใหม่',
   },
 
+
+
+
+
   en: {
     // Navigation
-    nav_projects: 'Projects Workspace',
-    nav_calculator: 'SROI Calculator',
+    nav_projects: 'Projects list',
+    nav_calculator: 'SROI Assessment',
     nav_org: 'Faculties & Depts',
-    nav_reports: 'Reports & Audit',
+    nav_reports: 'Reports & Calculation History',
     nav_about: 'Methodology & Principles',
     nav_auth: 'Account & Org',
     nav_faculty_report: 'Faculty Report',
@@ -693,7 +697,7 @@ export const translations = {
     people: 'people',
 
     // Projects Workspace
-    projects_title: 'Projects Workspace',
+    projects_title: 'Projects list',
     projects_subtitle: 'Manage social return on investment assessments and select plans for evaluation',
     btn_new_plan: 'New SROI Plan',
     filter_org: 'Institution',
