@@ -706,7 +706,7 @@ function openStakeholderModal({ initialData = null, defaultGroup = null, onSaved
     const btns = document.querySelectorAll('#btnQuickSaveStk, #btnFullSaveStk');
     btns.forEach((b) => (b.disabled = true));
     try {
-      await saveStakeholderWithInputs(editId, stkData, cleanInputs);
+      await saveStakeholderWithInputs({ id: editId, data: stkData, inputs: cleanInputs });
       closeModal();
       onSaved();
     } catch (err) {
