@@ -30,6 +30,7 @@ final class StakeholderController extends ProjectResource
             'overlap_notes' => ['type' => 'string', 'max' => 2000, 'nullable' => true],
             'stakeholder_group' => ['type' => 'enum', 'in' => ['primary_beneficiary', 'project_operator', 'project_supporter', 'other_agency'], 'nullable' => true],
             'group_code' => ['type' => 'string', 'max' => 50, 'nullable' => true],
+            'count_unit' => ['type' => 'string', 'max' => 50, 'nullable' => true],
         ];
     }
 

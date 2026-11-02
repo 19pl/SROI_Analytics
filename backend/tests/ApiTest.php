@@ -469,3 +469,47 @@ T::test('api: stakeholder group fields are stored and retrieved', function () us
         ['name' => 'X', 'stakeholder_group' => 'invalid_group'], $tok);
     T::eq(422, $s, 'invalid stakeholder_group rejected');
 });
+
+T::test('api: funding lines link to a stakeholder (migration 006) and survive its deletion', function () use ($call, $register) {
+    [, $a] = $register(['email' => 'fund@x.org', 'name' => 'F', 'password' => 'correct-horse-9']);
+    $tok = $a['token'];
+    [, $p] = $call('POST', '/projects', ['name' => 'Fund', 'currency' => 'THB'], $tok);
+    $pid = $p['data']['id'];
+    [, $q] = $call('POST', '/projects', ['name' => 'Other', 'currency' => 'THB'], $tok);
+    $qid = $q['data']['id'];
+
+    [$s, $st] = $call('POST', "/projects/$pid/stakeholders",
+        ['name' => 'Faculty', 'stakeholder_group' => 'project_supporter', 'group_code' => 'S3.1', 'estimated_count' => 1, 'count_unit' => 'คณะ'], $tok);
+    T::eq(201, $s);
+    T::eq('คณะ', $st['data']['count_unit']);
+    $sid = $st['data']['id'];
+
+    [$s, $c] = $call('POST', "/projects/$pid/costs",
+        ['category' => 'opex', 'description' => 'Budget', 'amount' => 6090, 'year' => 0, 'stakeholder_id' => $sid], $tok);
+    T::eq(201, $s);
+    T::eq($sid, $c['data']['stakeholder_id']);
+
+    // a stakeholder of ANOTHER project cannot be used as funder
+    [, $ost] = $call('POST', "/projects/$qid/stakeholders", ['name' => 'Elsewhere'], $tok);
+    [$s] = $call('POST', "/projects/$pid/costs",
+        ['category' => 'opex', 'description' => 'Bad link', 'amount' => 1, 'year' => 0, 'stakeholder_id' => $ost['data']['id']], $tok);
+    T::eq(422, $s, 'funder from another project rejected');
+
+    // a cost can still be saved without a funder, and can be unlinked again
+    [$s, $c2] = $call('POST', "/projects/$pid/costs", ['category' => 'opex', 'description' => 'No funder', 'amount' => 5, 'year' => 0], $tok);
+    T::eq(201, $s);
+    T::eq(null, $c2['data']['stakeholder_id']);
+    [$s, $c3] = $call('PATCH', "/projects/$pid/costs/{$c['data']['id']}", ['stakeholder_id' => null], $tok);
+    T::eq(200, $s);
+    T::eq(null, $c3['data']['stakeholder_id']);
+    [$s, $c4] = $call('PATCH', "/projects/$pid/costs/{$c['data']['id']}", ['stakeholder_id' => $sid], $tok);
+    T::eq($sid, $c4['data']['stakeholder_id']);
+
+    // deleting the stakeholder keeps the investment line (unlinked) — no figure is lost silently
+    [$s] = $call('DELETE', "/projects/$pid/stakeholders/$sid", null, $tok);
+    T::eq(204, $s);
+    [, $list] = $call('GET', "/projects/$pid/costs", null, $tok);
+    $kept = array_values(array_filter($list['data'], fn($x) => $x['description'] === 'Budget'));
+    T::eq(1, count($kept));
+    T::eq(null, $kept[0]['stakeholder_id']);
+});

@@ -126,3 +126,10 @@ neutralisation, HTML-escaped exports with a restrictive CSP, share links stored 
 - Not included yet (spec Phase 2/3): Excel export, real-time collaborative editing, organisation templates, portfolio dashboards.
 - No proxy values are bundled — every library entry must carry its own source, so nothing unsourced ships by default.
 - SQLite suits a single server; the schema is portable to PostgreSQL if you outgrow it.
+
+## Migration 006 — funding linked to stakeholders
+
+Additive only (existing rows are untouched):
+
+- `project_costs.stakeholder_id` (nullable, `ON DELETE SET NULL`) — who provides an investment line (S2/S3/S4). `NULL` = not linked. The API validates that the stakeholder belongs to the same project. Deleting a stakeholder keeps its cost lines (they become unlinked), so no investment figure disappears silently. The calculation snapshot is unchanged: the link is for data entry and display only.
+- `stakeholders.count_unit` — unit of `estimated_count` (คน / คณะ / แห่ง …), the Excel "หน่วย" column.

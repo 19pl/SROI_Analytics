@@ -177,6 +177,61 @@ export async function removeStakeholder(id) {
 }
 
 /**
+ * Save a stakeholder TOGETHER with the funding lines it provides (Step 2 form) so nothing is typed twice.
+ * `inputs` = [{ id?, description, amount, year, category, is_cash, evidence_source }]. Lines of this stakeholder that are
+ * missing from `inputs` are deleted; new lines are created and get their `id` written back into the passed objects, so a
+ * retry after a partial failure updates instead of duplicating. Throws (with `err.savedStakeholder`) if a line fails.
+ */
+export async function saveStakeholderWithInputs({ id = null, data, inputs = [] }) {
+  const pid = state.project?.id;
+  if (!pid) return;
+  let stk;
+  if (id) {
+    const res = await api.updateStakeholder(pid, id, data);
+    stk = res.data;
+    const idx = state.stakeholders.findIndex((x) => x.id === id);
+    if (idx !== -1) state.stakeholders[idx] = stk;
+  } else {
+    const res = await api.createStakeholder(pid, data);
+    stk = res.data;
+    state.stakeholders.push(stk);
+  }
+  try {
+    const keep = new Set(inputs.filter((i) => i.id).map((i) => i.id));
+    for (const c of state.costs.filter((c) => c.stakeholder_id === stk.id && !keep.has(c.id))) {
+      await api.deleteCost(pid, c.id);
+      state.costs = state.costs.filter((x) => x.id !== c.id);
+    }
+    for (const i of inputs) {
+      const payload = {
+        description: i.description,
+        amount: i.amount,
+        year: i.year,
+        category: i.category,
+        is_cash: i.is_cash,
+        evidence_source: i.evidence_source || null,
+        stakeholder_id: stk.id,
+      };
+      if (i.id) {
+        const r = await api.updateCost(pid, i.id, payload);
+        const idx = state.costs.findIndex((c) => c.id === i.id);
+        if (idx !== -1) state.costs[idx] = r.data;
+      } else {
+        const r = await api.createCost(pid, { ...payload, currency: state.project.currency });
+        i.id = r.data.id;
+        state.costs.push(r.data);
+      }
+    }
+  } catch (err) {
+    err.savedStakeholder = stk;
+    await refreshCalculations();
+    throw err;
+  }
+  await refreshCalculations();
+  return stk;
+}
+
+/**
  * Outcome Actions (Step 3)
  */
 export async function addOutcome(data) {
@@ -206,12 +261,12 @@ export async function removeOutcome(id) {
 /**
  * Impact Adjustment Actions (Step 4)
  */
-export async function saveAdjustment(outcomeId, adjustmentData) {
+export async function saveAdjustment(outcomeId, adjustmentData, { refresh = true } = {}) {
   if (!state.project?.id) return;
   const res = await api.saveAdjustment(state.project.id, outcomeId, adjustmentData);
   const outcome = state.outcomes.find((o) => o.id === outcomeId);
   if (outcome) outcome.adjustment = res.data;
-  await refreshCalculations();
+  if (refresh) await refreshCalculations();
   return res.data;
 }
 

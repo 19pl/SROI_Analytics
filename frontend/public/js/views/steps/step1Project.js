@@ -3,16 +3,19 @@
  * Fully bilingual (Thai & English)
  */
 
-import { getState, updateProject, addCost, removeCost } from '../../store.js';
+import { getState, updateProject, addCost, updateCost, addStakeholder, removeCost } from '../../store.js';
 import { card, textField, numberField } from '../../components/ui.js';
 import { openModal, closeModal, confirmModal } from '../../components/modal.js';
 import { formatBaht } from '../../utils/format.js';
 import { escapeHtml } from '../../utils/html.js';
 import { icons } from '../../components/icons.js';
+import { GROUPS, groupByKey, groupLabel, nextGroupCode, stakeholderOptionsHtml } from '../../utils/stakeholderGroups.js';
 import { t } from '../../i18n.js';
 
 export function renderStep1(container) {
-  const { project, costs, investmentSummary } = getState();
+  const { project, costs, stakeholders, investmentSummary } = getState();
+  const stkById = {};
+  stakeholders.forEach((x) => (stkById[x.id] = x));
   if (!project) {
     container.innerHTML = `<div class="alert alert-info">${t('alert_select_project_first', 'Please select or create a project first.')}</div>`;
     return;
@@ -164,6 +167,7 @@ export function renderStep1(container) {
           </div>
           <button class="btn btn-primary" id="btnAddCost">${icons.plus} ${t('btn_add_cost', 'Add Cost Item')}</button>
         </div>
+        <p class="in-tip">💡 ${t('in_step1_tip', 'Funding from S2/S3/S4 (faculty, supporters, agencies) can be entered together with the stakeholder in Step 2 — it shows up here automatically.')} <a href="#/wizard/step-2">${t('in_go_step2', 'Go to Step 2')}</a></p>
 
         <div class="table-wrap">
           <table class="table">
@@ -171,6 +175,7 @@ export function renderStep1(container) {
               <tr>
                 <th>${t('col_cost_cat', 'Category')}</th>
                 <th>${t('col_cost_desc', 'Description')}</th>
+                <th>${t('in_funder', 'Funder / source')}</th>
                 <th>${t('col_cost_type', 'Type')}</th>
                 <th class="num">${t('col_cost_year', 'Year')}</th>
                 <th class="num">${t('col_cost_amount', 'Amount')} (${project.currency})</th>
@@ -181,7 +186,7 @@ export function renderStep1(container) {
             <tbody id="costTableBody">
               ${
                 costs.length === 0
-                  ? `<tr><td colspan="7" class="empty">${t('no_costs_yet', 'No cost items recorded yet. Click "Add Cost Item" to add inputs.')}</td></tr>`
+                  ? `<tr><td colspan="8" class="empty">${t('no_costs_yet', 'No cost items recorded yet. Click "Add Cost Item" to add inputs.')}</td></tr>`
                   : costs
                       .map(
                         (c) => `
@@ -191,12 +196,18 @@ export function renderStep1(container) {
                     ${escapeHtml(c.description)}
                     ${c.period_label ? `<span class="badge badge-integrated" style="font-size: 0.6875rem; margin-left: 6px;">${escapeHtml(c.period_label)}</span>` : ''}
                   </td>
+                  <td>${c.stakeholder_id && stkById[c.stakeholder_id] ? `<span class="badge badge-integrated">${escapeHtml(stkById[c.stakeholder_id].group_code || '')}</span> ${escapeHtml(stkById[c.stakeholder_id].name)}` : '<span class="muted">–</span>'}</td>
                   <td>${c.is_cash ? 'Cash' : `<span class="muted">${t('cost_cat_inkind', 'In-Kind')}</span>`}</td>
                   <td class="num">${t('year', 'Year')} ${c.year}</td>
                   <td class="num strong">${formatBaht(c.amount * (c.exchange_rate || 1))}</td>
                   <td class="num">${c.present_value !== undefined ? formatBaht(c.present_value) : '-'}</td>
                   <td>
-                    <button class="btn-icon" data-remove-cost="${c.id}" title="${t('delete', 'Delete Expense')}">${icons.trash}</button>
+                    <div style="display: flex; gap: 4px;">
+                      <button class="btn-icon" data-edit-cost="${c.id}" title="${t('edit', 'Edit')}">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                      </button>
+                      <button class="btn-icon" data-remove-cost="${c.id}" title="${t('delete', 'Delete Expense')}">${icons.trash}</button>
+                    </div>
                   </td>
                 </tr>
               `,
@@ -246,6 +257,13 @@ export function renderStep1(container) {
     });
   });
 
+  container.querySelectorAll('[data-edit-cost]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const target = costs.find((c) => c.id === Number(btn.dataset.editCost));
+      if (target) openAddCostModal({ project, initialData: target, onAdded: () => renderStep1(container) });
+    });
+  });
+
   container.querySelectorAll('[data-remove-cost]').forEach((btn) => {
     btn.addEventListener('click', (e) => {
       const costId = Number(btn.dataset.removeCost);
@@ -261,49 +279,74 @@ export function renderStep1(container) {
   });
 }
 
-function openAddCostModal({ project, onAdded }) {
+function openAddCostModal({ project, initialData = null, onAdded }) {
+  const { stakeholders } = getState();
+  const isEdit = !!initialData;
+  const v = (k, d = '') => (initialData && initialData[k] !== null && initialData[k] !== undefined ? initialData[k] : d);
+  const funderGroups = GROUPS.filter((g) => g.fundsByDefault);
+
   const formHtml = `
-    <form id="addCostForm" class="stack" style="gap: var(--sp-md);">
+    <form id="addCostForm" class="stack" style="gap: var(--sp-md);" autocomplete="off">
       <div class="field">
         <label class="field-label">${t('col_cost_desc', 'Expense Description')} *</label>
-        <input type="text" name="description" class="input" required placeholder="e.g. Staff and tutoring costs" />
+        <input type="text" name="description" class="input" required value="${escapeHtml(v('description'))}" placeholder="e.g. Staff and tutoring costs" />
       </div>
+
+      <div class="field">
+        <label class="field-label">${t('in_funder', 'Funder / source')} <span class="muted">(${t('in_funder_hint', 'who provides it — optional')})</span></label>
+        <select name="stakeholder_id" class="input">
+          <option value="">${t('in_funder_none', '— not specified —')}</option>
+          ${stakeholderOptionsHtml(stakeholders, v('stakeholder_id', ''), escapeHtml)}
+          <option value="__new__">${t('in_funder_new', '＋ Add a new stakeholder…')}</option>
+        </select>
+      </div>
+      <div class="in-grid" id="newFunderBox" hidden>
+        <label class="field in-w6"><span class="field-label">${t('in_funder_new_name', 'New stakeholder name')} *</span>
+          <input class="input" name="new_name" /></label>
+        <label class="field in-w6"><span class="field-label">${t('in_group_pick', 'Group')}</span>
+          <select class="input" name="new_group">${funderGroups.map((g) => `<option value="${g.key}" ${g.key === 'project_supporter' ? 'selected' : ''}>${escapeHtml(groupLabel(g))}</option>`).join('')}</select></label>
+      </div>
+
       <div class="form-grid">
         <div class="field">
           <label class="field-label">${t('col_cost_cat', 'Category')} *</label>
           <select name="category" class="input" required>
-            <option value="capex">${t('cost_cat_capital', 'Initial Capital (Capex)')}</option>
-            <option value="opex" selected>${t('cost_cat_operational', 'Operating Expenditure (Opex)')}</option>
-            <option value="delivery">${t('cost_cat_operational', 'Program Delivery')}</option>
-            <option value="administration">${t('cost_cat_personnel', 'Administration & Personnel')}</option>
-            <option value="in_kind">${t('cost_cat_inkind', 'Volunteer & In-Kind')}</option>
-            <option value="other">${t('all', 'Other Resources')}</option>
+            ${[
+              ['capex', t('cost_cat_capital', 'Initial Capital (Capex)')],
+              ['opex', t('cost_cat_operational', 'Operating Expenditure (Opex)')],
+              ['delivery', 'Program Delivery'],
+              ['administration', t('cost_cat_personnel', 'Administration & Personnel')],
+              ['in_kind', t('cost_cat_inkind', 'Volunteer & In-Kind')],
+              ['other', 'Other Resources'],
+            ]
+              .map(([k, l]) => `<option value="${k}" ${(v('category', 'opex')) === k ? 'selected' : ''}>${l}</option>`)
+              .join('')}
           </select>
         </div>
         <div class="field">
           <label class="field-label">${t('col_cost_amount', 'Amount')} (${project.currency}) *</label>
-          <input type="number" name="amount" min="0" step="0.01" class="input" required placeholder="50000" />
+          <input type="text" inputmode="decimal" name="amount" class="input" required value="${v('amount')}" placeholder="50000" />
         </div>
         <div class="field">
           <label class="field-label">${t('col_cost_year', 'Incurred Year')} *</label>
-          <input type="number" name="year" min="0" max="${project.analysis_period_years || 5}" class="input" value="0" required />
+          <input type="number" name="year" min="0" max="${project.analysis_period_years || 5}" class="input" value="${v('year', 0)}" required />
         </div>
       </div>
       <div class="form-grid">
         <div class="field">
           <label class="field-label">${t('col_cost_type', 'Cost Nature')}</label>
           <select name="is_cash" class="input">
-            <option value="1">Direct Cash Expenditure</option>
-            <option value="0">${t('cost_cat_inkind', 'Non-Cash / In-Kind Contribution')}</option>
+            <option value="1" ${initialData && !initialData.is_cash ? '' : 'selected'}>Direct Cash Expenditure</option>
+            <option value="0" ${initialData && !initialData.is_cash ? 'selected' : ''}>${t('cost_cat_inkind', 'Non-Cash / In-Kind Contribution')}</option>
           </select>
         </div>
         <div class="field">
           <label class="field-label">${t('field_rationale', 'Evidence / Source Citation')}</label>
-          <input type="text" name="evidence_source" class="input" placeholder="e.g. Institutional budget FY2026" />
+          <input type="text" name="evidence_source" class="input" value="${escapeHtml(v('evidence_source'))}" placeholder="e.g. Institutional budget FY2026" />
         </div>
         <div class="field">
           <label class="field-label">${t('unit', 'Period Label')} (Optional)</label>
-          <input type="text" name="period_label" class="input" placeholder="e.g. Y0, Y1, 6 months" />
+          <input type="text" name="period_label" class="input" value="${escapeHtml(v('period_label'))}" placeholder="e.g. Y0, Y1, 6 months" />
         </div>
       </div>
       <div id="costModalError" class="alert alert-danger" style="display: none;"></div>
@@ -312,48 +355,92 @@ function openAddCostModal({ project, onAdded }) {
 
   const footer = `
     <button class="btn btn-secondary" data-modal-close>${t('cancel', 'Cancel')}</button>
+    ${isEdit ? '' : `<button class="btn btn-secondary" id="btnSaveCostNext">${t('in_save_add', 'Save & add next')}</button>`}
     <button class="btn btn-primary" id="btnSaveCost">${t('save', 'Save Expense')}</button>
   `;
 
   openModal({
-    title: t('modal_add_cost_title', 'Add Investment Cost'),
+    title: isEdit ? t('modal_edit_cost_title', 'Edit Investment Cost') : t('modal_add_cost_title', 'Add Investment Cost'),
     body: formHtml,
     footer,
   });
 
-  document.getElementById('btnSaveCost')?.addEventListener('click', async () => {
-    const form = document.getElementById('addCostForm');
-    const errBox = document.getElementById('costModalError');
-    if (!form) return;
+  const form = document.getElementById('addCostForm');
+  const errBox = document.getElementById('costModalError');
+  const box = document.getElementById('newFunderBox');
+  const showErr = (m) => {
+    errBox.textContent = m;
+    errBox.style.display = 'block';
+  };
 
-    const data = {
-      description: form.description.value.trim(),
-      category: form.category.value,
-      amount: parseFloat(form.amount.value),
-      currency: project.currency,
-      year: parseInt(form.year.value, 10),
-      is_cash: form.is_cash.value === '1',
-      evidence_source: form.evidence_source.value.trim(),
-      period_label: form.period_label.value.trim() || null,
-    };
+  form.stakeholder_id.addEventListener('change', () => {
+    box.hidden = form.stakeholder_id.value !== '__new__';
+    if (!box.hidden) form.new_name.focus();
+  });
+  // the category and the cash/in-kind choice must agree (the server forces in-kind to non-cash anyway)
+  form.category.addEventListener('change', () => {
+    if (form.category.value === 'in_kind') form.is_cash.value = '0';
+  });
+  form.is_cash.addEventListener('change', () => {
+    if (form.is_cash.value === '0' && form.category.value !== 'in_kind') form.category.value = 'in_kind';
+  });
 
-    if (!data.description || isNaN(data.amount)) {
-      if (errBox) {
-        errBox.textContent = t('required', 'Please fill in description and valid amount.');
-        errBox.style.display = 'block';
-      }
+  const save = async (andNext) => {
+    errBox.style.display = 'none';
+    const amount = parseFloat(String(form.amount.value).replace(/[,\s]/g, ''));
+    const desc = form.description.value.trim();
+    if (!desc || Number.isNaN(amount) || amount < 0) {
+      showErr(t('required', 'Please fill in description and valid amount.'));
       return;
     }
-
+    const btns = document.querySelectorAll('#btnSaveCost, #btnSaveCostNext');
+    btns.forEach((b) => (b.disabled = true));
     try {
-      await addCost(data);
+      let funderId = form.stakeholder_id.value === '' ? null : form.stakeholder_id.value === '__new__' ? '__new__' : Number(form.stakeholder_id.value);
+      if (funderId === '__new__') {
+        const name = form.new_name.value.trim();
+        if (!name) throw new Error(t('required', 'Please enter a stakeholder name.'));
+        const g = groupByKey(form.new_group.value);
+        const created = await addStakeholder({
+          name,
+          stakeholder_group: g.key,
+          group_code: nextGroupCode(getState().stakeholders, g),
+          count_unit: g.unit,
+          category: 'Government agencies',
+        });
+        funderId = created.id;
+      }
+      const data = {
+        description: desc,
+        category: form.category.value,
+        amount,
+        currency: project.currency,
+        year: parseInt(form.year.value, 10),
+        is_cash: form.is_cash.value === '1',
+        evidence_source: form.evidence_source.value.trim(),
+        period_label: form.period_label.value.trim() || null,
+        stakeholder_id: funderId,
+      };
+      if (isEdit) await updateCost(initialData.id, data);
+      else await addCost(data);
       closeModal();
       onAdded();
-    } catch (err) {
-      if (errBox) {
-        errBox.textContent = err.message;
-        errBox.style.display = 'block';
+      if (andNext) {
+        openAddCostModal({ project, onAdded });
+        // keep the funder and year of the line just saved — the next line is usually from the same source
+        const f = document.getElementById('addCostForm');
+        if (f && funderId) {
+          f.stakeholder_id.value = String(funderId);
+          f.year.value = data.year;
+        }
       }
+    } catch (err) {
+      showErr(err.message);
+      btns.forEach((b) => (b.disabled = false));
     }
-  });
+  };
+  document.getElementById('btnSaveCost')?.addEventListener('click', () => save(false));
+  document.getElementById('btnSaveCostNext')?.addEventListener('click', () => save(true));
+  form.addEventListener('submit', (e) => e.preventDefault());
+  form.description.focus();
 }

@@ -38,6 +38,7 @@ final class CostController extends ProjectResource
             'evidence_source' => ['type' => 'string', 'max' => 1000, 'nullable' => true],
             'notes' => ['type' => 'string', 'max' => 2000, 'nullable' => true],
             'period_label' => ['type' => 'string', 'max' => 100, 'nullable' => true],
+            'stakeholder_id' => ['type' => 'int', 'min' => 1, 'nullable' => true],
         ];
     }
 
@@ -55,6 +56,12 @@ final class CostController extends ProjectResource
         }
         if (($m['category'] ?? null) === 'in_kind') {
             $data['is_cash'] = false; // contributed resources are never cash expenditure
+        }
+        if (isset($data['stakeholder_id'])) {
+            $own = $this->app->db->one('SELECT id FROM stakeholders WHERE id = ? AND project_id = ?', [$data['stakeholder_id'], $project['id']]);
+            if ($own === null) {
+                throw HttpException::unprocessable('Validation failed', ['stakeholder_id' => 'must be a stakeholder of this project']);
+            }
         }
         $T = $this->periodYears($project);
         if (isset($data['year']) && $T !== null && $data['year'] > $T) {

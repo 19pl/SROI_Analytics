@@ -10,7 +10,11 @@ import { formatBaht } from '../../utils/format.js';
 import { escapeHtml } from '../../utils/html.js';
 import { icons } from '../../components/icons.js';
 import { api } from '../../api.js';
+import { groupByKey, stakeholderLabel, stakeholderOptionsHtml } from '../../utils/stakeholderGroups.js';
 import { t } from '../../i18n.js';
+
+// remembered between outcomes so adding the next one for the same stakeholder needs no re-picking
+let lastStakeholderId = null;
 
 export function renderStep3(container) {
   const { project, stakeholders, outcomes } = getState();
@@ -20,7 +24,7 @@ export function renderStep3(container) {
   }
 
   const stakeById = {};
-  stakeholders.forEach((s) => (stakeById[s.id] = s.name));
+  stakeholders.forEach((s) => (stakeById[s.id] = stakeholderLabel(s)));
 
   container.innerHTML = `
     <div class="stack" style="gap: var(--sp-xl);">
@@ -102,6 +106,7 @@ export function renderStep3(container) {
                         <button class="btn-icon" data-edit-outcome="${o.id}" title="${t('edit', 'Edit Outcome')}">
                           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
                         </button>
+                        <button class="btn-icon" data-dup-outcome="${o.id}" title="${t('in_dup', 'Duplicate (same details, new row)')}">⧉</button>
                         <button class="btn-icon" data-evidence-outcome="${o.id}" title="${t('field_rationale', 'Manage Evidence & Attachments')}">
                           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>
                         </button>
@@ -149,6 +154,13 @@ export function renderStep3(container) {
     });
   });
 
+  container.querySelectorAll('[data-dup-outcome]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const target = outcomes.find((o) => o.id === Number(btn.dataset.dupOutcome));
+      if (target) openOutcomeModal({ project, stakeholders, prefill: target, onSaved: () => renderStep3(container) });
+    });
+  });
+
   container.querySelectorAll('[data-evidence-outcome]').forEach((btn) => {
     btn.addEventListener('click', () => {
       const oId = Number(btn.dataset.evidenceOutcome);
@@ -177,34 +189,34 @@ export function renderStep3(container) {
   });
 }
 
-function openOutcomeModal({ project, stakeholders, initialData = null, onSaved }) {
+function openOutcomeModal({ project, stakeholders, initialData = null, prefill = null, onSaved }) {
   const isEdit = !!initialData;
+  // `src` supplies the form values: the outcome being edited, or the one being duplicated, or nothing (new)
+  const src = initialData || prefill;
+  const period = project.analysis_period_years || 5;
+  const startStk = src?.stakeholder_id ?? (stakeholders.some((s) => s.id === lastStakeholderId) ? lastStakeholderId : null);
+  const startCount = stakeholders.find((s) => s.id === startStk)?.estimated_count;
 
   const formHtml = `
     <form id="outcomeBuilderForm" class="stack" style="gap: var(--sp-md);">
       <div class="field">
         <label class="field-label">${t('field_outcome_name', 'Outcome / Change Description *')}</label>
-        <input type="text" name="name" class="input" value="${escapeHtml(initialData?.name || '')}" required placeholder="e.g. Students achieve higher academic attainment" />
+        <input type="text" name="name" class="input" value="${escapeHtml(src?.name || '')}" required placeholder="e.g. Students achieve higher academic attainment" />
       </div>
 
       <div class="form-grid">
         <div class="field">
           <label class="field-label">${t('field_select_stakeholder', 'Associated Stakeholder Group *')}</label>
           <select name="stakeholder_id" class="input" required>
-            ${stakeholders
-              .map(
-                (s) => `
-              <option value="${s.id}" ${initialData?.stakeholder_id === s.id ? 'selected' : ''}>${escapeHtml(s.name)}</option>
-            `,
-              )
-              .join('')}
+            ${!startStk ? `<option value="" disabled selected>${t('in_pick_stk', '— choose —')}</option>` : ''}
+            ${stakeholderOptionsHtml(stakeholders, startStk, escapeHtml)}
           </select>
         </div>
         <div class="field">
           <label class="field-label">${t('field_polarity', 'Impact Polarity')} *</label>
           <select name="polarity" class="input">
-            <option value="positive" ${initialData?.polarity === 'positive' || !initialData ? 'selected' : ''}>${t('polarity_pos_opt', '+ Positive Impact (Benefit)')}</option>
-            <option value="negative" ${initialData?.polarity === 'negative' ? 'selected' : ''}>${t('polarity_neg_opt', '- Negative Impact (Harm)')}</option>
+            <option value="positive" ${src?.polarity === 'positive' || !initialData ? 'selected' : ''}>${t('polarity_pos_opt', '+ Positive Impact (Benefit)')}</option>
+            <option value="negative" ${src?.polarity === 'negative' ? 'selected' : ''}>${t('polarity_neg_opt', '- Negative Impact (Harm)')}</option>
           </select>
         </div>
       </div>
@@ -212,15 +224,15 @@ function openOutcomeModal({ project, stakeholders, initialData = null, onSaved }
       <div class="form-grid">
         <div class="field">
           <label class="field-label">${t('field_indicator', 'Indicator of Change')}</label>
-          <input type="text" name="indicator" class="input" value="${escapeHtml(initialData?.indicator || '')}" placeholder="e.g. Standardized test score percentile" />
+          <input type="text" name="indicator" class="input" value="${escapeHtml(src?.indicator || '')}" placeholder="e.g. Standardized test score percentile" />
         </div>
         <div class="field">
           <label class="field-label">Baseline (Before)</label>
-          <input type="text" name="baseline" class="input" value="${escapeHtml(initialData?.baseline || '')}" placeholder="e.g. 52% passing rate" />
+          <input type="text" name="baseline" class="input" value="${escapeHtml(src?.baseline || '')}" placeholder="e.g. 52% passing rate" />
         </div>
         <div class="field">
           <label class="field-label">Observed Result (After)</label>
-          <input type="text" name="observed_result" class="input" value="${escapeHtml(initialData?.observed_result || '')}" placeholder="e.g. 78% passing rate" />
+          <input type="text" name="observed_result" class="input" value="${escapeHtml(src?.observed_result || '')}" placeholder="e.g. 78% passing rate" />
         </div>
       </div>
 
@@ -235,44 +247,44 @@ function openOutcomeModal({ project, stakeholders, initialData = null, onSaved }
         <div class="form-grid">
           <div class="field">
             <label class="field-label">${t('field_quantity_beneficiaries', 'Number of Beneficiaries (People) *')}</label>
-            <input type="number" name="quantity" min="0" step="1" class="input" value="${initialData?.quantity ?? 100}" required />
+            <input type="number" name="quantity" min="0" step="1" class="input" value="${src?.quantity ?? startCount ?? ''}" required />
           </div>
           <div class="field">
             <label class="field-label">${t('field_proxy_value', 'Proxy Value per Unit *')} (${project.currency})</label>
-            <input type="number" name="proxy_value" min="0" step="0.01" class="input" value="${initialData?.proxy_value ?? 2500}" placeholder="${t('unmonetized', 'Leave blank if unmonetized')}" />
+            <input type="number" name="proxy_value" min="0" step="0.01" class="input" value="${src?.proxy_value ?? ''}" placeholder="${t('unmonetized', 'Leave blank if unmonetized')}" />
           </div>
           <div class="field">
             <label class="field-label">${t('field_proxy_unit', 'Proxy Unit of Measure')}</label>
-            <input type="text" name="proxy_unit" class="input" value="${escapeHtml(initialData?.proxy_unit || 'person / year')}" placeholder="e.g. participant / year" />
+            <input type="text" name="proxy_unit" class="input" value="${escapeHtml(src?.proxy_unit || '')}" placeholder="e.g. participant / year" />
           </div>
         </div>
 
         <div class="field" style="margin-top: var(--sp-sm);">
           <label class="field-label">${t('field_proxy_source', 'Proxy Benchmark / Evidence Source')} *</label>
-          <input type="text" name="proxy_source" class="input" value="${escapeHtml(initialData?.proxy_source || '')}" required placeholder="e.g. Ministry of Education Tutoring Benchmark 2026" />
+          <input type="text" name="proxy_source" class="input" value="${escapeHtml(src?.proxy_source || '')}" required placeholder="e.g. Ministry of Education Tutoring Benchmark 2026" />
         </div>
       </div>
 
       <div class="form-grid">
         <div class="field">
           <label class="field-label">${t('field_outcome_duration', 'Outcome Duration (Years)')}</label>
-          <input type="number" name="duration_years" min="1" max="${project.analysis_period_years || 5}" class="input" value="${initialData?.duration_years || 3}" />
+          <input type="number" name="duration_years" min="1" max="${period}" class="input" value="${src?.duration_years || Math.min(3, period)}" />
         </div>
         <div class="field">
           <label class="field-label">${t('field_projection_model', 'Outcome Persistence Model')}</label>
           <select name="projection_model" class="input">
-            <option value="cohort" ${initialData?.projection_model === 'cohort' ? 'selected' : ''}>Single Cohort (${t('model_declining', 'persists over time')})</option>
-            <option value="recurring_cohorts" ${initialData?.projection_model === 'recurring_cohorts' ? 'selected' : ''}>Recurring Cohorts (${t('model_constant', 'new entrants yearly')})</option>
-            <option value="independent" ${initialData?.projection_model === 'independent' ? 'selected' : ''}>Independent (annual measured quantities)</option>
+            <option value="cohort" ${src?.projection_model === 'cohort' ? 'selected' : ''}>Single Cohort (${t('model_declining', 'persists over time')})</option>
+            <option value="recurring_cohorts" ${src?.projection_model === 'recurring_cohorts' ? 'selected' : ''}>Recurring Cohorts (${t('model_constant', 'new entrants yearly')})</option>
+            <option value="independent" ${src?.projection_model === 'independent' ? 'selected' : ''}>Independent (annual measured quantities)</option>
           </select>
         </div>
         <div class="field">
           <label class="field-label">${t('field_evidence_quality', 'Evidence Rigor Level')}</label>
           <select name="evidence_quality" class="input">
-            <option value="measured" ${initialData?.evidence_quality === 'measured' ? 'selected' : ''}>${t('evidence_measured', 'Measured (Empirical data collected)')}</option>
-            <option value="external" ${initialData?.evidence_quality === 'external' ? 'selected' : ''}>${t('evidence_external', 'External (Research citations)')}</option>
-            <option value="estimated" ${initialData?.evidence_quality === 'estimated' ? 'selected' : ''}>${t('evidence_estimated', 'Estimated (Extrapolated)')}</option>
-            <option value="assumed" ${initialData?.evidence_quality === 'assumed' ? 'selected' : ''}>Assumed (Hypothetical judgment)</option>
+            <option value="measured" ${src?.evidence_quality === 'measured' ? 'selected' : ''}>${t('evidence_measured', 'Measured (Empirical data collected)')}</option>
+            <option value="external" ${src?.evidence_quality === 'external' ? 'selected' : ''}>${t('evidence_external', 'External (Research citations)')}</option>
+            <option value="estimated" ${src?.evidence_quality === 'estimated' ? 'selected' : ''}>${t('evidence_estimated', 'Estimated (Extrapolated)')}</option>
+            <option value="assumed" ${src?.evidence_quality === 'assumed' ? 'selected' : ''}>Assumed (Hypothetical judgment)</option>
           </select>
         </div>
       </div>
@@ -283,6 +295,7 @@ function openOutcomeModal({ project, stakeholders, initialData = null, onSaved }
 
   const footer = `
     <button class="btn btn-secondary" data-modal-close>${t('cancel', 'Cancel')}</button>
+    ${isEdit ? '' : `<button class="btn btn-secondary" id="btnSaveOutcomeNext">${t('in_save_add_outcome', 'Save & add another outcome')}</button>`}
     <button class="btn btn-primary" id="btnSaveOutcome">${isEdit ? t('save', 'Update Outcome') : t('save', 'Save Outcome')}</button>
   `;
 
@@ -306,10 +319,11 @@ function openOutcomeModal({ project, stakeholders, initialData = null, onSaved }
     });
   });
 
-  document.getElementById('btnSaveOutcome')?.addEventListener('click', async () => {
+  const save = async (andNext) => {
     const form = document.getElementById('outcomeBuilderForm');
     const errBox = document.getElementById('outcomeModalError');
     if (!form) return;
+    if (errBox) errBox.style.display = 'none';
 
     const proxyVal = form.proxy_value.value ? parseFloat(form.proxy_value.value) : null;
 
@@ -329,7 +343,7 @@ function openOutcomeModal({ project, stakeholders, initialData = null, onSaved }
       evidence_quality: form.evidence_quality.value,
     };
 
-    if (!data.name || isNaN(data.quantity)) {
+    if (!data.name || !data.stakeholder_id || form.quantity.value === '' || isNaN(data.quantity)) {
       if (errBox) {
         errBox.textContent = t('required', 'Please enter an outcome name and valid quantity.');
         errBox.style.display = 'block';
@@ -343,6 +357,15 @@ function openOutcomeModal({ project, stakeholders, initialData = null, onSaved }
       } else {
         await addOutcome(data);
       }
+      lastStakeholderId = data.stakeholder_id;
+      if (andNext) {
+        // keep stakeholder / polarity / persistence / evidence level; clear what is specific to the next outcome
+        ['name', 'indicator', 'baseline', 'observed_result', 'proxy_value', 'proxy_unit', 'proxy_source'].forEach((n) => (form[n].value = ''));
+        form.quantity.value = stakeholders.find((s) => s.id === data.stakeholder_id)?.estimated_count ?? '';
+        onSaved();
+        form.name.focus();
+        return;
+      }
       closeModal();
       onSaved();
     } catch (err) {
@@ -351,7 +374,23 @@ function openOutcomeModal({ project, stakeholders, initialData = null, onSaved }
         errBox.style.display = 'block';
       }
     }
-  });
+  };
+
+  document.getElementById('btnSaveOutcome')?.addEventListener('click', () => save(false));
+  document.getElementById('btnSaveOutcomeNext')?.addEventListener('click', () => save(true));
+
+  // picking a stakeholder pre-fills the number of beneficiaries from Step 2 (only while the field is still untouched)
+  const f = document.getElementById('outcomeBuilderForm');
+  if (f) {
+    let qtyTouched = !!src || f.quantity.value !== '';
+    f.quantity.addEventListener('input', () => (qtyTouched = true));
+    f.stakeholder_id.addEventListener('change', () => {
+      const c = stakeholders.find((s) => s.id === Number(f.stakeholder_id.value))?.estimated_count;
+      if (!qtyTouched && c !== null && c !== undefined) f.quantity.value = c;
+    });
+    f.addEventListener('submit', (e) => e.preventDefault());
+    f.name.focus();
+  }
 }
 
 function openEvidenceModal({ project, outcome }) {
