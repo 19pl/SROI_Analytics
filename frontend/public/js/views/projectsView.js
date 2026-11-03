@@ -7,11 +7,78 @@
 import { api } from '../api.js';
 import { loadProject } from '../store.js';
 import { openModal, closeModal, confirmModal } from '../components/modal.js';
-import { card } from '../components/ui.js';
 import { icons } from '../components/icons.js';
+import { showToast } from '../components/toast.js';
 import { escapeHtml } from '../utils/html.js';
 import { t } from '../i18n.js';
 import { isGuest, renderGuestPage } from '../components/guestNotice.js';
+
+// API status value -> pill class + translated label
+const STATUS_PILL = {
+  draft: { cls: 'status--draft', key: 'project_status_draft', fallback: 'Draft' },
+  ready: { cls: 'status--ok', key: 'project_status_ready', fallback: 'Ready' },
+  archived: { cls: 'status--neutral', key: 'project_status_archived', fallback: 'Archived' },
+};
+
+const statusPill = (status) => {
+  const s = STATUS_PILL[status];
+  const label = s ? t(s.key, s.fallback) : escapeHtml(status || '-');
+  return `<span class="status ${s ? s.cls : 'status--neutral'}">${label}</span>`;
+};
+
+let closeActiveMenu = null;
+
+/** Small popup menu for a "..." button. Added to <body> so the table's scroll area cannot clip it. */
+function openRowMenu(anchor, { label, onSelect }) {
+  const sameButton = closeActiveMenu && closeActiveMenu.anchor === anchor;
+  closeActiveMenu?.();
+  if (sameButton) return; // a second click on the same button just closes the menu
+
+  const menu = document.createElement('div');
+  menu.className = 'row-menu';
+  menu.setAttribute('role', 'menu');
+  menu.innerHTML = `<button type="button" role="menuitem" class="row-menu__item">${escapeHtml(label)}</button>`;
+  document.body.appendChild(menu);
+
+  // Right-align under the button; flip above it when there is no room below
+  const rect = anchor.getBoundingClientRect();
+  const below = rect.bottom + 4;
+  const fitsBelow = below + menu.offsetHeight <= window.innerHeight;
+  menu.style.top = `${fitsBelow ? below : Math.max(4, rect.top - menu.offsetHeight - 4)}px`;
+  menu.style.right = `${document.documentElement.clientWidth - rect.right}px`;
+
+  const onDocClick = (e) => {
+    if (!menu.contains(e.target) && !anchor.contains(e.target)) close();
+  };
+  const onKey = (e) => {
+    if (e.key === 'Escape') {
+      close();
+      anchor.focus();
+    }
+  };
+  function close() {
+    menu.remove();
+    anchor.setAttribute('aria-expanded', 'false');
+    document.removeEventListener('click', onDocClick, true);
+    document.removeEventListener('keydown', onKey);
+    window.removeEventListener('resize', close);
+    window.removeEventListener('scroll', close, true);
+    closeActiveMenu = null;
+  }
+  close.anchor = anchor;
+  closeActiveMenu = close;
+
+  anchor.setAttribute('aria-expanded', 'true');
+  menu.querySelector('.row-menu__item').addEventListener('click', () => {
+    close();
+    onSelect();
+  });
+  document.addEventListener('click', onDocClick, true);
+  document.addEventListener('keydown', onKey);
+  window.addEventListener('resize', close);
+  window.addEventListener('scroll', close, true);
+  menu.querySelector('.row-menu__item').focus();
+}
 
 export async function renderProjects(root) {
   if (isGuest()) {
@@ -19,64 +86,52 @@ export async function renderProjects(root) {
     return;
   }
   root.innerHTML = `
-    <div class="stack" style="gap: var(--sp-lg);">
-      <!-- Header with Action -->
-      <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: var(--sp-md); flex-wrap: wrap;">
+    <div class="stack-md">
+      <header class="page-head">
         <div>
-          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
-            <span class="badge badge-integrated" style="font-size: 0.75rem; font-weight: 600;">
-              🏛️ ${t('institution_badge', 'Naresuan University')}
-            </span>
-          </div>
-          <h1 class="page-title" style="margin-bottom: 2px;">${t('projects_title', 'Projects Workspace')}</h1>
-          <p class="muted page-sub" style="margin-bottom: 0;">
+          <p class="muted-sm">${t('institution_badge', 'Naresuan University')}</p>
+          <h1 class="page-head__title">${t('projects_title', 'Projects Workspace')}</h1>
+          <p class="page-head__sub">
             ${t('projects_subtitle', 'Manage social return on investment assessments and select plans for evaluation')}
           </p>
         </div>
-        <button class="btn btn-primary" id="btnCreateNewProject">
-          ${icons.plus} ${t('btn_new_plan', 'New SROI Plan')}
-        </button>
-      </div>
+        <div class="page-head__actions">
+          <button class="btn btn-primary" id="btnCreateNewProject">
+            ${icons.plus} ${t('btn_new_plan', 'New SROI Plan')}
+          </button>
+        </div>
+      </header>
 
-      <!-- Professional Search & Hierarchy Filters -->
-      <div class="card" style="padding: var(--sp-md);">
+      <section class="panel">
         <div class="projects-filter-bar">
-          <div class="projects-filter-search">
-            <label class="field-label" style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: var(--muted);">
-              ${t('search', 'Search')}
-            </label>
+          <div class="field projects-filter-search">
+            <label class="field-label" for="searchProjectName">${t('search', 'Search')}</label>
             <input
               type="text"
               id="searchProjectName"
               class="input"
-              style="height: 38px;"
               placeholder="${t('search_projects_placeholder', 'Search plans by title or objectives...')}"
             />
           </div>
 
-          <div class="projects-filter-select">
-            <label class="field-label" style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: var(--muted);">
-              ${t('filter_faculty', 'Faculty Filter')}
-            </label>
-            <select id="filterFaculty" class="input" style="height: 38px;">
+          <div class="field projects-filter-select">
+            <label class="field-label" for="filterFaculty">${t('filter_faculty', 'Faculty Filter')}</label>
+            <select id="filterFaculty" class="input">
               <option value="">${t('all_faculties', 'All Faculties & General')}</option>
             </select>
           </div>
 
-          <div class="projects-filter-select">
-            <label class="field-label" style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: var(--muted);">
-              ${t('filter_dept', 'Department Filter')}
-            </label>
-            <select id="filterDept" class="input" style="height: 38px;">
-              <option value="">${t('all_departments', 'All Departments')}</option>
+          <div class="field projects-filter-select">
+            <label class="field-label" for="filterDept">${t('filter_dept', 'Department Filter')}</label>
+            <select id="filterDept" class="input" disabled>
+              <option value="">${t('filter_dept_pick_faculty', 'Choose a faculty first')}</option>
             </select>
           </div>
         </div>
-      </div>
+      </section>
 
-      <!-- Projects Table Container -->
-      <div id="projectsTableContainer" style="min-width: 0; width: 100%; max-width: 100%;">
-        <div class="muted" style="padding: var(--sp-2xl); text-align: center;">${t('loading_projects', 'Loading projects from database...')}</div>
+      <div id="projectsTableContainer" class="stack-md">
+        <p class="muted-sm">${t('loading_projects', 'Loading projects from database...')}</p>
       </div>
     </div>
   `;
@@ -107,6 +162,12 @@ export async function renderProjects(root) {
     console.warn('Could not load orgs:', e);
   }
 
+    // The department filter stays disabled until a faculty is chosen
+  function resetDeptFilter() {
+    filterDept.innerHTML = `<option value="">${t('filter_dept_pick_faculty', 'Choose a faculty first')}</option>`;
+    filterDept.disabled = true;
+  }
+
   async function loadFacultiesForOrg(orgId) {
     try {
       const res = await api.getFaculties(orgId);
@@ -114,7 +175,7 @@ export async function renderProjects(root) {
       filterFaculty.innerHTML =
         `<option value="">${t('all_faculties', 'All Faculties & General')}</option>` +
         faculties.map((f) => `<option value="${f.id}">${escapeHtml(f.name)}</option>`).join('');
-      filterDept.innerHTML = `<option value="">${t('all_departments', 'All Departments')}</option>`;
+      resetDeptFilter();
     } catch (e) {
       faculties = [];
     }
@@ -122,7 +183,7 @@ export async function renderProjects(root) {
 
   async function loadDeptsForFaculty(facId) {
     if (!facId) {
-      filterDept.innerHTML = `<option value="">${t('all_departments', 'All Departments')}</option>`;
+      resetDeptFilter();
       return;
     }
     try {
@@ -131,6 +192,7 @@ export async function renderProjects(root) {
       filterDept.innerHTML =
         `<option value="">${t('all_departments', 'All Departments')}</option>` +
         departments.map((d) => `<option value="${d.id}">${escapeHtml(d.name)}</option>`).join('');
+      filterDept.disabled = false;
     } catch (e) {
       departments = [];
     }
@@ -177,34 +239,39 @@ export async function renderProjects(root) {
     }
   };
 
-  function renderTable(projects) {
+    function renderTable(projects) {
     if (projects.length === 0) {
-      container.innerHTML = `
-        <div class="card" style="text-align: center; padding: var(--sp-2xl);">
-          <h3 style="margin-bottom: var(--sp-xs); font-size: 1.125rem;">${t('no_projects_found', 'No projects found')}</h3>
-          <p class="muted" style="margin-bottom: var(--sp-lg);">${t('create_first_plan', 'Get started by creating your unit’s first SROI plan.')}</p>
+      // Nothing exists yet -> invite to create one; filters hid everything -> just say so
+      container.innerHTML =
+        allProjects.length === 0
+          ? `
+        <div class="empty-state">
+          <h2 class="empty-state__title">${t('empty_projects_title', 'No plans yet')}</h2>
+          <p class="empty-state__text">${t('create_first_plan', 'Get started by creating your unit’s first SROI plan.')}</p>
           <button class="btn btn-primary" id="btnCreateFirstProject">${icons.plus} ${t('btn_new_plan', 'New SROI Plan')}</button>
-        </div>
-      `;
+        </div>`
+          : `
+        <div class="empty-state">
+          <p class="empty-state__text">${t('no_projects_found', 'No projects found matching the search or filter criteria.')}</p>
+        </div>`;
       document
         .getElementById('btnCreateFirstProject')
         ?.addEventListener('click', triggerCreateModal);
       return;
     }
 
-    container.innerHTML = card({
-      body: `
+    container.innerHTML = `
+      <section class="panel">
         <div class="table-wrap">
           <table class="table">
             <thead>
               <tr>
                 <th>${t('col_project_name', 'Plan Name')}</th>
                 <th>${t('col_owner', 'Direct Owner')}</th>
-                <th>${t('col_eval_type', 'Type')}</th>
-                <th class="num">${t('stat_horizon', 'Scope / Period')}</th>
+                <th>${t('col_type_period', 'Type & period')}</th>
                 <th class="num">${t('col_sroi_ratio', 'SROI Ratio')}</th>
                 <th>${t('col_status', 'Status')}</th>
-                <th>${t('col_actions', 'Actions')}</th>
+                <th aria-label="${t('col_actions', 'Actions')}"></th>
               </tr>
             </thead>
             <tbody>
@@ -219,48 +286,41 @@ export async function renderProjects(root) {
                     ownerLabel = `<span class="badge badge-production">${t('owner_faculty_direct', 'Faculty')}: ${escapeHtml(f ? f.name : '#' + p.faculty_id)}</span>`;
                   }
 
+                  const typeLabel =
+                    p.evaluation_type === 'forecast'
+                      ? t('eval_type_forecast_short', 'Forecast')
+                      : t('eval_type_evaluative_short', 'Evaluative');
                   const periodLabel = p.assessment_months
                     ? `${p.assessment_months} ${t('months', 'Months')}`
                     : `${p.analysis_period_years || 5} ${t('years', 'Years')}`;
 
                   const hasSroi = p.latest_run && p.latest_run.sroi_ratio !== null;
-                  const sroiVal = hasSroi ? Number(p.latest_run.sroi_ratio) : null;
-                  const sroiText = hasSroi ? `${sroiVal.toFixed(2)} : 1` : '-';
-                  const sroiColor = hasSroi
-                    ? sroiVal >= 1
-                      ? 'var(--positive)'
-                      : 'var(--warning)'
-                    : 'var(--muted)';
+                  const sroiText = hasSroi ? `${Number(p.latest_run.sroi_ratio).toFixed(2)} : 1` : '-';
 
                   return `
                 <tr data-project-id="${p.id}">
                   <td class="strong">
-                    <div style="font-size: 0.9375rem; color: var(--on-background);">${escapeHtml(p.name)}${p.calc_method === 'sheet' ? ` <span class="badge badge-integrated" style="font-size: 0.6875rem;">${t('sheet_badge', 'Sheet')}</span>` : ''}</div>
-                    ${p.category ? `<div class="muted" style="font-size: 0.75rem;">${escapeHtml(p.category)}</div>` : ''}
+                    <div>${escapeHtml(p.name)}${p.calc_method === 'sheet' ? ` <span class="badge badge-integrated">${t('sheet_badge', 'Sheet')}</span>` : ''}</div>
+                    ${p.category ? `<div class="muted-sm">${escapeHtml(p.category)}</div>` : ''}
                   </td>
                   <td>${ownerLabel}</td>
+                  <td>${typeLabel} · ${periodLabel}</td>
+                  <td class="num strong">${sroiText}</td>
+                  <td>${statusPill(p.status)}</td>
                   <td>
-                    <span class="badge badge-integrated">
-                      ${p.evaluation_type === 'forecast' ? t('eval_type_forecast', 'Forecast') : t('eval_type_evaluative', 'Evaluative')}
-                    </span>
-                  </td>
-                  <td class="num">${periodLabel}</td>
-                  <td class="num strong" style="color: ${sroiColor}; font-size: 0.9375rem;">
-                    ${sroiText}
-                  </td>
-                  <td>
-                    <span class="badge badge-${p.status === 'ready' ? 'production' : 'planned'}">
-                      ${escapeHtml(p.status)}
-                    </span>
-                  </td>
-                  <td>
-                    <div style="display: flex; gap: var(--sp-xs); align-items: center; white-space: nowrap;">
-                      <button class="btn btn-primary" data-open-project="${p.id}" style="height: 30px; font-size: 0.75rem; padding: 0 10px; white-space: nowrap;">
-                        ${t('btn_open_calculator', 'Open Calculator')}
+                    <div class="row-actions">
+                      <button class="btn btn-primary" data-open-project="${p.id}">
+                        ${t('open', 'Open')}
                       </button>
-                      <button class="btn-icon" data-delete-project="${p.id}" title="${t('delete', 'Delete Plan')}">
-                        ${icons.trash}
-                      </button>
+                      <button
+                        type="button"
+                        class="btn-icon"
+                        data-row-menu="${p.id}"
+                        aria-haspopup="menu"
+                        aria-expanded="false"
+                        aria-label="${t('more_actions', 'More actions')}"
+                        title="${t('more_actions', 'More actions')}"
+                      >&hellip;</button>
                     </div>
                   </td>
                 </tr>
@@ -270,8 +330,8 @@ export async function renderProjects(root) {
             </tbody>
           </table>
         </div>
-      `,
-    });
+      </section>
+    `;
 
     container.querySelectorAll('[data-open-project]').forEach((btn) => {
       btn.addEventListener('click', async () => {
@@ -281,20 +341,25 @@ export async function renderProjects(root) {
       });
     });
 
-    container.querySelectorAll('[data-delete-project]').forEach((btn) => {
+    container.querySelectorAll('[data-row-menu]').forEach((btn) => {
       btn.addEventListener('click', () => {
-        const pId = Number(btn.dataset.deleteProject);
-        confirmModal({
-          title: t('delete', 'Delete Plan'),
-          message: t('confirm_delete', 'Are you sure you want to delete this SROI plan?'),
-          onConfirm: async () => {
-            try {
-              await api.deleteProject(pId);
-              loadList();
-            } catch (err) {
-              alert(`Failed to delete plan: ${err.message}`);
-            }
-          },
+        const pId = Number(btn.dataset.rowMenu);
+        openRowMenu(btn, {
+          label: t('delete', 'Delete Plan'),
+          onSelect: () =>
+            confirmModal({
+              title: t('delete', 'Delete Plan'),
+              message: t('confirm_delete', 'Are you sure you want to delete this SROI plan?'),
+              confirmText: t('delete', 'Delete'),
+              onConfirm: async () => {
+                try {
+                  await api.deleteProject(pId);
+                  loadList();
+                } catch (err) {
+                  showToast(`${t('delete_failed', 'Failed to delete plan')}: ${err.message}`, 'error');
+                }
+              },
+            }),
         });
       });
     });

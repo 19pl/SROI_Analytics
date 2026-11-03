@@ -131,6 +131,19 @@
 .stack-lg { gap: var(--sp-xl); }
 .muted-sm { font-size: 0.8125rem; line-height: 1.45; color: var(--muted); }
 
+/* ---------- Row actions + popup menu (opened from a "..." button) ---------- */
+.row-actions { display: flex; align-items: center; justify-content: flex-end; gap: var(--sp-xs); }
+.row-menu {
+  position: fixed; z-index: 100; min-width: 140px; padding: var(--sp-xs);
+  background: var(--surface-elevated); border: 1px solid var(--outline-strong);
+  border-radius: var(--radius-md); box-shadow: var(--shadow-card);
+}
+.row-menu__item {
+  display: block; width: 100%; padding: var(--sp-sm) var(--sp-md); border: 0; border-radius: var(--radius-sm);
+  background: transparent; color: var(--negative-fg); font: inherit; text-align: left; cursor: pointer;
+}
+.row-menu__item:hover, .row-menu__item:focus-visible { background: var(--negative-bg); outline: none; }
+
 /* ---------- Toast (js/components/toast.js) ---------- */
 .toast-region {
   position: fixed;
