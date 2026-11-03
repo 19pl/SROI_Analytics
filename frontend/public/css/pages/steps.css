@@ -603,3 +603,112 @@
   outline: 2px solid var(--primary);
   outline-offset: 2px;
 }
+
+/* Step 4 Adjustments Accordion */
+.adj-accordion-item {
+  padding: var(--sp-md) var(--sp-lg);
+  margin-bottom: var(--sp-sm);
+  transition: border-color 0.15s var(--ease);
+}
+.adj-accordion-item.is-open {
+  border-color: var(--primary);
+}
+.adj-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+}
+.adj-header__main {
+  flex: 1;
+  min-width: 200px;
+}
+.adj-header__side {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-md);
+}
+.adj-header__title {
+  font-size: 0.9375rem;
+}
+.adj-factor-display {
+  min-width: 70px;
+  text-align: right;
+}
+.adj-body {
+  margin-top: var(--sp-md);
+  padding-top: var(--sp-md);
+  border-top: 1px solid var(--outline);
+}
+.adj-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--sp-md);
+  margin-top: var(--sp-md);
+}
+.adj-footer__group {
+  display: flex;
+  gap: var(--sp-sm);
+}
+.pct-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.pct-wrap input {
+  padding-right: 2rem;
+}
+.pct-wrap__suffix {
+  position: absolute;
+  right: 10px;
+  pointer-events: none;
+}
+.field-hint--compact {
+  margin-bottom: var(--sp-xs);
+}
+.table--compact {
+  font-size: 0.8125rem;
+}
+
+.adj-accordion-item.is-open .btn-icon svg {
+  transform: rotate(180deg);
+}
+.btn-icon svg {
+  transition: transform 0.2s var(--ease);
+}
+
+/* Step helper utilities */
+.panel--soft {
+  background: var(--surface-soft);
+}
+.badge--xs {
+  font-size: 0.6875rem;
+}
+.field-hint--primary {
+  color: var(--primary);
+  font-weight: 600;
+}
+.field-hint--positive {
+  color: var(--positive);
+}
+.val--negative {
+  color: var(--negative);
+}
+.val--positive {
+  color: var(--positive);
+}
+.in-group--dashed {
+  border: 1px dashed var(--outline-strong);
+}
+.cluster--space-between {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.cluster--end {
+  display: flex;
+  justify-content: flex-end;
+}

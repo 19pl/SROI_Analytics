@@ -15,6 +15,10 @@ export const icons = {
   ),
   plus: svg('<path d="M5 12h14M12 5v14"/>'),
   trash: svg('<path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6"/>'),
+  institution: svg(
+    '<path d="M3 21h18M3 10h18M5 10v11M9 10v11M15 10v11M19 10v11M12 2L2 7v3h20V7L12 2z"/>',
+  ),
+  chevronDown: svg('<polyline points="6 9 12 15 18 9"/>'),
   trendUp: svg(
     '<polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>',
   ),

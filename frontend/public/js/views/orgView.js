@@ -4,6 +4,7 @@ import { escapeHtml } from '../utils/html.js';
 import { icons } from '../components/icons.js';
 import { t } from '../i18n.js';
 import { isGuest, renderGuestPage } from '../components/guestNotice.js';
+import { showToast } from '../components/toast.js';
 
 export async function renderOrg(root) {
   if (isGuest()) {
@@ -13,49 +14,49 @@ export async function renderOrg(root) {
   const user = getCurrentUser();
 
   root.innerHTML = `
-    <div class="stack" style="gap: var(--sp-lg);">
+    <div class="form-stack stack-lg">
       <!-- Page Header -->
-      <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: var(--sp-md); flex-wrap: wrap;">
+      <div class="page-head">
         <div>
-          <h1 class="page-title" style="margin-bottom: 4px;">${t('org_title', 'Faculties & Departments Hierarchy')}</h1>
-          <p class="muted page-sub" style="margin-bottom: 0;">
+          <h1 class="page-head__title">${t('org_title', 'Faculties & Departments Hierarchy')}</h1>
+          <p class="page-head__sub">
             ${t('org_subtitle', 'Manage university organizational structure and configure SROI plan ownership at Naresuan University')}
           </p>
         </div>
-        <div style="display: flex; gap: var(--sp-sm);">
+        <div class="page-head__actions">
           <button class="btn btn-primary" id="btnNewFaculty">${icons.plus} ${t('btn_add_faculty', 'Add Faculty')}</button>
         </div>
       </div>
 
       <!-- Institutional Banner & Quick Overview -->
-      <div class="card has-stripe" style="background: linear-gradient(180deg, var(--surface-card) 0%, var(--surface-soft) 100%); padding: var(--sp-lg); --stripe: var(--accent);">
-        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: var(--sp-md);">
-          <div style="display: flex; align-items: center; gap: var(--sp-md);">
-            <div style="width: 44px; height: 44px; border-radius: var(--radius-md); background: var(--primary-soft); color: var(--primary); display: grid; place-items: center; font-size: 1.5rem; flex-shrink: 0;">
-              🏛️
+      <div class="card has-stripe org-banner-card">
+        <div class="toolbar">
+          <div class="cluster stack-sm">
+            <div class="org-banner-icon">
+              ${icons.institution || icons.folder}
             </div>
             <div>
-              <div style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: var(--muted); letter-spacing: 0.05em;">
+              <div class="muted-sm uppercase strong">
                 ${t('institution_label', 'Academic Institution')}
               </div>
-              <div style="font-size: 1.125rem; font-weight: 700; color: var(--on-background);" id="orgDisplayName">
+              <div class="strong" id="orgDisplayName">
                 ${t('institution_nu', 'มหาวิทยาลัยนเรศวร (Naresuan University)')}
               </div>
             </div>
           </div>
 
-          <div style="display: flex; gap: var(--sp-lg); flex-wrap: wrap;">
-            <div style="text-align: right;">
-              <div class="muted" style="font-size: 0.75rem;">${t('stat_total_faculties', 'Total Faculties')}</div>
-              <div style="font-size: 1.25rem; font-weight: 700; color: var(--primary);" id="statFacCount">-</div>
+          <div class="cluster stack-md">
+            <div class="stat-item text-right">
+              <div class="muted-sm">${t('stat_total_faculties', 'Total Faculties')}</div>
+              <div class="strong primary-text" id="statFacCount">-</div>
             </div>
-            <div style="text-align: right;">
-              <div class="muted" style="font-size: 0.75rem;">${t('stat_total_departments', 'Total Departments')}</div>
-              <div style="font-size: 1.25rem; font-weight: 700; color: var(--on-background);" id="statDeptCount">-</div>
+            <div class="stat-item text-right">
+              <div class="muted-sm">${t('stat_total_departments', 'Total Departments')}</div>
+              <div class="strong" id="statDeptCount">-</div>
             </div>
-            <div style="text-align: right;">
-              <div class="muted" style="font-size: 0.75rem;">${t('org_members_title', 'Organization Members')}</div>
-              <div style="font-size: 1.25rem; font-weight: 700; color: var(--on-background);" id="statMemCount">-</div>
+            <div class="stat-item text-right">
+              <div class="muted-sm">${t('org_members_title', 'Organization Members')}</div>
+              <div class="strong" id="statMemCount">-</div>
             </div>
           </div>
         </div>
@@ -63,7 +64,9 @@ export async function renderOrg(root) {
 
       <!-- Main Content Area -->
       <div id="orgContentArea">
-        <div class="muted" style="padding: var(--sp-2xl); text-align: center;">${t('loading', 'Loading organizational data...')}</div>
+        <div class="empty-state">
+          <p class="empty-state__text">${t('loading', 'Loading organizational data...')}</p>
+        </div>
       </div>
     </div>
   `;
@@ -78,6 +81,7 @@ export async function renderOrg(root) {
   let currentOrgId = 1;
   let allFaculties = [];
   let allMembers = [];
+  let allProjects = [];
 
   async function loadOrgs() {
     try {
@@ -94,20 +98,27 @@ export async function renderOrg(root) {
       }
       await loadOrgStructure(currentOrgId);
     } catch (err) {
-      contentArea.innerHTML = `<div class="alert alert-danger">${escapeHtml(err.message)}</div>`;
+      contentArea.innerHTML = `<div class="field-error">${escapeHtml(err.message)}</div>`;
+      showToast(err.message, 'error');
     }
   }
 
   async function loadOrgStructure(orgId) {
-    contentArea.innerHTML = `<div class="muted" style="padding: var(--sp-2xl); text-align: center;">${t('loading', 'Loading faculties and departments...')}</div>`;
+    contentArea.innerHTML = `
+      <div class="empty-state">
+        <p class="empty-state__text">${t('loading', 'Loading faculties and departments...')}</p>
+      </div>
+    `;
     try {
-      const [facRes, memRes] = await Promise.all([
+      const [facRes, memRes, projRes] = await Promise.all([
         api.getFaculties(orgId),
         api.getOrgMembers(orgId),
+        api.getProjects().catch(() => ({ data: [] })),
       ]);
 
       const faculties = facRes.data || [];
       const members = memRes.data || [];
+      allProjects = projRes.data || [];
 
       // For each faculty, fetch departments
       const facWithDepts = await Promise.all(
@@ -133,53 +144,65 @@ export async function renderOrg(root) {
       if (statDeptCount) statDeptCount.textContent = totalDepts;
       if (statMemCount) statMemCount.textContent = allMembers.length;
 
-      renderStructureView(orgId, allFaculties, allMembers);
+      renderStructureView(orgId, allFaculties, allMembers, allProjects);
     } catch (err) {
-      contentArea.innerHTML = `<div class="alert alert-danger">${escapeHtml(err.message)}</div>`;
+      contentArea.innerHTML = `<div class="field-error">${escapeHtml(err.message)}</div>`;
+      showToast(err.message, 'error');
     }
   }
 
-  function renderStructureView(orgId, faculties, members) {
+  function countPlansForFaculty(facultyId) {
+    const fId = Number(facultyId);
+    return allProjects.filter((p) => {
+      if (p.owner_type === 'faculty' && Number(p.faculty_id) === fId) return true;
+      if (Number(p.faculty_id) === fId) return true;
+      return false;
+    }).length;
+  }
+
+  function countPlansForDepartment(departmentId) {
+    const dId = Number(departmentId);
+    return allProjects.filter((p) => Number(p.department_id) === dId).length;
+  }
+
+  function renderStructureView(orgId, faculties, members, projects) {
     contentArea.innerHTML = `
-      <div class="stack" style="gap: var(--sp-xl);">
+      <div class="form-stack stack-lg">
         <!-- Faculties Section -->
         <div>
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--sp-md); flex-wrap: wrap; gap: var(--sp-sm);">
-            <div>
-              <h2 style="font-size: 1.125rem; font-weight: 700; color: var(--on-background);">
-                ${t('fac_and_dept_count', 'Faculties & Departments')} (${faculties.length})
-              </h2>
-            </div>
-            <div style="display: flex; gap: var(--sp-sm); align-items: center;">
+          <div class="toolbar">
+            <h2 class="panel__title">
+              ${t('fac_and_dept_count', 'Faculties & Departments')} (${faculties.length})
+            </h2>
+            <div class="cluster">
               <input
                 type="text"
                 id="searchFacultyInput"
-                class="input"
+                class="input org-search-input"
                 placeholder="${t('search_faculties_placeholder', 'Search faculties...')}"
-                style="height: 34px; font-size: 0.8125rem; width: 220px;"
               />
-              <button class="btn btn-secondary" id="btnSubAddFaculty" style="height: 34px; font-size: 0.8125rem;">
+              <button class="btn btn-secondary btn-compact" id="btnSubAddFaculty">
                 ${icons.plus} ${t('btn_add_faculty', 'Add Faculty')}
               </button>
             </div>
           </div>
 
           <div id="facultyCardsList">
-            ${renderFacultyCards(faculties)}
+            ${renderFacultyTree(faculties)}
           </div>
         </div>
 
         <!-- Organization Members Table -->
-        <div>
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--sp-md);">
-            <h2 style="font-size: 1.125rem; font-weight: 700; color: var(--on-background);">
+        <div class="panel">
+          <div class="toolbar">
+            <h2 class="panel__title">
               ${t('org_members_title', 'Organization Members')} (${members.length})
             </h2>
-            <button class="btn btn-secondary" id="btnAddMember" style="height: 34px; font-size: 0.8125rem;">
+            <button class="btn btn-secondary btn-compact" id="btnAddMember">
               ${icons.plus} ${t('btn_add_member', 'Add Member')}
             </button>
           </div>
-          <div class="card" style="padding: 0; overflow: hidden;">
+          <div class="table-container">
             <table class="table">
               <thead>
                 <tr>
@@ -191,14 +214,14 @@ export async function renderOrg(root) {
               <tbody>
                 ${
                   members.length === 0
-                    ? `<tr><td colspan="3" class="empty">${t('no_data', 'No members found.')}</td></tr>`
+                    ? `<tr><td colspan="3" class="empty-state">${t('no_data', 'No members found.')}</td></tr>`
                     : members
                         .map(
                           (m) => `
                         <tr>
-                          <td class="strong">${escapeHtml(m.name)}</td>
+                          <td class="strong">${escapeHtml(m.name || m.email)}</td>
                           <td>${escapeHtml(m.email)}</td>
-                          <td><span class="badge badge-integrated">${escapeHtml(m.role)}</span></td>
+                          <td><span class="status status--neutral">${escapeHtml(m.role)}</span></td>
                         </tr>
                       `,
                         )
@@ -220,60 +243,76 @@ export async function renderOrg(root) {
       const filtered = faculties.filter(
         (f) =>
           f.name.toLowerCase().includes(q) ||
-          (f.description && f.description.toLowerCase().includes(q)),
+          (f.description && f.description.toLowerCase().includes(q)) ||
+          (f.departments && f.departments.some((d) => d.name.toLowerCase().includes(q))),
       );
       const container = document.getElementById('facultyCardsList');
       if (container) {
-        container.innerHTML = renderFacultyCards(filtered);
+        container.innerHTML = renderFacultyTree(filtered);
         bindFacultyEvents(orgId);
       }
     });
 
     document
       .getElementById('btnSubAddFaculty')
-      ?.addEventListener('click', () => openCreateFacultyModal(orgId));
+      ?.addEventListener('click', () => {
+        openOrgEntityModal({
+          type: 'faculty',
+          mode: 'create',
+          parentId: orgId,
+        });
+      });
+
     document
       .getElementById('btnEmptyAddFac')
-      ?.addEventListener('click', () => openCreateFacultyModal(orgId));
+      ?.addEventListener('click', () => {
+        openOrgEntityModal({
+          type: 'faculty',
+          mode: 'create',
+          parentId: orgId,
+        });
+      });
+
     document
       .getElementById('btnAddMember')
       ?.addEventListener('click', () => openAddMemberModal(orgId));
   }
 
-  function renderFacultyCards(faculties) {
+  function renderFacultyTree(faculties) {
     if (faculties.length === 0) {
       return `
-        <div class="card" style="padding: var(--sp-2xl); text-align: center;">
-          <p class="muted" style="margin-bottom: var(--sp-md);">${t('no_faculties_yet', 'No faculties created yet in this institution.')}</p>
+        <div class="empty-state">
+          <p class="empty-state__title">${t('no_faculties_yet', 'No faculties created yet in this institution.')}</p>
           <button class="btn btn-primary" id="btnEmptyAddFac">${icons.plus} ${t('btn_create_first_fac', 'Create First Faculty')}</button>
         </div>
       `;
     }
 
     return `
-      <div class="stack" style="gap: var(--sp-md);">
+      <div class="org-tree">
         ${faculties
-          .map(
-            (f) => `
-          <div class="card has-stripe" style="padding: var(--sp-md); transition: box-shadow 150ms var(--ease); --stripe: var(--accent);">
-            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: var(--sp-sm); gap: var(--sp-sm); flex-wrap: wrap;">
-              <div>
-                <h3 style="font-size: 1.0625rem; font-weight: 700; margin-bottom: 2px; color: var(--on-background);">
-                  ${escapeHtml(f.name)}
-                </h3>
-                ${f.description ? `<p class="muted" style="font-size: 0.8125rem; margin-bottom: 0;">${escapeHtml(f.description)}</p>` : ''}
+          .map((f) => {
+            const planCount = f.plan_count != null ? f.plan_count : countPlansForFaculty(f.id);
+            const depts = f.departments || [];
+            return `
+          <details class="org-faculty-node">
+            <summary class="org-faculty-summary">
+              <div class="org-faculty-summary__info">
+                <span class="org-faculty-summary__title">${escapeHtml(f.name)}</span>
+                ${f.description ? `<span class="muted-sm">(${escapeHtml(f.description)})</span>` : ''}
+                <span class="status status--neutral">${planCount} ${t('plans', 'plans')}</span>
               </div>
 
-              <div style="display: flex; gap: var(--sp-xs); flex-wrap: wrap;">
-                <a class="btn btn-secondary" href="#/faculty-report?id=${f.id}" style="font-size: 0.75rem; height: 30px; font-weight: 600;">
-                  ${t('conso_report', 'Consolidated Report ↗')}
+              <div class="org-faculty-summary__actions">
+                <a class="btn btn-secondary btn-compact" href="#/faculty-report?id=${f.id}">
+                  ${t('conso_report', 'Consolidated Report')}
                 </a>
 
-                <button class="btn btn-secondary" data-add-dept="${f.id}" data-fac-name="${escapeHtml(f.name)}" style="font-size: 0.75rem; height: 30px;">
+                <button class="btn btn-secondary btn-compact" data-add-dept="${f.id}" data-fac-name="${escapeHtml(f.name)}">
                   + ${t('departments_in_fac', 'Department')}
                 </button>
 
-                <button class="btn btn-secondary" data-edit-fac="${f.id}" data-fac-name="${escapeHtml(f.name)}" data-fac-desc="${escapeHtml(f.description || '')}" style="font-size: 0.75rem; height: 30px;">
+                <button class="btn btn-secondary btn-compact" data-edit-fac="${f.id}" data-fac-name="${escapeHtml(f.name)}" data-fac-desc="${escapeHtml(f.description || '')}">
                   ${t('btn_rename', 'Rename')}
                 </button>
 
@@ -281,39 +320,38 @@ export async function renderOrg(root) {
                   ${icons.trash}
                 </button>
               </div>
-            </div>
+            </summary>
 
             <!-- Departments under this faculty -->
-            <div style="background: var(--surface-soft); border: 1px solid var(--outline); border-radius: var(--radius-sm); padding: var(--sp-sm); margin-top: var(--sp-sm);">
-              <div style="font-size: 0.75rem; font-weight: 700; color: var(--muted); text-transform: uppercase; margin-bottom: var(--sp-xs); letter-spacing: 0.04em;">
-                ${t('departments_in_fac', 'Departments')} (${f.departments ? f.departments.length : 0})
+            <div class="org-dept-container">
+              <div class="org-dept-header">
+                ${t('departments_in_fac', 'Departments')} (${depts.length})
               </div>
 
               ${
-                !f.departments || f.departments.length === 0
-                  ? `<div class="muted" style="font-size: 0.8125rem; font-style: italic;">
+                depts.length === 0
+                  ? `<p class="muted-sm">
                       ${t('no_departments_yet', 'No departments yet. SROI plans can be owned directly by this faculty.')}
-                    </div>`
+                    </p>`
                   : `
-                    <div class="stack" style="gap: var(--sp-xs);">
-                      ${f.departments
-                        .map(
-                          (d) => `
-                        <div style="display: flex; justify-content: space-between; align-items: center; gap: var(--sp-sm); flex-wrap: wrap; padding: 6px 12px; background: var(--surface-card); color: var(--on-background); border-radius: var(--radius-xs); border: 1px solid var(--outline);">
-                          <div>
-                            <strong style="font-size: 0.875rem; color: var(--on-background);">
-                              ${escapeHtml(d.name)}
-                            </strong>
-                            ${d.description ? `<span class="muted" style="font-size: 0.75rem; margin-left: 8px;">${escapeHtml(d.description)}</span>` : ''}
+                    <div class="org-dept-list">
+                      ${depts
+                        .map((d) => {
+                          const deptPlanCount = d.plan_count != null ? d.plan_count : countPlansForDepartment(d.id);
+                          return `
+                        <div class="org-dept-row">
+                          <div class="org-dept-row__info">
+                            <span class="org-dept-row__name">${escapeHtml(d.name)}</span>
+                            ${d.description ? `<span class="muted-sm">(${escapeHtml(d.description)})</span>` : ''}
+                            <span class="status status--neutral">${deptPlanCount} ${t('plans', 'plans')}</span>
                           </div>
 
-                          <div style="display: flex; gap: var(--sp-xs);">
+                          <div class="org-dept-row__actions">
                             <button
-                              class="btn btn-ghost"
+                              class="btn btn-ghost btn-compact-subtle"
                               data-edit-dept="${d.id}"
                               data-dept-name="${escapeHtml(d.name)}"
                               data-dept-desc="${escapeHtml(d.description || '')}"
-                              style="font-size: 0.75rem; height: 26px; padding: 0 8px;"
                             >
                               ${t('btn_rename', 'Rename')}
                             </button>
@@ -322,37 +360,54 @@ export async function renderOrg(root) {
                               class="btn-icon"
                               data-delete-dept="${d.id}"
                               title="${t('btn_delete', 'Delete Department')}"
-                              style="width: 26px; height: 26px;"
                             >
                               ${icons.trash}
                             </button>
                           </div>
                         </div>
-                      `,
-                        )
+                      `;
+                        })
                         .join('')}
                     </div>
                   `
               }
             </div>
-          </div>
-        `,
-          )
+          </details>
+        `;
+          })
           .join('')}
       </div>
     `;
   }
 
   function bindFacultyEvents(orgId) {
+    // Prevent details toggle when clicking buttons or links inside summary
+    contentArea.querySelectorAll('.org-faculty-summary__actions button, .org-faculty-summary__actions a').forEach((el) => {
+      el.addEventListener('click', (e) => {
+        e.stopPropagation();
+      });
+    });
+
     contentArea.querySelectorAll('[data-add-dept]').forEach((btn) => {
       btn.addEventListener('click', () => {
-        openCreateDeptModal(Number(btn.dataset.addDept), btn.dataset.facName);
+        openOrgEntityModal({
+          type: 'department',
+          mode: 'create',
+          parentId: Number(btn.dataset.addDept),
+          parentName: btn.dataset.facName,
+        });
       });
     });
 
     contentArea.querySelectorAll('[data-edit-fac]').forEach((btn) => {
       btn.addEventListener('click', () => {
-        openEditFacultyModal(Number(btn.dataset.editFac), btn.dataset.facName, btn.dataset.facDesc);
+        openOrgEntityModal({
+          type: 'faculty',
+          mode: 'edit',
+          id: Number(btn.dataset.editFac),
+          currentName: btn.dataset.facName,
+          currentDescription: btn.dataset.facDesc,
+        });
       });
     });
 
@@ -368,9 +423,10 @@ export async function renderOrg(root) {
           onConfirm: async () => {
             try {
               await api.deleteFaculty(facId);
+              showToast(t('deleted_faculty', 'Faculty deleted successfully'), 'success');
               loadOrgStructure(orgId);
             } catch (e) {
-              alert(e.message);
+              showToast(e.message, 'error');
             }
           },
         });
@@ -379,7 +435,13 @@ export async function renderOrg(root) {
 
     contentArea.querySelectorAll('[data-edit-dept]').forEach((btn) => {
       btn.addEventListener('click', () => {
-        openEditDeptModal(Number(btn.dataset.editDept), btn.dataset.deptName, btn.dataset.deptDesc);
+        openOrgEntityModal({
+          type: 'department',
+          mode: 'edit',
+          id: Number(btn.dataset.editDept),
+          currentName: btn.dataset.deptName,
+          currentDescription: btn.dataset.deptDesc,
+        });
       });
     });
 
@@ -395,9 +457,10 @@ export async function renderOrg(root) {
           onConfirm: async () => {
             try {
               await api.deleteDepartment(deptId);
+              showToast(t('deleted_dept', 'Department deleted successfully'), 'success');
               loadOrgStructure(orgId);
             } catch (e) {
-              alert(e.message);
+              showToast(e.message, 'error');
             }
           },
         });
@@ -405,182 +468,111 @@ export async function renderOrg(root) {
     });
   }
 
-  function openCreateFacultyModal(orgId) {
+  /**
+   * Unified popup function for Add/Edit Faculty and Department
+   */
+  function openOrgEntityModal({
+    type = 'faculty',
+    mode = 'create',
+    id = null,
+    parentId = null,
+    parentName = '',
+    currentName = '',
+    currentDescription = '',
+  }) {
+    const isFac = type === 'faculty';
+    const isCreate = mode === 'create';
+
+    let title = '';
+    if (isFac) {
+      title = isCreate
+        ? t('modal_create_fac_title', 'Create New Faculty')
+        : t('modal_edit_fac_title', 'Edit Faculty');
+    } else {
+      title = isCreate
+        ? `${t('modal_create_dept_title', 'Add Department')} : ${escapeHtml(parentName)}`
+        : t('modal_edit_dept_title', 'Edit Department');
+    }
+
+    const nameLabel = isFac
+      ? t('field_fac_name', 'Faculty Name *')
+      : t('field_dept_name', 'Department Name *');
+
+    const descLabel = isFac
+      ? t('field_fac_desc', 'Description / Faculty Code')
+      : t('field_dept_desc', 'Description / Department Code');
+
+    const namePlaceholder = isFac
+      ? 'e.g. คณะสหเวชศาสตร์ / Faculty of Allied Health Sciences'
+      : 'e.g. ภาควิชากายภาพบำบัด / Department of Physical Therapy';
+
+    const descPlaceholder = isFac
+      ? t('ph_fac_desc', 'Brief description or faculty unit code (optional)')
+      : t('ph_dept_desc', 'Brief department description or unit code (optional)');
+
+    const submitLabel = isCreate
+      ? (isFac ? t('save_create_fac', 'Create Faculty') : t('save_create_dept', 'Create Department'))
+      : t('save_changes', 'Save Changes');
+
     openModal({
-      title: t('modal_create_fac_title', 'Create New Faculty'),
+      title,
       body: `
-        <form id="createFacForm" class="stack" style="gap: var(--sp-md);">
+        <form id="orgEntityForm" class="form-stack">
           <div class="field">
-            <label class="field-label">${t('field_fac_name', 'Faculty Name *')}</label>
-            <input type="text" name="name" class="input" required placeholder="e.g. คณะสหเวชศาสตร์ / Faculty of Allied Health Sciences" />
+            <label class="field-label">${nameLabel}</label>
+            <input type="text" name="name" class="input" required value="${escapeHtml(currentName)}" placeholder="${escapeHtml(namePlaceholder)}" />
           </div>
           <div class="field">
-            <label class="field-label">${t('field_fac_desc', 'Description / Faculty Code')}</label>
-            <textarea name="description" class="input" rows="2" placeholder="${t('ph_fac_desc', 'Brief description or faculty unit code (optional)')}"></textarea>
+            <label class="field-label">${descLabel}</label>
+            <textarea name="description" class="input" rows="2" placeholder="${escapeHtml(descPlaceholder)}">${escapeHtml(currentDescription)}</textarea>
           </div>
-          <div id="createFacError" class="alert alert-danger" style="display: none;"></div>
+          <div id="orgEntityError" class="field-error" hidden></div>
         </form>
       `,
       footer: `
         <button class="btn btn-secondary" data-modal-close>${t('cancel', 'Cancel')}</button>
-        <button class="btn btn-primary" id="btnSubmitFac">${t('save', 'Create Faculty')}</button>
+        <button class="btn btn-primary" id="btnSubmitOrgEntity">${submitLabel}</button>
       `,
     });
 
-    document.getElementById('btnSubmitFac')?.addEventListener('click', async () => {
-      const form = document.getElementById('createFacForm');
-      const errBox = document.getElementById('createFacError');
+    document.getElementById('btnSubmitOrgEntity')?.addEventListener('click', async () => {
+      const form = document.getElementById('orgEntityForm');
+      const errBox = document.getElementById('orgEntityError');
       const name = form.name.value.trim();
       const description = form.description.value.trim();
 
       if (!name) {
-        errBox.textContent = t('required', 'Please enter a faculty name.');
-        errBox.style.display = 'block';
+        const reqMsg = isFac
+          ? t('required_fac_name', 'Please enter a faculty name.')
+          : t('required_dept_name', 'Please enter a department name.');
+        errBox.textContent = reqMsg;
+        errBox.hidden = false;
         return;
       }
 
       try {
-        await api.createFaculty(orgId, { name, description });
-        closeModal();
-        loadOrgStructure(orgId);
-      } catch (err) {
-        errBox.textContent = err.message;
-        errBox.style.display = 'block';
-      }
-    });
-  }
-
-  function openEditFacultyModal(facId, oldName, oldDesc) {
-    openModal({
-      title: t('modal_edit_fac_title', 'Edit Faculty'),
-      body: `
-        <form id="editFacForm" class="stack" style="gap: var(--sp-md);">
-          <div class="field">
-            <label class="field-label">${t('field_fac_name', 'Faculty Name *')}</label>
-            <input type="text" name="name" class="input" required value="${escapeHtml(oldName)}" />
-          </div>
-          <div class="field">
-            <label class="field-label">${t('field_fac_desc', 'Description / Faculty Code')}</label>
-            <textarea name="description" class="input" rows="2">${escapeHtml(oldDesc)}</textarea>
-          </div>
-          <div id="editFacError" class="alert alert-danger" style="display: none;"></div>
-        </form>
-      `,
-      footer: `
-        <button class="btn btn-secondary" data-modal-close>${t('cancel', 'Cancel')}</button>
-        <button class="btn btn-primary" id="btnSubmitEditFac">${t('save', 'Save Changes')}</button>
-      `,
-    });
-
-    document.getElementById('btnSubmitEditFac')?.addEventListener('click', async () => {
-      const form = document.getElementById('editFacForm');
-      const errBox = document.getElementById('editFacError');
-      const name = form.name.value.trim();
-      const description = form.description.value.trim();
-
-      if (!name) {
-        errBox.textContent = t('required', 'Please enter a faculty name.');
-        errBox.style.display = 'block';
-        return;
-      }
-
-      try {
-        await api.updateFaculty(facId, { name, description });
-        closeModal();
-        loadOrgStructure(currentOrgId);
-      } catch (err) {
-        errBox.textContent = err.message;
-        errBox.style.display = 'block';
-      }
-    });
-  }
-
-  function openCreateDeptModal(facId, facName) {
-    openModal({
-      title: `${t('modal_create_dept_title', 'Add Department')} : ${escapeHtml(facName)}`,
-      body: `
-        <form id="createDeptForm" class="stack" style="gap: var(--sp-md);">
-          <div class="field">
-            <label class="field-label">${t('field_dept_name', 'Department Name *')}</label>
-            <input type="text" name="name" class="input" required placeholder="e.g. ภาควิชากายภาพบำบัด / Department of Physical Therapy" />
-          </div>
-          <div class="field">
-            <label class="field-label">${t('field_dept_desc', 'Department Description')}</label>
-            <textarea name="description" class="input" rows="2" placeholder="${t('ph_dept_desc', 'Brief department description (optional)')}"></textarea>
-          </div>
-          <div id="createDeptError" class="alert alert-danger" style="display: none;"></div>
-        </form>
-      `,
-      footer: `
-        <button class="btn btn-secondary" data-modal-close>${t('cancel', 'Cancel')}</button>
-        <button class="btn btn-primary" id="btnSubmitDept">${t('save', 'Create Department')}</button>
-      `,
-    });
-
-    document.getElementById('btnSubmitDept')?.addEventListener('click', async () => {
-      const form = document.getElementById('createDeptForm');
-      const errBox = document.getElementById('createDeptError');
-      const name = form.name.value.trim();
-      const description = form.description.value.trim();
-
-      if (!name) {
-        errBox.textContent = t('required', 'Please enter a department name.');
-        errBox.style.display = 'block';
-        return;
-      }
-
-      try {
-        await api.createDepartment(facId, { name, description });
+        if (isFac) {
+          if (isCreate) {
+            await api.createFaculty(parentId, { name, description });
+            showToast(t('created_faculty', 'Faculty created successfully'), 'success');
+          } else {
+            await api.updateFaculty(id, { name, description });
+            showToast(t('updated_faculty', 'Faculty updated successfully'), 'success');
+          }
+        } else {
+          if (isCreate) {
+            await api.createDepartment(parentId, { name, description });
+            showToast(t('created_dept', 'Department created successfully'), 'success');
+          } else {
+            await api.updateDepartment(id, { name, description });
+            showToast(t('updated_dept', 'Department updated successfully'), 'success');
+          }
+        }
         closeModal();
         loadOrgStructure(currentOrgId);
       } catch (err) {
         errBox.textContent = err.message;
-        errBox.style.display = 'block';
-      }
-    });
-  }
-
-  function openEditDeptModal(deptId, oldName, oldDesc) {
-    openModal({
-      title: t('modal_edit_dept_title', 'Edit Department'),
-      body: `
-        <form id="editDeptForm" class="stack" style="gap: var(--sp-md);">
-          <div class="field">
-            <label class="field-label">${t('field_dept_name', 'Department Name *')}</label>
-            <input type="text" name="name" class="input" required value="${escapeHtml(oldName)}" />
-          </div>
-          <div class="field">
-            <label class="field-label">${t('field_dept_desc', 'Department Description')}</label>
-            <textarea name="description" class="input" rows="2">${escapeHtml(oldDesc)}</textarea>
-          </div>
-          <div id="editDeptError" class="alert alert-danger" style="display: none;"></div>
-        </form>
-      `,
-      footer: `
-        <button class="btn btn-secondary" data-modal-close>${t('cancel', 'Cancel')}</button>
-        <button class="btn btn-primary" id="btnSubmitEditDept">${t('save', 'Save Changes')}</button>
-      `,
-    });
-
-    document.getElementById('btnSubmitEditDept')?.addEventListener('click', async () => {
-      const form = document.getElementById('editDeptForm');
-      const errBox = document.getElementById('editDeptError');
-      const name = form.name.value.trim();
-      const description = form.description.value.trim();
-
-      if (!name) {
-        errBox.textContent = t('required', 'Please enter a department name.');
-        errBox.style.display = 'block';
-        return;
-      }
-
-      try {
-        await api.updateDepartment(deptId, { name, description });
-        closeModal();
-        loadOrgStructure(currentOrgId);
-      } catch (err) {
-        errBox.textContent = err.message;
-        errBox.style.display = 'block';
+        errBox.hidden = false;
       }
     });
   }
@@ -589,20 +581,21 @@ export async function renderOrg(root) {
     openModal({
       title: t('modal_add_member_title', 'Add Member to Organization'),
       body: `
-        <form id="addMemberForm" class="stack" style="gap: var(--sp-md);">
+        <form id="addMemberForm" class="form-stack">
           <div class="field">
             <label class="field-label">${t('field_user_email', 'User Email *')}</label>
             <input type="email" name="email" class="input" required placeholder="colleague@nu.ac.th" />
+            <p class="field-hint">${t('email_nu_hint', 'Enter an official university email ending with @nu.ac.th')}</p>
           </div>
           <div class="field">
             <label class="field-label">${t('field_role', 'Role *')}</label>
             <select name="role" class="input">
-              <option value="viewer">${t('role_viewer', 'Viewer (Read-only)')}</option>
-              <option value="editor" selected>${t('role_editor', 'Editor (Manage plans & assessments)')}</option>
-              <option value="owner">${t('role_owner', 'Owner (Full administrative rights)')}</option>
+              <option value="owner">${t('role_owner_desc', 'Owner — Full control of organization, faculties, and plans')}</option>
+              <option value="editor" selected>${t('role_editor_desc', 'Editor — Can create, edit, and evaluate SROI plans')}</option>
+              <option value="viewer">${t('role_viewer_desc', 'Viewer — Read-only access to plans and reports')}</option>
             </select>
           </div>
-          <div id="addMemberError" class="alert alert-danger" style="display: none;"></div>
+          <div id="addMemberError" class="field-error" hidden></div>
         </form>
       `,
       footer: `
@@ -617,19 +610,37 @@ export async function renderOrg(root) {
       const email = form.email.value.trim();
       const role = form.role.value;
 
+      // Validate email ending with @nu.ac.th
+      const emailLower = email.toLowerCase();
+      if (!email || !emailLower.endsWith('@nu.ac.th') || !emailLower.includes('@')) {
+        errBox.textContent = t(
+          'err_nu_email_required',
+          'Please enter a valid Naresuan University email address ending with @nu.ac.th',
+        );
+        errBox.hidden = false;
+        return;
+      }
+
       try {
         await api.post(`/organizations/${orgId}/members`, { email, role });
+        showToast(t('member_added', 'Member added successfully'), 'success');
         closeModal();
         loadOrgStructure(orgId);
       } catch (err) {
         errBox.textContent = err.message;
-        errBox.style.display = 'block';
+        errBox.hidden = false;
       }
     });
   }
 
   document.getElementById('btnNewFaculty')?.addEventListener('click', () => {
-    if (currentOrgId) openCreateFacultyModal(currentOrgId);
+    if (currentOrgId) {
+      openOrgEntityModal({
+        type: 'faculty',
+        mode: 'create',
+        parentId: currentOrgId,
+      });
+    }
   });
 
   loadOrgs();
