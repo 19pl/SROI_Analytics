@@ -79,12 +79,12 @@ function updateControls() {
   if (themeIconEl && themeLabelEl) {
     if (theme === 'black') {
       themeIconEl.innerHTML = sunIcon;
-      themeLabelEl.textContent = 'Light';
+      themeLabelEl.textContent = t('theme_label_light', 'Light');
       if (btnTheme) btnTheme.title = t('theme_light', 'Switch to Light Theme');
     } else {
       themeIconEl.innerHTML = moonIcon;
-      themeLabelEl.textContent = 'Black';
-      if (btnTheme) btnTheme.title = t('theme_black', 'Switch to Black Theme');
+      themeLabelEl.textContent = t('theme_label_dark', 'Dark');
+      if (btnTheme) btnTheme.title = t('theme_black', 'Switch to Dark Theme');
     }
   }
 
@@ -116,7 +116,8 @@ function updateHeader() {
     if (project) {
       titleEl.innerHTML = `<strong>${escapeHtml(project.name)}</strong> <span class="muted" style="font-size: 0.8125rem;">(${project.currency})</span>`;
     } else {
-      titleEl.textContent = t('app_title', 'ImpactValue SROI Calculator');
+      const page = findRoute(location.hash || '#/projects');
+      titleEl.textContent = t(page.labelKey, page.label);
     }
   }
 
@@ -147,6 +148,13 @@ async function navigate() {
   if (!ready) return;
   const currentHash = location.hash || '#/projects';
   const route = findRoute(currentHash);
+
+  // Auth guard: every page except the sign-in page requires a signed-in user.
+  // Guests are sent to #/login?next=<page> and come back to that page after signing in.
+  if (!getCurrentUser() && route.path !== '#/login') {
+    window.location.hash = signInHref(); // fires 'hashchange', which calls navigate() again for the login page
+    return;
+  }
 
   // the sign-in page is stand-alone: no sidebar or header around it
   $('app')?.classList.toggle('is-login', route.path === '#/login');
@@ -229,8 +237,8 @@ async function init() {
   subscribe(updateHeader);
   subscribeAuth(onAuthChange);
 
-  // Restore an existing session. No token / expired token = guest: the app still opens normally and
-  // every page is viewable; pages that need data show a "sign in to see data" notice.
+  // Restore an existing session. No token / expired token = signed out: navigate() redirects every
+  // page except #/login to the sign-in page.
   try {
     const user = await api.restoreSession();
     if (user) {

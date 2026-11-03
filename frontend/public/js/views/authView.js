@@ -68,9 +68,6 @@ export function renderLogin(root) {
         <p class="muted" style="font-size: 0.8125rem; margin: var(--sp-md) 0 var(--sp-xs);">
           ${t('auth_guest_help', 'Accounts are issued by the SROI administrator. If you do not have one, please contact them.')}
         </p>
-        <a href="#/projects" class="muted" style="font-size: 0.8125rem; text-decoration: underline;">
-          ${t('btn_browse_as_guest', 'Browse without signing in')}
-        </a>
       </div>
     </div>
   `;

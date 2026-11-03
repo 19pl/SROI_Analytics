@@ -1,6 +1,6 @@
 // ค่าคงที่ที่ใช้ร่วมกันทั้งแอป (ชื่อแอป, ขอบเขตค่าที่กรอกได้)
 
-export const APP_TITLE = 'NU SROI';
+export const APP_TITLE = 'AHS SROI Analytics';
 
 /** hash ของหน้าเริ่มต้น (เครื่องคำนวณ) */
 export const HOME_HASH = '#/';
