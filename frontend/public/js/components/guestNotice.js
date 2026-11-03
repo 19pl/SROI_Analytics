@@ -57,14 +57,14 @@ function projectsBody() {
   ];
   return `
     <div class="card" style="padding: var(--sp-md);">
-      <div style="display: flex; gap: var(--sp-md); flex-wrap: wrap; align-items: flex-end;">
-        <div style="flex: 2; min-width: 240px;">${label('search', 'Search')}
+      <div class="projects-filter-bar">
+        <div class="projects-filter-search">${label('search', 'Search')}
           <input type="text" class="input" style="height: 38px;" disabled placeholder="${t('search_projects_placeholder', 'Search plans by title or objectives...')}" />
         </div>
-        <div style="flex: 1; min-width: 200px;">${label('filter_faculty', 'Faculty Filter')}
+        <div class="projects-filter-select">${label('filter_faculty', 'Faculty Filter')}
           <select class="input" style="height: 38px;" disabled><option>${t('all_faculties', 'All Faculties & General')}</option></select>
         </div>
-        <div style="flex: 1; min-width: 200px;">${label('filter_dept', 'Department Filter')}
+        <div class="projects-filter-select">${label('filter_dept', 'Department Filter')}
           <select class="input" style="height: 38px;" disabled><option>${t('all_departments', 'All Departments')}</option></select>
         </div>
       </div>

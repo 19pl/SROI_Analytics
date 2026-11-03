@@ -168,6 +168,7 @@ input[type='number'] {
 
 /* ---------- Table: ฐานเป็นกลาง หัวตารางส้มจาง ---------- */
 .table-wrap {
+  width: 100%;
   min-width: 0;
   max-width: 100%;
   overflow-x: auto;
@@ -194,7 +195,45 @@ input[type='number'] {
 
 .table {
   width: 100%;
+  min-width: 880px;
   border-collapse: collapse;
+}
+
+/* ---------- Projects Filter Bar ---------- */
+.projects-filter-bar {
+  display: grid;
+  grid-template-columns: minmax(200px, 2fr) minmax(160px, 1fr) minmax(160px, 1fr);
+  gap: var(--sp-md);
+  align-items: flex-end;
+  width: 100%;
+  min-width: 0;
+}
+
+.projects-filter-search,
+.projects-filter-select {
+  min-width: 0;
+  width: 100%;
+}
+
+.projects-filter-select select,
+.projects-filter-search input {
+  width: 100%;
+  max-width: 100%;
+}
+
+@media (max-width: 900px) {
+  .projects-filter-bar {
+    grid-template-columns: 1fr 1fr;
+  }
+  .projects-filter-search {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 560px) {
+  .projects-filter-bar {
+    grid-template-columns: 1fr;
+  }
 }
 
 .table th {

@@ -40,8 +40,8 @@ export async function renderProjects(root) {
 
       <!-- Professional Search & Hierarchy Filters -->
       <div class="card" style="padding: var(--sp-md);">
-        <div style="display: flex; gap: var(--sp-md); flex-wrap: wrap; align-items: flex-end;">
-          <div style="flex: 2; min-width: 240px;">
+        <div class="projects-filter-bar">
+          <div class="projects-filter-search">
             <label class="field-label" style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: var(--muted);">
               ${t('search', 'Search')}
             </label>
@@ -54,7 +54,7 @@ export async function renderProjects(root) {
             />
           </div>
 
-          <div style="flex: 1; min-width: 200px;">
+          <div class="projects-filter-select">
             <label class="field-label" style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: var(--muted);">
               ${t('filter_faculty', 'Faculty Filter')}
             </label>
@@ -63,7 +63,7 @@ export async function renderProjects(root) {
             </select>
           </div>
 
-          <div style="flex: 1; min-width: 200px;">
+          <div class="projects-filter-select">
             <label class="field-label" style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: var(--muted);">
               ${t('filter_dept', 'Department Filter')}
             </label>
@@ -75,7 +75,7 @@ export async function renderProjects(root) {
       </div>
 
       <!-- Projects Table Container -->
-      <div id="projectsTableContainer">
+      <div id="projectsTableContainer" style="min-width: 0; width: 100%; max-width: 100%;">
         <div class="muted" style="padding: var(--sp-2xl); text-align: center;">${t('loading_projects', 'Loading projects from database...')}</div>
       </div>
     </div>
@@ -254,8 +254,8 @@ export async function renderProjects(root) {
                     </span>
                   </td>
                   <td>
-                    <div style="display: flex; gap: var(--sp-xs);">
-                      <button class="btn btn-primary" data-open-project="${p.id}" style="height: 30px; font-size: 0.75rem;">
+                    <div style="display: flex; gap: var(--sp-xs); align-items: center; white-space: nowrap;">
+                      <button class="btn btn-primary" data-open-project="${p.id}" style="height: 30px; font-size: 0.75rem; padding: 0 10px; white-space: nowrap;">
                         ${t('btn_open_calculator', 'Open Calculator')}
                       </button>
                       <button class="btn-icon" data-delete-project="${p.id}" title="${t('delete', 'Delete Plan')}">
