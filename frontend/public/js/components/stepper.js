@@ -65,18 +65,24 @@ export const STEPS = [
 ];
 
 export function stepperHtml(currentStep = 1, completedSteps = []) {
+  const currentObj = STEPS.find((s) => s.step === currentStep) || STEPS[1];
+  const currentLabel = currentObj.labelKey ? t(currentObj.labelKey, currentObj.label) : currentObj.label;
+  const mobileLabel = currentStep === 0
+    ? currentLabel
+    : `${t('step_mobile_word', 'Step')} ${currentStep} ${t('of_word', 'of')} 6`;
+
   const items = STEPS.map(({ step, labelKey, descKey, label, desc, hash }, index) => {
     const isActive = step === currentStep;
     const isDone = (completedSteps.includes(step) || step < currentStep) && step > 0;
     const displayLabel = labelKey ? t(labelKey, label) : label;
     const displayDesc = descKey ? t(descKey, desc) : desc;
 
-    const iconContent = step === 0 ? '💡' : isDone && !isActive ? '✓' : step;
+    const iconContent = isDone && !isActive ? '✓' : step;
 
     const itemHtml = `
-      <a class="step-item ${isActive ? 'is-active' : ''} ${isDone ? 'is-done' : ''} ${step === 0 ? 'step-welcome' : ''}" href="${hash}" title="${displayDesc}">
+      <a class="step-item ${isActive ? 'is-active' : ''} ${isDone ? 'is-done' : ''} ${step === 0 ? 'step-welcome' : ''}" href="${hash}" aria-label="${displayLabel}: ${displayDesc}" title="${displayLabel}: ${displayDesc}">
         <span class="step-num">${iconContent}</span>
-        <span>${displayLabel}</span>
+        ${isActive ? `<span class="step-label">${displayLabel}</span><span class="step-mobile-label">${mobileLabel}</span>` : ''}
       </a>
     `;
 

@@ -12,6 +12,7 @@ import { showToast } from '../components/toast.js';
 import { escapeHtml } from '../utils/html.js';
 import { t } from '../i18n.js';
 import { isGuest, renderGuestPage } from '../components/guestNotice.js';
+import { PROJECT_CATEGORIES, CURRENCIES, PERIOD_MONTHS, ANALYSIS_YEARS, EVAL_TYPES } from '../config/options.js';
 
 // API status value -> pill class + translated label
 const STATUS_PILL = {
@@ -382,108 +383,151 @@ export async function renderProjects(root) {
 }
 
 function openCreateProjectModal({ currentOrgId, faculties, onCreated }) {
+  let currentStep = 1;
+
   const formHtml = `
-    <form id="createProjectForm" class="stack" style="gap: var(--sp-md);">
-      <div class="field" style="display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: var(--surface-soft); border-radius: var(--radius-sm); border: 1px solid var(--outline);">
-        <span style="font-size: 0.75rem; font-weight: 600; color: var(--muted);">${t('institution_label', 'Institution')}:</span>
-        <strong style="font-size: 0.875rem;">🏛️ ${t('institution_nu', 'มหาวิทยาลัยนเรศวร (Naresuan University)')}</strong>
+    <form id="createProjectForm" class="form-stack" novalidate>
+      <div class="field-hint" id="modalStepIndicator" style="font-weight: 600; color: var(--primary);">
+        ${t('modal_step_1_indicator', 'Step 1 of 3: Plan basics')}
       </div>
 
-      <div class="field">
-        <label class="field-label">${t('sheet_mode_label', 'รูปแบบการทำงาน (Assessment Method)')}</label>
-        <select name="calc_method" class="input">
-          <option value="wizard" selected>${t('sheet_mode_wizard', 'ระบบแนะนำทีละขั้นตอน (Guided Assistant) — แนะนำสำหรับผู้เริ่มต้น')}</option>
-          <option value="sheet">${t('sheet_mode_sheet', 'ตารางคำนวณแบบสเปรดชีต (Sheet Mode) — สำหรับผู้มีไฟล์ Excel แล้ว')}</option>
-        </select>
-        <span class="muted" style="font-size: 0.75rem; margin-top: 4px; display: block;">
-          💡 ระบบแนะนำทีละขั้นตอนจะช่วยอธิบายความหมายของแต่ละช่อง แนะนำการแปลงกิจกรรมเป็นผลลัพธ์ และตรวจสอบความถูกต้องให้อัตโนมัติ
-        </span>
-      </div>
+      <!-- Step 1: Plan basics -->
+      <div id="modalStep1" class="form-stack">
+        <div class="field">
+          <label class="field-label" for="planNameInput">${t('field_plan_name', 'Plan / Project Name')} *</label>
+          <input type="text" id="planNameInput" name="name" class="input" required placeholder="${t('field_plan_name_placeholder', 'e.g. Community Skills Development Initiative 2025')}" />
+        </div>
 
-      <div class="field">
-        <label class="field-label">${t('field_plan_name', 'Plan / Project Name *')}</label>
-        <input type="text" name="name" class="input" required placeholder="${t('field_plan_name_placeholder', 'e.g. Community Skills Development Initiative 2025')}" />
-      </div>
-
-      <!-- Plan Ownership Model (Faculty vs Department vs Org) -->
-      <div class="field" style="background: var(--surface-soft); padding: var(--sp-md); border-radius: var(--radius-sm); border: 1px solid var(--outline);">
-        <label class="field-label" style="font-weight: 700; margin-bottom: 4px;">${t('field_owner_type', 'Direct Ownership Level')} *</label>
-        <p class="muted" style="font-size: 0.75rem; margin-bottom: 8px;">
-          ${t('alert_double_count_safe', 'Anti-double-counting safeguard active: Each plan is directly owned by exactly one entity level.')}
-        </p>
-        <div style="display: flex; gap: var(--sp-md); margin-bottom: 10px; flex-wrap: wrap;">
-          <label style="font-size: 0.8125rem; display: flex; align-items: center; gap: 6px; cursor: pointer;">
-            <input type="radio" name="ownerType" value="faculty" checked /> ${t('owner_faculty_direct', 'Faculty Direct Owner')}
-          </label>
-          <label style="font-size: 0.8125rem; display: flex; align-items: center; gap: 6px; cursor: pointer;">
-            <input type="radio" name="ownerType" value="department" /> ${t('owner_dept_direct', 'Department Direct Owner')}
-          </label>
-          <label style="font-size: 0.8125rem; display: flex; align-items: center; gap: 6px; cursor: pointer;">
-            <input type="radio" name="ownerType" value="org" /> ${t('owner_general', 'General / No Faculty')}
-          </label>
+        <div class="field">
+          <label class="field-label" for="modalOwnerTypeSelect">${t('field_owner_type', 'Who owns this plan?')} *</label>
+          <select id="modalOwnerTypeSelect" name="ownerType" class="input">
+            <option value="faculty" selected>${t('owner_faculty_direct', 'Faculty Direct Owner')}</option>
+            <option value="department">${t('owner_dept_direct', 'Department Direct Owner')}</option>
+            <option value="org">${t('owner_general', 'University-wide / No Faculty')}</option>
+          </select>
         </div>
 
         <div id="facultySelectWrap" class="field">
-          <label class="field-label" style="font-size: 0.75rem; font-weight: 600;">${t('field_faculty', 'Assigned Faculty')}</label>
+          <label class="field-label" for="modalFacultySelect">${t('field_faculty', 'Assigned Faculty')} *</label>
           <select id="modalFacultySelect" class="input">
             ${faculties.map((f) => `<option value="${f.id}">${escapeHtml(f.name)}</option>`).join('')}
             ${faculties.length === 0 ? '<option value="">No faculties available</option>' : ''}
           </select>
         </div>
 
-        <div id="deptSelectWrap" class="field" style="display: none; margin-top: var(--sp-sm);">
-          <label class="field-label" style="font-size: 0.75rem; font-weight: 600;">${t('field_department', 'Assigned Department')}</label>
+        <div id="deptSelectWrap" class="field" style="display: none;">
+          <label class="field-label" for="modalDeptSelect">${t('field_department', 'Assigned Department')} *</label>
           <select id="modalDeptSelect" class="input">
             <option value="">Select a faculty first</option>
           </select>
         </div>
+
+        <div class="field">
+          <label class="field-label">${t('sheet_mode_label', 'Assessment Method')}</label>
+          <div class="form-row" style="gap: var(--sp-sm);">
+            <div class="panel method-card is-active" data-method="wizard" style="cursor: pointer; padding: var(--sp-md); border: 2px solid var(--primary);">
+              <strong style="display: block; font-size: 0.875rem; margin-bottom: 4px;">${t('sheet_mode_wizard_title', 'Guided Assistant')}</strong>
+              <span class="field-hint">${t('sheet_mode_wizard_desc', 'Step-by-step guidance, recommended for beginners')}</span>
+            </div>
+            <div class="panel method-card" data-method="sheet" style="cursor: pointer; padding: var(--sp-md); border: 1px solid var(--outline);">
+              <strong style="display: block; font-size: 0.875rem; margin-bottom: 4px;">${t('sheet_mode_sheet_title', 'Sheet Mode')}</strong>
+              <span class="field-hint">${t('sheet_mode_sheet_desc', 'Spreadsheet-style entry for existing Excel models')}</span>
+            </div>
+          </div>
+          <input type="hidden" name="calc_method" value="wizard" />
+        </div>
       </div>
 
-      <div class="form-grid">
+      <!-- Step 2: Evaluation -->
+      <div id="modalStep2" class="form-stack" style="display: none;">
         <div class="field">
-          <label class="field-label">${t('field_category', 'Project Category')}</label>
-          <input type="text" name="category" class="input" placeholder="${t('field_category_ph', 'Education, Health, Community, Technology...')}" />
-        </div>
-        <div class="field">
-          <label class="field-label">${t('field_eval_type', 'Evaluation Type')}</label>
-          <select name="evaluation_type" class="input">
-            <option value="forecast">${t('eval_type_forecast', 'Forecast (Ex-ante prospective)')}</option>
-            <option value="evaluative" selected>${t('eval_type_evaluative', 'Evaluative (Ex-post actuals)')}</option>
+          <label class="field-label" for="modalEvalTypeSelect">${t('field_eval_type', 'Evaluation Type')}</label>
+          <select id="modalEvalTypeSelect" name="evaluation_type" class="input">
+            <option value="evaluative" selected>${t('eval_type_evaluative', 'Evaluative (Ex-post actuals)')} — ${t('eval_type_evaluative_desc', 'Assess real results after project completion')}</option>
+            <option value="forecast">${t('eval_type_forecast', 'Forecast (Ex-ante prospective)')} — ${t('eval_type_forecast_desc', 'Forecast prospective impact before starting')}</option>
           </select>
         </div>
-      </div>
 
-      <div class="form-grid">
         <div class="field">
-          <label class="field-label">${t('field_currency', 'Currency')}</label>
-          <input type="text" name="currency" class="input" value="THB" maxlength="3" required />
-        </div>
-        <div class="field">
-          <label class="field-label">${t('field_analysis_period', 'Analysis Horizon (Years) *')}</label>
-          <input type="number" name="analysis_period_years" min="1" max="100" class="input" value="1" required />
-        </div>
-        <div class="field">
-          <label class="field-label">${t('field_assessment_scope', 'Assessment Scope (Months)')}</label>
-          <select name="assessment_months" class="input">
+          <label class="field-label" for="modalScopeSelect">${t('field_assessment_scope', 'Assessment Period')}</label>
+          <select id="modalScopeSelect" name="assessment_months" class="input">
             <option value="">${t('scope_full_year', 'Full Year (12 months / standard)')}</option>
             <option value="6">${t('scope_6_months', '6 Months (Interim)')}</option>
             <option value="9">${t('scope_9_months', '9 Months (Interim)')}</option>
             <option value="12">${t('scope_12_months', '12 Months (Fiscal Year)')}</option>
           </select>
         </div>
+
+        <div class="field">
+          <label class="field-label" for="modalHorizonSelect">${t('field_analysis_period', 'Analysis Horizon (Years)')} *</label>
+          <select id="modalHorizonSelect" class="input">
+            <option value="1" selected>1 ${t('years', 'Year')}</option>
+            <option value="2">2 ${t('years', 'Years')}</option>
+            <option value="3">3 ${t('years', 'Years')}</option>
+            <option value="4">4 ${t('years', 'Years')}</option>
+            <option value="5">5 ${t('years', 'Years')}</option>
+            <option value="6">6 ${t('years', 'Years')}</option>
+            <option value="7">7 ${t('years', 'Years')}</option>
+            <option value="8">8 ${t('years', 'Years')}</option>
+            <option value="9">9 ${t('years', 'Years')}</option>
+            <option value="10">10 ${t('years', 'Years')}</option>
+            <option value="Other">${t('other_specify', 'Other (specify)')}</option>
+          </select>
+          <div id="horizonOtherWrap" style="margin-top: var(--sp-xs); display: none;">
+            <input type="number" name="analysis_period_years" min="1" max="100" class="input" value="1" placeholder="${t('specify_years', 'Specify years (1–100)')}" />
+          </div>
+        </div>
       </div>
 
-      <div class="field">
-        <label class="field-label">${t('field_discount_rate', 'Annual Discount Rate (%) *')}</label>
-        <input type="number" name="discount_rate" min="0" max="100" step="0.1" class="input" value="0.0" />
+      <!-- Step 3: Optional details -->
+      <div id="modalStep3" class="form-stack" style="display: none;">
+        <div class="field">
+          <label class="field-label" for="modalCategorySelect">${t('field_category', 'Project Category')}</label>
+          <select id="modalCategorySelect" class="input">
+            <option value="">${t('select_category', '— Select Category —')}</option>
+            <option value="Education">${t('cat_education', 'Education')}</option>
+            <option value="Health">${t('cat_health', 'Health')}</option>
+            <option value="Community">${t('cat_community', 'Community')}</option>
+            <option value="Technology">${t('cat_technology', 'Technology')}</option>
+            <option value="Agriculture">${t('cat_agriculture', 'Agriculture')}</option>
+            <option value="Environment">${t('cat_environment', 'Environment')}</option>
+            <option value="Other">${t('other_specify', 'Other (specify)')}</option>
+          </select>
+          <div id="categoryOtherWrap" style="margin-top: var(--sp-xs); display: none;">
+            <input type="text" id="modalCategoryCustom" class="input" placeholder="${t('specify_category', 'Specify custom category')}" />
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="field-label" for="modalDesc">${t('field_plan_desc', 'Project Description / Objectives')}</label>
+          <textarea id="modalDesc" name="description" class="input" rows="2" placeholder="${t('field_plan_desc_placeholder', 'Brief summary of plan objectives')}"></textarea>
+        </div>
+
+        <details class="disclosure" style="margin-top: var(--sp-xs);">
+          <summary class="disclosure__summary">${t('advanced_settings', 'Advanced Settings')}</summary>
+          <div class="form-stack" style="margin-top: var(--sp-md);">
+            <div class="field">
+              <label class="field-label" for="modalCurrencySelect">${t('field_currency', 'Currency')}</label>
+              <select id="modalCurrencySelect" class="input">
+                <option value="THB" selected>THB (Thai Baht)</option>
+                <option value="USD">USD (US Dollar)</option>
+                <option value="EUR">EUR (Euro)</option>
+                <option value="Other">${t('other_specify', 'Other (specify)')}</option>
+              </select>
+              <div id="currencyOtherWrap" style="margin-top: var(--sp-xs); display: none;">
+                <input type="text" id="modalCurrencyCustom" class="input" maxlength="3" placeholder="GBP" />
+              </div>
+            </div>
+
+            <div class="field">
+              <label class="field-label" for="modalDiscountRate">${t('field_discount_rate', 'Annual Discount Rate (%)')}</label>
+              <input type="number" id="modalDiscountRate" name="discount_rate" min="0" max="100" step="0.1" class="input" value="0.0" />
+            </div>
+          </div>
+        </details>
       </div>
 
-      <div class="field">
-        <label class="field-label">${t('field_plan_desc', 'Project Description / Objectives')}</label>
-        <textarea name="description" class="input" rows="2" placeholder="${t('field_plan_desc', 'Brief summary of plan objectives')}"></textarea>
-      </div>
-
-      <div id="newProjectModalError" class="alert alert-danger" style="display: none;"></div>
+      <div id="newProjectModalError" class="field-error" style="display: none; padding: var(--sp-sm); background: var(--negative-bg); border-radius: var(--radius-sm);"></div>
     </form>
   `;
 
@@ -491,15 +535,28 @@ function openCreateProjectModal({ currentOrgId, faculties, onCreated }) {
     title: t('modal_new_project_title', 'Create New SROI Assessment Plan'),
     body: formHtml,
     footer: `
-      <button class="btn btn-secondary" data-modal-close>${t('cancel', 'Cancel')}</button>
-      <button class="btn btn-primary" id="btnSubmitNewProject">${t('save', 'Create Plan')}</button>
+      <div id="modalFooterActions" style="display: flex; gap: var(--sp-sm); width: 100%; justify-content: flex-end;">
+        <button type="button" class="btn btn-secondary" data-modal-close>${t('cancel', 'Cancel')}</button>
+        <button type="button" class="btn btn-primary" id="btnModalNext">${t('next', 'Next →')}</button>
+      </div>
     `,
   });
 
+  const form = document.getElementById('createProjectForm');
+  const errBox = document.getElementById('newProjectModalError');
   const facultyWrap = document.getElementById('facultySelectWrap');
   const deptWrap = document.getElementById('deptSelectWrap');
   const modalFacSelect = document.getElementById('modalFacultySelect');
   const modalDeptSelect = document.getElementById('modalDeptSelect');
+  const ownerTypeSelect = document.getElementById('modalOwnerTypeSelect');
+  const horizonSelect = document.getElementById('modalHorizonSelect');
+  const horizonOtherWrap = document.getElementById('horizonOtherWrap');
+  const categorySelect = document.getElementById('modalCategorySelect');
+  const categoryOtherWrap = document.getElementById('categoryOtherWrap');
+  const currencySelect = document.getElementById('modalCurrencySelect');
+  const currencyOtherWrap = document.getElementById('currencyOtherWrap');
+  const stepIndicator = document.getElementById('modalStepIndicator');
+  const footerActions = document.getElementById('modalFooterActions');
 
   async function loadModalDepts(facId) {
     if (!facId) return;
@@ -523,28 +580,117 @@ function openCreateProjectModal({ currentOrgId, faculties, onCreated }) {
     loadModalDepts(Number(modalFacSelect.value));
   }
 
-  document.querySelectorAll('input[name="ownerType"]').forEach((radio) => {
-    radio.addEventListener('change', (e) => {
-      const val = e.target.value;
-      if (val === 'faculty') {
-        facultyWrap.style.display = 'block';
-        deptWrap.style.display = 'none';
-      } else if (val === 'department') {
-        facultyWrap.style.display = 'block';
-        deptWrap.style.display = 'block';
-      } else {
-        facultyWrap.style.display = 'none';
-        deptWrap.style.display = 'none';
-      }
+  ownerTypeSelect?.addEventListener('change', (e) => {
+    const val = e.target.value;
+    if (val === 'faculty') {
+      facultyWrap.style.display = 'block';
+      deptWrap.style.display = 'none';
+    } else if (val === 'department') {
+      facultyWrap.style.display = 'block';
+      deptWrap.style.display = 'block';
+    } else {
+      facultyWrap.style.display = 'none';
+      deptWrap.style.display = 'none';
+    }
+  });
+
+  // Method selectable cards
+  document.querySelectorAll('.method-card').forEach((card) => {
+    card.addEventListener('click', () => {
+      document.querySelectorAll('.method-card').forEach((c) => {
+        c.classList.remove('is-active');
+        c.style.border = '1px solid var(--outline)';
+      });
+      card.classList.add('is-active');
+      card.style.border = '2px solid var(--primary)';
+      form.calc_method.value = card.dataset.method;
     });
   });
 
-  document.getElementById('btnSubmitNewProject')?.addEventListener('click', async () => {
-    const form = document.getElementById('createProjectForm');
-    const errBox = document.getElementById('newProjectModalError');
+  // Horizon Other handler
+  horizonSelect?.addEventListener('change', (e) => {
+    horizonOtherWrap.style.display = e.target.value === 'Other' ? 'block' : 'none';
+  });
+
+  // Category Other handler
+  categorySelect?.addEventListener('change', (e) => {
+    categoryOtherWrap.style.display = e.target.value === 'Other' ? 'block' : 'none';
+  });
+
+  // Currency Other handler
+  currencySelect?.addEventListener('change', (e) => {
+    currencyOtherWrap.style.display = e.target.value === 'Other' ? 'block' : 'none';
+  });
+
+  function updateStepUI() {
+    if (errBox) errBox.style.display = 'none';
+    const s1 = document.getElementById('modalStep1');
+    const s2 = document.getElementById('modalStep2');
+    const s3 = document.getElementById('modalStep3');
+    if (s1) s1.style.display = currentStep === 1 ? 'grid' : 'none';
+    if (s2) s2.style.display = currentStep === 2 ? 'grid' : 'none';
+    if (s3) s3.style.display = currentStep === 3 ? 'grid' : 'none';
+
+    if (stepIndicator) {
+      if (currentStep === 1) stepIndicator.textContent = t('modal_step_1_indicator', 'Step 1 of 3: Plan basics');
+      else if (currentStep === 2) stepIndicator.textContent = t('modal_step_2_indicator', 'Step 2 of 3: Evaluation');
+      else stepIndicator.textContent = t('modal_step_3_indicator', 'Step 3 of 3: Optional details');
+    }
+
+    if (footerActions) {
+      if (currentStep === 1) {
+        footerActions.innerHTML = `
+          <button type="button" class="btn btn-secondary" data-modal-close>${t('cancel', 'Cancel')}</button>
+          <button type="button" class="btn btn-primary" id="btnModalNext">${t('next', 'Next →')}</button>
+        `;
+      } else if (currentStep === 2) {
+        footerActions.innerHTML = `
+          <button type="button" class="btn btn-secondary" id="btnModalBack">← ${t('back', 'Back')}</button>
+          <button type="button" class="btn btn-primary" id="btnModalNext">${t('next', 'Next →')}</button>
+        `;
+      } else {
+        footerActions.innerHTML = `
+          <button type="button" class="btn btn-secondary" id="btnModalBack">← ${t('back', 'Back')}</button>
+          <button type="button" class="btn btn-primary" id="btnSubmitNewProject">${t('save', 'Create Plan')}</button>
+        `;
+      }
+      bindStepButtons();
+    }
+  }
+
+  function bindStepButtons() {
+    document.getElementById('btnModalNext')?.addEventListener('click', () => {
+      if (currentStep === 1) {
+        const nameVal = form.name.value.trim();
+        if (!nameVal) {
+          if (errBox) {
+            errBox.textContent = t('required_plan_name', 'Please enter a plan name.');
+            errBox.style.display = 'block';
+          }
+          return;
+        }
+        currentStep = 2;
+        updateStepUI();
+      } else if (currentStep === 2) {
+        currentStep = 3;
+        updateStepUI();
+      }
+    });
+
+    document.getElementById('btnModalBack')?.addEventListener('click', () => {
+      if (currentStep > 1) {
+        currentStep -= 1;
+        updateStepUI();
+      }
+    });
+
+    document.getElementById('btnSubmitNewProject')?.addEventListener('click', submitPlan);
+  }
+
+  async function submitPlan() {
     if (!form) return;
 
-    const ownerType = document.querySelector('input[name="ownerType"]:checked')?.value;
+    const ownerType = ownerTypeSelect?.value;
     let faculty_id = null;
     let department_id = null;
 
@@ -554,12 +700,27 @@ function openCreateProjectModal({ currentOrgId, faculties, onCreated }) {
       department_id = modalDeptSelect?.value ? Number(modalDeptSelect.value) : null;
     }
 
+    let yearsVal = horizonSelect?.value || '1';
+    if (yearsVal === 'Other') {
+      yearsVal = form.analysis_period_years.value;
+    }
+
+    let catVal = categorySelect?.value || '';
+    if (catVal === 'Other') {
+      catVal = document.getElementById('modalCategoryCustom')?.value.trim() || '';
+    }
+
+    let curVal = currencySelect?.value || 'THB';
+    if (curVal === 'Other') {
+      curVal = document.getElementById('modalCurrencyCustom')?.value.trim().toUpperCase() || 'THB';
+    }
+
     const data = {
       name: form.name.value.trim(),
-      category: form.category.value.trim(),
+      category: catVal,
       evaluation_type: form.evaluation_type.value,
-      currency: form.currency.value.trim().toUpperCase(),
-      analysis_period_years: parseInt(form.analysis_period_years.value, 10),
+      currency: curVal,
+      analysis_period_years: parseInt(yearsVal, 10) || 1,
       discount_rate: form.discount_rate.value ? parseFloat(form.discount_rate.value) / 100 : 0.0,
       description: form.description.value.trim(),
       faculty_id,
@@ -592,5 +753,8 @@ function openCreateProjectModal({ currentOrgId, faculties, onCreated }) {
         errBox.style.display = 'block';
       }
     }
-  });
+  }
+
+  bindStepButtons();
 }
+

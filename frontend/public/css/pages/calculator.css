@@ -301,26 +301,44 @@
 
 .wizard-content-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 300px;
+  grid-template-columns: 1fr;
   gap: var(--sp-xl);
   align-items: start;
 }
 
+.wizard-content-layout.has-help-open {
+  grid-template-columns: minmax(0, 1fr) 320px;
+}
+
 @media (max-width: 1100px) {
-  .wizard-content-layout {
+  .wizard-content-layout.has-help-open {
     grid-template-columns: 1fr;
+  }
+}
+
+.step-mobile-label {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .step-label {
+    display: none;
+  }
+  .step-mobile-label {
+    display: inline;
   }
 }
 
 /* Contextual Help Drawer */
 .help-drawer {
-  background: var(--surface);
+  background: var(--surface-elevated);
   border: 1px solid var(--outline);
   border-radius: var(--radius-lg);
   padding: var(--sp-lg);
-  box-shadow: var(--shadow-subtle);
+  box-shadow: var(--shadow-card);
   position: sticky;
   top: calc(var(--header-h) + var(--sp-lg));
+  color: var(--on-background);
 }
 
 .help-drawer-title {

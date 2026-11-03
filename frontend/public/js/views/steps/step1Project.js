@@ -23,6 +23,7 @@ import { openModal, closeModal, confirmModal } from '../../components/modal.js';
 import { formatCurrency } from '../../utils/format.js';
 import { escapeHtml } from '../../utils/html.js';
 import { icons } from '../../components/icons.js';
+import { showToast } from '../../components/toast.js';
 import {
   GROUPS,
   groupByKey,
@@ -92,7 +93,7 @@ export function renderStep1(container) {
     );
   const ownerHtml = `
     <div class="s1-owner">
-      <span class="s1-owner-icon" aria-hidden="true">🏛️</span>
+      <span class="s1-owner-icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18"></path><path d="M5 21V7l8-4v18"></path><path d="M19 21V11l-6-3"></path></svg></span>
       <div class="s1-owner-main">
         <div class="s1-owner-label">${L('หน่วยงานเจ้าของโครงการ', 'Project owner')}</div>
         <div class="s1-owner-name">
@@ -105,7 +106,7 @@ export function renderStep1(container) {
             : ''
         }
       </div>
-      <span class="s1-owner-lock muted" title="${L('เลือกไว้แล้วตอนสร้างโครงการ จึงไม่ต้องกรอกอีก', 'Chosen when the plan was created, so there is nothing to fill in')}">🔒 ${L('เลือกไว้แล้วตอนสร้างโครงการ', 'Set when the plan was created')}</span>
+      <span class="s1-owner-lock muted" title="${L('เลือกไว้แล้วตอนสร้างโครงการ จึงไม่ต้องกรอกอีก', 'Chosen when the plan was created, so there is nothing to fill in')}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline-block;vertical-align:middle;margin-right:3px;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>${L('เลือกไว้แล้วตอนสร้างโครงการ', 'Set when the plan was created')}</span>
     </div>`;
 
   const req = `<span class="s1-tag s1-tag-req">${L('จำเป็น', 'Required')}</span>`;
@@ -175,17 +176,23 @@ export function renderStep1(container) {
             <span class="s1-fact"><small>${L('ติดตามผล', 'Impact tracked for')}</small><b>${horizon} ${L('ปี', horizon === 1 ? 'year' : 'years')}</b></span>
             <span class="s1-fact"><small>${L('ช่วงที่ประเมิน', 'Period')}</small><b>${monthsLabel}</b></span>
             <span class="s1-fact"><small>${L('สกุลเงิน', 'Currency')}</small><b>${escapeHtml(cur)}</b></span>
-            <button type="button" class="btn-text s1-fact-edit" id="btnToggleAdvancedScope" aria-expanded="false" aria-controls="advancedScopeContent">✎ ${L('เปลี่ยนค่าเหล่านี้', 'Change these')}</button>
+            <button type="button" class="btn-text s1-fact-edit" id="btnToggleAdvancedScope" aria-expanded="false" aria-controls="advancedScopeContent">${L('เปลี่ยนค่าเหล่านี้', 'Change these')}</button>
           </div>
 
           <div class="s1-settings" id="advancedScopeContent" hidden>
             <p class="muted s1-sub" style="margin-bottom: var(--sp-md);">
-              ⚙️ ${L('ระบบตั้งค่ามาตรฐานไว้ให้แล้ว หากไม่แน่ใจ ไม่ต้องแก้ไขก็ได้', 'Standard values are already set. If you are unsure, leave them as they are.')}
+              ${L('ระบบตั้งค่ามาตรฐานไว้ให้แล้ว หากไม่แน่ใจ ไม่ต้องแก้ไขก็ได้', 'Standard values are already set. If you are unsure, leave them as they are.')}
             </p>
             <div class="form-grid">
               <div class="field">
                 <label class="field-label">${L('ติดตามผลกี่ปี', 'Years of impact to count')} ${req}</label>
-                <input type="number" name="analysis_period_years" min="1" max="100" class="input" value="${horizon}" />
+                <select id="s1HorizonSelect" class="input">
+                  ${[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((y) => `<option value="${y}" ${horizon === y ? 'selected' : ''}>${y} ${L('ปี', y === 1 ? 'year' : 'years')}</option>`).join('')}
+                  <option value="Other" ${horizon > 10 ? 'selected' : ''}>${L('อื่นๆ (ระบุ)', 'Other (specify)')}</option>
+                </select>
+                <div id="s1HorizonCustomWrap" style="margin-top: var(--sp-xs); ${horizon > 10 ? '' : 'display: none;'}">
+                  <input type="number" name="analysis_period_years" min="1" max="100" class="input" value="${horizon}" placeholder="1–100" />
+                </div>
                 <span class="muted s1-hint">${L('โครงการทั่วไปนิยม 1–3 ปี', 'Most projects use 1–3 years')}</span>
               </div>
               <div class="field">
@@ -206,7 +213,15 @@ export function renderStep1(container) {
               </div>
               <div class="field">
                 <label class="field-label">${L('สกุลเงิน', 'Currency')}</label>
-                <input type="text" name="currency" class="input" value="${escapeHtml(cur)}" maxlength="3" />
+                <select id="s1CurrencySelect" class="input">
+                  <option value="THB" ${cur === 'THB' ? 'selected' : ''}>THB</option>
+                  <option value="USD" ${cur === 'USD' ? 'selected' : ''}>USD</option>
+                  <option value="EUR" ${cur === 'EUR' ? 'selected' : ''}>EUR</option>
+                  <option value="Other" ${!['THB', 'USD', 'EUR'].includes(cur) ? 'selected' : ''}>${L('อื่นๆ (ระบุ)', 'Other (specify)')}</option>
+                </select>
+                <div id="s1CurrencyCustomWrap" style="margin-top: var(--sp-xs); ${!['THB', 'USD', 'EUR'].includes(cur) ? '' : 'display: none;'}">
+                  <input type="text" name="currency" class="input" value="${escapeHtml(cur)}" maxlength="3" placeholder="GBP" />
+                </div>
               </div>
             </div>
 
@@ -265,8 +280,8 @@ export function renderStep1(container) {
             ? `
         <div class="s1-stats">
           <div class="s1-stat s1-stat-main"><small>${L('รวมทั้งหมด', 'Total')}</small><b>${money(total)}</b></div>
-          <div class="s1-stat"><small>💵 ${L('เงินสด', 'Cash')}</small><b>${money(cash)}</b></div>
-          <div class="s1-stat"><small>🤝 ${L('ไม่ใช่เงินสด', 'Non-cash')}</small><b>${money(inKind)}</b></div>
+          <div class="s1-stat"><small>${L('เงินสด', 'Cash')}</small><b>${money(cash)}</b></div>
+          <div class="s1-stat"><small>${L('ไม่ใช่เงินสด', 'Non-cash')}</small><b>${money(inKind)}</b></div>
         </div>
 
         <div class="table-wrap">
@@ -291,12 +306,12 @@ export function renderStep1(container) {
                   <td>
                     <div class="strong">${escapeHtml(c.description)}
                       ${c.period_label ? `<span class="badge badge-integrated s1-mini">${escapeHtml(c.period_label)}</span>` : ''}
-                      ${dupIds.has(c.id) ? `<span class="badge s1-mini s1-warn" title="${L('มีรายการเหมือนกันอีก — ตรวจว่านับซ้ำหรือไม่', 'Another identical item exists — check for double counting')}">⚠ ${L('อาจซ้ำ', 'Possible duplicate')}</span>` : ''}
+                      ${dupIds.has(c.id) ? `<span class="badge s1-mini s1-warn" title="${L('มีรายการเหมือนกันอีก — ตรวจว่านับซ้ำหรือไม่', 'Another identical item exists — check for double counting')}">${L('อาจซ้ำ', 'Possible duplicate')}</span>` : ''}
                     </div>
                     <div class="muted s1-mini-line">${escapeHtml(costCategoryLabel(c.category, isTh))}</div>
                   </td>
                   <td>${stk ? `<span class="badge badge-integrated">${escapeHtml(stk.group_code || '')}</span> ${escapeHtml(stk.name)}` : '<span class="muted">–</span>'}</td>
-                  <td>${c.is_cash ? `💵 ${L('เงินสด', 'Cash')}` : `🤝 <span class="muted">${L('ไม่ใช่เงินสด', 'Non-cash')}</span>`}
+                  <td>${c.is_cash ? L('เงินสด', 'Cash') : `<span class="muted">${L('ไม่ใช่เงินสด', 'Non-cash')}</span>`}
                     ${notCounted ? `<div class="s1-mini-line s1-warn-text">${L('ไม่นับในการคำนวณ', 'Not counted')}</div>` : ''}</td>
                   ${showYear ? `<td class="num">${Number(c.year) === 0 ? L('เริ่มต้น', 'Start') : `${L('ปีที่', 'Year')} ${c.year}`}</td>` : ''}
                   <td class="num strong">${money(c.amount * (c.exchange_rate || 1))}</td>
@@ -316,19 +331,19 @@ export function renderStep1(container) {
         </div>
         ${
           unlinked > 0 && stakeholders.length > 0
-            ? `<p class="muted s1-sub" style="margin-top: var(--sp-sm);">ℹ️ ${unlinked} ${L('รายการยังไม่ระบุว่าใครให้ — ระบุตอนนี้ (กดแก้ไข) หรือที่ขั้นที่ 2 ก็ได้', 'items do not say who provided them — set it now (Edit) or in Step 2')}</p>`
+            ? `<p class="muted s1-sub" style="margin-top: var(--sp-sm);">${unlinked} ${L('รายการยังไม่ระบุว่าใครให้ — ระบุตอนนี้ (กดแก้ไข) หรือที่ขั้นที่ 2 ก็ได้', 'items do not say who provided them — set it now (Edit) or in Step 2')}</p>`
             : ''
         }`
             : `
         <!-- Empty state: say what to do, give examples, one big button -->
         <div class="s1-empty">
-          <div class="s1-empty-icon" aria-hidden="true">💰</div>
+          <div class="s1-empty-icon" aria-hidden="true"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg></div>
           <div class="strong">${L('เริ่มจากรายการแรกของโครงการ', 'Start with the first item')}</div>
           <div class="muted s1-sub">${L('เลือกตัวอย่างด้านล่างเพื่อเริ่มเร็วขึ้น หรือกดปุ่มเพื่อกรอกเอง', 'Pick an example to start faster, or add your own.')}</div>
           <div class="s1-presets">
-            <button type="button" class="s1-preset" data-preset="honorarium"><span>🎤</span>${L('ค่าตอบแทนวิทยากร / ทีมงาน', 'Speakers & staff pay')}</button>
-            <button type="button" class="s1-preset" data-preset="supplies"><span>🧰</span>${L('ค่าวัสดุ / อุปกรณ์', 'Supplies & equipment')}</button>
-            <button type="button" class="s1-preset" data-preset="volunteer"><span>🤝</span>${L('แรงอาสา / ของบริจาค', 'Volunteer time & donations')}</button>
+            <button type="button" class="s1-preset" data-preset="honorarium">${L('ค่าตอบแทนวิทยากร / ทีมงาน', 'Speakers & staff pay')}</button>
+            <button type="button" class="s1-preset" data-preset="supplies">${L('ค่าวัสดุ / อุปกรณ์', 'Supplies & equipment')}</button>
+            <button type="button" class="s1-preset" data-preset="volunteer">${L('แรงอาสา / ของบริจาค', 'Volunteer time & donations')}</button>
           </div>
           <button class="btn btn-primary s1-empty-btn" id="btnAddCost" type="button">${icons.plus} ${L('เพิ่มรายการแรก', 'Add first item')}</button>
         </div>`
@@ -372,13 +387,39 @@ export function renderStep1(container) {
   form?.addEventListener('submit', (e) => e.preventDefault());
 
   const toggleBtn = document.getElementById('btnToggleAdvancedScope');
+  const horizonSelect = document.getElementById('s1HorizonSelect');
+  const horizonCustomWrap = document.getElementById('s1HorizonCustomWrap');
+  const currencySelect = document.getElementById('s1CurrencySelect');
+  const currencyCustomWrap = document.getElementById('s1CurrencyCustomWrap');
+
+  horizonSelect?.addEventListener('change', (e) => {
+    if (e.target.value === 'Other') {
+      horizonCustomWrap.style.display = 'block';
+      form.analysis_period_years.focus();
+    } else {
+      horizonCustomWrap.style.display = 'none';
+      form.analysis_period_years.value = e.target.value;
+      setDirty(true);
+    }
+  });
+
+  currencySelect?.addEventListener('change', (e) => {
+    if (e.target.value === 'Other') {
+      currencyCustomWrap.style.display = 'block';
+      form.currency.focus();
+    } else {
+      currencyCustomWrap.style.display = 'none';
+      form.currency.value = e.target.value;
+      setDirty(true);
+    }
+  });
   const advContent = document.getElementById('advancedScopeContent');
   toggleBtn?.addEventListener('click', () => {
     advContent.hidden = !advContent.hidden;
     toggleBtn.setAttribute('aria-expanded', String(!advContent.hidden));
     toggleBtn.textContent = advContent.hidden
-      ? `✎ ${L('เปลี่ยนค่าเหล่านี้', 'Change these')}`
-      : `✕ ${L('ซ่อนการตั้งค่า', 'Hide settings')}`;
+      ? L('เปลี่ยนค่าเหล่านี้', 'Change these')
+      : L('ซ่อนการตั้งค่า', 'Hide settings');
   });
 
   container.querySelectorAll('[data-scroll]').forEach((a) => {
@@ -400,7 +441,17 @@ export function renderStep1(container) {
       form.name.setAttribute('aria-invalid', 'true');
       return false;
     }
-    const years = parseInt(form.analysis_period_years.value, 10);
+    let years = 1;
+    if (horizonSelect && horizonSelect.value !== 'Other') {
+      years = parseInt(horizonSelect.value, 10);
+      form.analysis_period_years.value = years;
+    } else {
+      years = parseInt(form.analysis_period_years.value, 10);
+    }
+
+    if (currencySelect && currencySelect.value !== 'Other') {
+      form.currency.value = currencySelect.value;
+    }
     if (Number.isNaN(years) || years < 1) {
       if (advContent.hidden) toggleBtn?.click();
       form.analysis_period_years.focus();
@@ -433,7 +484,7 @@ export function renderStep1(container) {
       renderStep1(container);
       return true;
     } catch (err) {
-      alert(`${L('บันทึกไม่สำเร็จ', 'Could not save')}: ${err.message}`);
+      showToast(`${L('บันทึกไม่สำเร็จ', 'Could not save')}: ${err.message}`, 'error');
       return false;
     }
   }
@@ -566,12 +617,12 @@ function openAddCostModal({ project, initialData = null, prefill = null, onAdded
         <div class="s1-kind">
           <label class="s1-kind-opt ${isCash ? 'is-on' : ''}">
             <input type="radio" name="kind" value="1" ${isCash ? 'checked' : ''} />
-            <span class="s1-kind-ico">💵</span>
+            
             <span><b>${L('เงินสด', 'Cash')}</b><small>${L('จ่ายจริงหรือได้รับเป็นเงิน', 'Actually paid or received as money')}</small></span>
           </label>
           <label class="s1-kind-opt ${!isCash ? 'is-on' : ''}">
             <input type="radio" name="kind" value="0" ${!isCash ? 'checked' : ''} />
-            <span class="s1-kind-ico">🤝</span>
+            
             <span><b>${L('ไม่ใช่เงินสด', 'Not cash')}</b><small>${L('แรงอาสา ของบริจาค ใช้ห้อง/อุปกรณ์ฟรี', 'Volunteer time, donations, free use of space')}</small></span>
           </label>
         </div>

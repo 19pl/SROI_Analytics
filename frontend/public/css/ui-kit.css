@@ -131,6 +131,13 @@
 .stack-lg { gap: var(--sp-xl); }
 .muted-sm { font-size: 0.8125rem; line-height: 1.45; color: var(--muted); }
 
+/* ---------- Tabs & Accordion ---------- */
+.tabs { display: flex; gap: var(--sp-xs); border-bottom: 1px solid var(--outline); margin-bottom: var(--sp-lg); }
+.tab { padding: var(--sp-sm) var(--sp-md); border: 0; background: transparent; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; font: inherit; font-size: 0.875rem; }
+.tab.is-active, .tab:hover { color: var(--on-background); }
+.tab.is-active { border-color: var(--primary); font-weight: 600; }
+.accordion-row { border-bottom: 1px solid var(--outline); padding: var(--sp-md) 0; }
+
 /* ---------- Row actions + popup menu (opened from a "..." button) ---------- */
 .row-actions { display: flex; align-items: center; justify-content: flex-end; gap: var(--sp-xs); }
 .row-menu {

@@ -171,7 +171,7 @@ const HELP_CONTENT = {
   },
 };
 
-export function renderHelpPanel(container, stepNumber = 1) {
+export function renderHelpPanel(container, stepNumber = 1, onClose = null) {
   const lang = getLanguage();
   const isTh = lang !== 'en';
   const langDict = HELP_CONTENT[lang] || HELP_CONTENT.th;
@@ -179,22 +179,29 @@ export function renderHelpPanel(container, stepNumber = 1) {
 
   container.innerHTML = `
     <div class="help-drawer">
-      <div class="help-drawer-title">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="12" cy="12" r="10"></circle>
-          <line x1="12" y1="16" x2="12" y2="12"></line>
-          <line x1="12" y1="8" x2="12.01" y2="8"></line>
-        </svg>
-        <span>${content.title}</span>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--sp-sm);">
+        <div class="help-drawer-title" style="margin-bottom: 0;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="16" x2="12" y2="12"></line>
+            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+          </svg>
+          <span>${content.title}</span>
+        </div>
+        ${onClose ? `<button type="button" class="btn-icon btn-close-help" aria-label="${t('close', 'Close')}" style="padding: 2px 6px; cursor: pointer;">&times;</button>` : ''}
       </div>
       <div class="help-drawer-body">${content.body}</div>
       <div style="margin-top: var(--sp-md); pt: var(--sp-sm); border-top: 1px dashed var(--outline); padding-top: 10px;">
         <button type="button" class="btn btn-secondary btn-drawer-glossary" style="width: 100%; font-size: 0.75rem; justify-content: center;">
-          📖 ${isTh ? 'เปิดพจนานุกรมคำศัพท์ SROI' : 'Open SROI Glossary'}
+          ${isTh ? 'เปิดพจนานุกรมคำศัพท์ SROI' : 'Open SROI Glossary'}
         </button>
       </div>
     </div>
   `;
+
+  container.querySelector('.btn-close-help')?.addEventListener('click', () => {
+    if (onClose) onClose();
+  });
 
   container.querySelector('.btn-drawer-glossary')?.addEventListener('click', () => {
     openGlossaryModal();

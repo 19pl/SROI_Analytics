@@ -140,7 +140,7 @@
 .card:hover,
 .stat-card:hover {
   border-color: color-mix(in srgb, var(--primary) 35%, var(--outline));
-  box-shadow: var(--shadow-modal);
+  box-shadow: var(--shadow-card);
 }
 
 /* ---------- ข้อความ/สถานะว่าง (Empty / loading) ให้มีกรอบประ + ไอคอนจาง ---------- */
