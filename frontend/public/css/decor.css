@@ -107,17 +107,7 @@
       rgba(243, 112, 33, 0.14) 79%,
       transparent 80%
     );
-  animation: decorFloat 18s ease-in-out infinite alternate;
-}
-
-@keyframes decorFloat {
-  from {
-    transform: translate(0, 0) rotate(0deg);
   }
-  to {
-    transform: translate(-24px, -18px) rotate(14deg);
-  }
-}
 
 /* ---------- หัวข้อหน้า: แถบสีเล็ก ๆ ช่วยให้ส่วนบนไม่โล่ง ---------- */
 .page-title {
