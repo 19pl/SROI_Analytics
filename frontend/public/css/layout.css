@@ -329,9 +329,12 @@
 }
 
 .nav-item span {
+  flex: 1;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 200px;
+  white-space: nowrap;
+  max-width: 240px;
   transition:
     opacity 200ms var(--ease),
     max-width 300ms var(--ease),
