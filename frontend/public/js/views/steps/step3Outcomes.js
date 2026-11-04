@@ -74,7 +74,7 @@ export function renderStep3(container) {
         </div>
         <div class="page-head__actions">
           <button type="button" class="btn btn-primary" id="btnAddOutcome">
-            ${icons.plus} ${isTh ? '+ เพิ่มผลลัพธ์ใหม่' : '+ Build Outcome'}
+            ${icons.plus} ${isTh ? 'เพิ่มผลลัพธ์ใหม่' : 'Build Outcome'}
           </button>
         </div>
       </header>

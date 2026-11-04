@@ -12,6 +12,7 @@ import { icons } from '../../components/icons.js';
 import { t, getLanguage } from '../../i18n.js';
 import { wizardFooterHtml, attachWizardFooterEvents } from '../../components/wizardFooter.js';
 import { openScenarioModal } from '../../components/scenarioModal.js';
+import { getReadiness } from '../../utils/readiness.js';
 
 export function renderStep5(container) {
   const {
@@ -32,11 +33,11 @@ export function renderStep5(container) {
     return;
   }
 
-  const isReady = review?.ready ?? false;
-  const blockers = review?.blockers || [];
-  const warnings = review?.warnings || [];
-  const completion = review?.completion || {};
-  const summary = investmentSummary || { nominal_total: 0, cash_total: 0, in_kind_total: 0 };
+  const rd = getReadiness(review);
+  const isReady = rd.ready && [1, 2, 3, 4].every((n) => rd.isComplete(n));
+  const blockers = rd.blockers;
+  const warnings = rd.warnings;
+  const summary = { total: investmentSummary?.total_investment ?? 0 };
 
   // Helper to determine step link for a blocker
   const getFixLink = (path = '') => {
@@ -75,27 +76,14 @@ export function renderStep5(container) {
   const firstBlocker = blockers[0];
   const firstFix = firstBlocker ? getFixLink(firstBlocker.path) : null;
 
-  // Step 1 status
-  const step1HasBlocker = blockers.some((b) => {
-    const p = String(b.path).toLowerCase();
-    return p.includes('cost') || p.includes('investment') || p.includes('discount');
-  });
-  const isStep1Ok = costs.length > 0 && !step1HasBlocker;
-
-  // Step 2 status
-  const step2HasBlocker = blockers.some((b) => String(b.path).toLowerCase().includes('stakeholder'));
-  const isStep2Ok = stakeholders.length > 0 && !step2HasBlocker;
-
-  // Step 3 status
-  const step3HasBlocker = blockers.some((b) => {
-    const p = String(b.path).toLowerCase();
-    return p.includes('outcome') || p.includes('proxy') || p.includes('quantity');
-  });
-  const isStep3Ok = outcomes.length > 0 && !step3HasBlocker;
-
-  // Step 4 status
-  const step4HasBlocker = blockers.some((b) => String(b.path).toLowerCase().includes('adjustment'));
-  const isStep4Ok = Boolean(completion.adjustments) && !step4HasBlocker;
+  // Step status comes only from the shared readiness helper (same source as the stepper)
+  const isStep1Ok = rd.isComplete(1);
+  const isStep2Ok = rd.isComplete(2);
+  const isStep3Ok = rd.isComplete(3);
+  const isStep4Ok = rd.isComplete(4);
+  const stepIssues = (n) => rd.step(n).issues;
+  const firstIncomplete = [1, 2, 3, 4].find((n) => !rd.isComplete(n));
+  const issueCount = rd.allIssues().length;
 
   container.innerHTML = `
     <div class="form-stack stack-lg">
@@ -114,8 +102,8 @@ export function renderStep5(container) {
                       ? 'ข้อมูลครบถ้วน พร้อมสำหรับการคำนวณ SROI'
                       : 'Ready to calculate'
                     : isTh
-                      ? `พบ ${blockers.length} รายการที่ต้องแก้ไขก่อนคำนวณ`
-                      : `${blockers.length} items need attention`
+                      ? `พบ ${issueCount || blockers.length} รายการที่ต้องแก้ไขก่อนคำนวณ`
+                      : `${issueCount || blockers.length} items need attention`
                 }
               </h2>
             </div>
@@ -140,10 +128,10 @@ export function renderStep5(container) {
                 ${isTh ? 'คำนวณผลลัพธ์ SROI' : 'Proceed to Dashboard'}
               </a>
             `
-                : firstFix
+                : (firstIncomplete || firstFix)
                   ? `
-              <a class="btn btn-primary" href="${firstFix.hash}">
-                ${isTh ? 'ไปที่รายการแรกที่ต้องแก้ไข' : 'Go to first missing item'} (${firstFix.label})
+              <a class="btn btn-primary" href="#/wizard/step-${firstIncomplete || firstFix.step}">
+                ${isTh ? 'ไปที่รายการแรกที่ต้องแก้ไข' : 'Go to first missing item'} (${isTh ? 'ขั้นตอนที่' : 'Step'} ${firstIncomplete || firstFix.step})
               </a>
             `
                   : ''
@@ -151,6 +139,19 @@ export function renderStep5(container) {
           </div>
         </div>
 
+        ${
+          !isReady && blockers.length === 0 && issueCount > 0
+            ? `<div class="form-stack stack-xs stack-top-md">${rd
+                .allIssues()
+                .map(
+                  (i) => `<div class="cluster cluster--space-between panel panel--soft">
+                    <span class="strong">${escapeHtml(i.message)}</span>
+                    <a href="#/wizard/step-${i.step}" class="btn btn-secondary btn-compact">${isTh ? 'ขั้นตอนที่' : 'Step'} ${i.step}</a>
+                  </div>`,
+                )
+                .join('')}</div>`
+            : ''
+        }
         ${
           blockers.length > 0
             ? `
@@ -216,8 +217,8 @@ export function renderStep5(container) {
                 <strong class="strong">1. ${isTh ? 'โครงการและเงินลงทุน' : 'Project & Investment'}</strong>
                 <span class="muted-sm">
                   ${
-                    summary.nominal_total > 0
-                      ? `${isTh ? 'งบประมาณรวม:' : 'Total Investment:'} ${formatBaht(summary.nominal_total)}`
+                    summary.total > 0
+                      ? `${isTh ? 'งบประมาณรวม:' : 'Total Investment:'} ${formatBaht(summary.total)}`
                       : isTh
                         ? 'ยังไม่ได้บันทึกงบประมาณ'
                         : 'No investment entered'
@@ -275,7 +276,7 @@ export function renderStep5(container) {
               <div>
                 <strong class="strong">4. ${isTh ? 'การปรับปรุงผลกระทบ' : 'Impact Adjustments'}</strong>
                 <span class="muted-sm">
-                  ${isStep4Ok ? (isTh ? 'ประเมินแล้วทุกผลลัพธ์' : 'All assessed') : isTh ? 'ยังมีช่องว่างที่ไม่ได้ประเมิน' : 'Pending assessment'}
+                  ${isStep4Ok ? (isTh ? 'ประเมินแล้วทุกผลลัพธ์' : 'All assessed') : escapeHtml(stepIssues(4)[0] || (isTh ? 'ยังมีช่องว่างที่ไม่ได้ประเมิน' : 'Pending assessment'))}
                 </span>
               </div>
             </div>

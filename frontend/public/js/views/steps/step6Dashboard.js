@@ -20,6 +20,7 @@ import { t, getLanguage } from '../../i18n.js';
 import { wizardFooterHtml, attachWizardFooterEvents } from '../../components/wizardFooter.js';
 import { openCalculationTraceModal } from '../../components/calculationTraceModal.js';
 import { showToast } from '../../components/toast.js';
+import { getReadiness } from '../../utils/readiness.js';
 import { openScenarioModal } from '../../components/scenarioModal.js';
 
 export function renderStep6(container) {
@@ -33,7 +34,7 @@ export function renderStep6(container) {
   }
 
   const isReady = dashboard?.status === 'ready';
-  const blockers = review?.blockers || [];
+  const blockers = getReadiness(review).blockers;
   const result = dashboard?.result || {};
   const summary = result.summary || {};
   const stakeholders = result.stakeholders || [];
@@ -143,7 +144,7 @@ export function renderStep6(container) {
         <div class="panel">
           <span class="muted-sm uppercase strong">${t('col_investment', 'มูลค่าการลงทุนรวม (Present Value)')}</span>
           <div class="stat-num--lg">
-            ${project.currency} ${formatBaht(summary.present_value_investment ?? summary.total_investment ?? summary.nominal_total ?? 0)}
+            ${project.currency} ${formatBaht(summary.investment_used ?? summary.total_investment_present_value ?? summary.total_investment_nominal ?? 0)}
           </div>
           <p class="muted-sm">${isTh ? 'ต้นทุนรวมที่ปรับลดตามกาลเวลา' : 'Discounted cumulative investment costs'}</p>
           <button class="btn btn-secondary btn-compact stack-top-sm" id="traceBtn_inv">
@@ -155,7 +156,7 @@ export function renderStep6(container) {
         <div class="panel">
           <span class="muted-sm uppercase strong">${t('col_present_value', 'มูลค่าผลกระทบทางสังคมรวม (PV)')}</span>
           <div class="val--positive stat-num--lg">
-            ${project.currency} ${formatBaht(summary.present_value_impact ?? 0)}
+            ${project.currency} ${formatBaht(summary.present_value_of_impact ?? 0)}
           </div>
           <p class="muted-sm">${isTh ? 'ผลประโยชน์ทางสังคมคิดลดตลอดอายุโครงการ' : 'Discounted cumulative social impact'}</p>
           <button class="btn btn-secondary btn-compact stack-top-sm" id="traceBtn_pv">
@@ -167,7 +168,7 @@ export function renderStep6(container) {
         <div class="panel">
           <span class="muted-sm uppercase strong">${t('card_net_social_value', 'มูลค่าปัจจุบันสุทธิทางสังคม (NPV)')}</span>
           <div class="stat-num--lg">
-            ${project.currency} ${formatBaht(summary.net_present_value ?? 0)}
+            ${project.currency} ${formatBaht(summary.net_social_value ?? 0)}
           </div>
           <p class="muted-sm">${isTh ? 'ผลตอบแทนสุทธิหลังหักเงินลงทุน' : 'Net social impact after deducting investment'}</p>
           <button class="btn btn-secondary btn-compact stack-top-sm" id="traceBtn_nsv">
@@ -197,16 +198,16 @@ export function renderStep6(container) {
                 ? `โครงการ <strong>"${escapeHtml(project.name)}"</strong> ดำเนินการโดย ${escapeHtml(project.faculty_name || 'มหาวิทยาลัยนเรศวร')} ` +
                   `มีระยะเวลาดำเนินงาน ${project.period_months || 12} เดือน จากการประเมินผลตอบแทนทางสังคมจากการลงทุน (SROI) ` +
                   `พบว่าโครงการนี้มีอัตราส่วน SROI เท่ากับ <strong>${ratio !== null ? `${ratio} : 1` : 'อยู่ระหว่างรอข้อมูล'}</strong> ` +
-                  `โดยก่อให้เกิดมูลค่าผลกระทบทางสังคมรวม <strong>${project.currency} ${formatBaht(summary.present_value_impact ?? 0)}</strong> ` +
-                  `จากการลงทุนรวม <strong>${project.currency} ${formatBaht(summary.present_value_investment ?? summary.total_investment ?? 0)}</strong> ` +
-                  `คิดเป็นมูลค่าปัจจุบันสุทธิ (NPV) เท่ากับ <strong>${project.currency} ${formatBaht(summary.net_present_value ?? 0)}</strong> ` +
+                  `โดยก่อให้เกิดมูลค่าผลกระทบทางสังคมรวม <strong>${project.currency} ${formatBaht(summary.present_value_of_impact ?? 0)}</strong> ` +
+                  `จากการลงทุนรวม <strong>${project.currency} ${formatBaht(summary.investment_used ?? summary.total_investment_present_value ?? summary.total_investment_nominal ?? 0)}</strong> ` +
+                  `คิดเป็นมูลค่าปัจจุบันสุทธิ (NPV) เท่ากับ <strong>${project.currency} ${formatBaht(summary.net_social_value ?? 0)}</strong> ` +
                   `ซึ่งแสดงให้เห็นว่าโครงการนี้ก่อให้เกิดคุณค่าทางสังคมที่คุ้มค่าต่อการลงทุนของมหาวิทยาลัยและแหล่งทุน`
                 : `The project <strong>"${escapeHtml(project.name)}"</strong> represents an investment of ` +
-                  `<strong>${project.currency} ${formatBaht(summary.present_value_investment ?? summary.total_investment ?? 0)}</strong>. ` +
+                  `<strong>${project.currency} ${formatBaht(summary.investment_used ?? summary.total_investment_present_value ?? summary.total_investment_nominal ?? 0)}</strong>. ` +
                   `Over the evaluation period, it generates a cumulative discounted social value of ` +
-                  `<strong>${project.currency} ${formatBaht(summary.present_value_impact ?? 0)}</strong>, ` +
+                  `<strong>${project.currency} ${formatBaht(summary.present_value_of_impact ?? 0)}</strong>, ` +
                   `yielding an SROI Ratio of <strong>${ratio !== null ? `${ratio} : 1` : 'pending'}</strong> ` +
-                  `and an NPV of <strong>${project.currency} ${formatBaht(summary.net_present_value ?? 0)}</strong>.`
+                  `and an NPV of <strong>${project.currency} ${formatBaht(summary.net_social_value ?? 0)}</strong>.`
             }
           </p>
         </div>
@@ -323,7 +324,7 @@ export function renderStep6(container) {
                         .map((o) => {
                           const netPct = ((o.net_impact_ratio ?? 1) * 100).toFixed(0);
                           const pvVal = o.present_value ?? 0;
-                          const totalPv = summary.present_value_impact || 1;
+                          const totalPv = summary.present_value_of_impact || 1;
                           const share = ((pvVal / totalPv) * 100).toFixed(1);
                           return `
                         <tr>

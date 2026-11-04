@@ -638,25 +638,25 @@
 
 @media (max-width: 768px) {
   .wizard-footer {
-    flex-direction: column;
-    align-items: stretch;
+    padding: var(--sp-sm) var(--sp-md);
     gap: var(--sp-sm);
   }
-  .wizard-footer-center {
-    justify-content: center;
-    order: -1;
+  .wizard-footer .btn {
+    padding-inline: var(--sp-md);
+    white-space: nowrap;
   }
-  .wizard-footer-left,
-  .wizard-footer-right {
-    width: 100%;
-  }
-  .wizard-footer-left a,
-  .wizard-footer-left button,
-  .wizard-footer-right a,
-  .wizard-footer-right button {
-    width: 100%;
-    justify-content: center;
-  }
+  .wizard-footer-right { margin-left: auto; }
+}
+
+.wizard-container { max-width: 1100px; margin-inline: auto; }
+
+.page-head__eyebrow {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--primary);
+  margin-bottom: 4px;
 }
 
 /* Activity vs Outcome Comparison Table */

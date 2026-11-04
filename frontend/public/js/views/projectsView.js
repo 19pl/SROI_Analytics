@@ -44,7 +44,9 @@ function timeAgo(iso) {
   if (!iso) return '';
   const then = new Date(iso).getTime();
   if (Number.isNaN(then)) return '';
-  const rtf = new Intl.RelativeTimeFormat(getLanguage() === 'th' ? 'th' : 'en', { numeric: 'auto' });
+  const lang = getLanguage() === 'th' ? 'th' : 'en';
+  // Use numeric: 'always' for Thai to display numeric output like "2 วันที่แล้ว" instead of "เมื่อวานซืน"
+  const rtf = new Intl.RelativeTimeFormat(lang, { numeric: lang === 'th' ? 'always' : 'auto' });
   const sec = Math.round((then - Date.now()) / 1000);
   const units = [
     ['year', 31536000],

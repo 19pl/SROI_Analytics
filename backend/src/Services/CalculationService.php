@@ -143,8 +143,8 @@ final class CalculationService
                 $issues[3][] = "Outcome \"{$o['name']}\" needs a proxy source or a stated assumption.";
             }
             $a = $o['adjustment'];
-            if ($a === null || ($a['deadweight'] === null && $a['attribution'] === null && $a['displacement'] === null)) {
-                $issues[4][] = "Outcome \"{$o['name']}\": assess deadweight, attribution and displacement (0% is a valid answer).";
+            if ($a === null || $a['deadweight'] === null || $a['attribution'] === null || $a['displacement'] === null) {
+                $issues[4][] = "Outcome \"{$o['name']}\": assess all of deadweight, attribution and displacement (0% is a valid answer, but it must be entered).";
             } elseif (trim((string)$a['justification']) === '' && trim((string)$a['source']) === '') {
                 $issues[4][] = "Outcome \"{$o['name']}\": document the basis for the adjustments.";
             }
