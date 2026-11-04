@@ -113,8 +113,8 @@ function updateHeader() {
 
   const titleEl = $('headerTitle');
   if (titleEl) {
-    if (project) {
-      titleEl.innerHTML = `<strong>${escapeHtml(project.name)}</strong> <span class="muted" style="font-size: 0.8125rem;">(${project.currency})</span>`;
+    if (project && project.name) {
+      titleEl.innerHTML = `<strong>${escapeHtml(project.name)}</strong> <span class="muted" style="font-size: 0.8125rem;">${project.currency ? `(${escapeHtml(project.currency)})` : ''}</span>`;
     } else {
       const page = findRoute(location.hash || '#/projects');
       titleEl.textContent = t(page.labelKey, page.label);

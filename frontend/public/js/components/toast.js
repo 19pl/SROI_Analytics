@@ -22,7 +22,7 @@ function getRegion() {
   return region;
 }
 
-export function showToast(message, type = 'info') {
+export function showToast(message, type = 'info', { duration = HIDE_AFTER_MS, action = null } = {}) {
   if (!message) return null;
 
   const toast = document.createElement('div');
@@ -30,10 +30,25 @@ export function showToast(message, type = 'info') {
   toast.textContent = message;
   getRegion().appendChild(toast);
 
-  setTimeout(() => {
+  const dismiss = () => {
     toast.classList.add('is-leaving');
     setTimeout(() => toast.remove(), FADE_MS);
-  }, HIDE_AFTER_MS);
+  };
+
+  // Optional action button, e.g. Undo: showToast('Deleted', 'info', { duration: 8000, action: { label: 'Undo', onClick } })
+  if (action) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'toast__action';
+    btn.textContent = action.label;
+    btn.addEventListener('click', () => {
+      dismiss();
+      action.onClick();
+    });
+    toast.appendChild(btn);
+  }
+
+  setTimeout(dismiss, duration);
 
   return toast;
 }
