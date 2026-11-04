@@ -78,7 +78,7 @@
 
 .btn-icon:hover {
   background: var(--surface-soft);
-  color: var(--danger);
+  color: var(--negative);
 }
 
 /* ---------- Form fields ---------- */

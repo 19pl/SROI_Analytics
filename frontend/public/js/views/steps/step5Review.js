@@ -307,7 +307,7 @@ export function renderStep5(container) {
             </button>
           </div>
 
-          <div class="table-container">
+          <div class="table-wrap">
             <table class="table table--compact">
               <thead>
                 <tr>

@@ -188,7 +188,7 @@
 }
 
 .summary-npv-strip.is-neg .npv-val {
-  color: var(--danger);
+  color: var(--negative);
 }
 
 /* ---------- Chart: แท่งส้ม NU กว้างพอดีการ์ด (ไม่มีแถบเลื่อน) ---------- */

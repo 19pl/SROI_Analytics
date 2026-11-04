@@ -304,7 +304,7 @@ export function renderStep6(container) {
           <h2 class="panel__title">
             ${isTh ? 'ตารางจำแนกองค์ประกอบผลลัพธ์รายข้อ (Detailed Impact Composition)' : 'Detailed Impact Composition Table'}
           </h2>
-          <div class="table-container">
+          <div class="table-wrap">
             <table class="table table--compact">
               <thead>
                 <tr>
@@ -419,7 +419,7 @@ export function renderStep6(container) {
         return;
       }
       target.innerHTML = `
-        <div class="table-container">
+        <div class="table-wrap">
           <table class="table table--compact">
             <thead>
               <tr>
@@ -480,7 +480,7 @@ export function renderStep6(container) {
         return;
       }
       target.innerHTML = `
-        <div class="table-container">
+        <div class="table-wrap">
           <table class="table table--compact">
             <thead>
               <tr>

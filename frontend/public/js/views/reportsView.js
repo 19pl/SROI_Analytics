@@ -211,7 +211,7 @@ export async function renderReports(root) {
     if (nextBtn) nextBtn.disabled = repPage >= totalPages;
 
     box.innerHTML = `
-      <div class="table-container">
+      <div class="table-wrap">
         <table class="table table--compact">
           <thead>
             <tr>
@@ -344,7 +344,7 @@ export async function renderReports(root) {
     if (nextBtn) nextBtn.disabled = runsPage >= totalPages;
 
     box.innerHTML = `
-      <div class="table-container">
+      <div class="table-wrap">
         <table class="table table--compact">
           <thead>
             <tr>

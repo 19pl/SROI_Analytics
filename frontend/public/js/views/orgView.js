@@ -31,7 +31,7 @@ export async function renderOrg(root) {
       <!-- Institutional Banner & Quick Overview -->
       <div class="card has-stripe org-banner-card">
         <div class="toolbar">
-          <div class="cluster stack-sm">
+          <div class="org-banner-identity">
             <div class="org-banner-icon">
               ${icons.institution || icons.folder}
             </div>
@@ -45,7 +45,7 @@ export async function renderOrg(root) {
             </div>
           </div>
 
-          <div class="cluster stack-md">
+          <div class="org-banner-stats">
             <div class="stat-item text-right">
               <div class="muted-sm">${t('stat_total_faculties', 'Total Faculties')}</div>
               <div class="strong primary-text" id="statFacCount">-</div>
@@ -172,18 +172,20 @@ export async function renderOrg(root) {
         <div>
           <div class="toolbar">
             <h2 class="panel__title">
-              ${t('fac_and_dept_count', 'Faculties & Departments')} (${faculties.length})
+              ${t('fac_and_dept_count', 'Faculties & Departments')}
             </h2>
-            <div class="cluster">
+            <div class="org-list-toolbar">
               <input
-                type="text"
+                type="search"
                 id="searchFacultyInput"
                 class="input org-search-input"
+                aria-label="${t('search_faculties_placeholder', 'Search faculties...')}"
                 placeholder="${t('search_faculties_placeholder', 'Search faculties...')}"
               />
-              <button class="btn btn-secondary btn-compact" id="btnSubAddFaculty">
-                ${icons.plus} ${t('btn_add_faculty', 'Add Faculty')}
-              </button>
+              <div class="org-tree-controls" role="group" aria-label="${t('faculty_tree_controls', 'Faculty tree controls')}">
+                <button type="button" class="btn btn-ghost btn-compact" id="btnExpandAll">${t('expand_all', 'Expand all')}</button>
+                <button type="button" class="btn btn-ghost btn-compact" id="btnCollapseAll">${t('collapse_all', 'Collapse all')}</button>
+              </div>
             </div>
           </div>
 
@@ -196,13 +198,13 @@ export async function renderOrg(root) {
         <div class="panel">
           <div class="toolbar">
             <h2 class="panel__title">
-              ${t('org_members_title', 'Organization Members')} (${members.length})
+              ${t('org_members_title', 'Organization Members')}
             </h2>
             <button class="btn btn-secondary btn-compact" id="btnAddMember">
               ${icons.plus} ${t('btn_add_member', 'Add Member')}
             </button>
           </div>
-          <div class="table-container">
+          <div class="table-wrap">
             <table class="table">
               <thead>
                 <tr>
@@ -236,6 +238,13 @@ export async function renderOrg(root) {
 
     bindFacultyEvents(orgId);
 
+    document.getElementById('btnExpandAll')?.addEventListener('click', () => {
+      contentArea.querySelectorAll('.org-faculty-disclosure').forEach((node) => { node.open = true; });
+    });
+    document.getElementById('btnCollapseAll')?.addEventListener('click', () => {
+      contentArea.querySelectorAll('.org-faculty-disclosure').forEach((node) => { node.open = false; });
+    });
+
     // Search filter for faculties
     const searchInput = document.getElementById('searchFacultyInput');
     searchInput?.addEventListener('input', (e) => {
@@ -254,223 +263,141 @@ export async function renderOrg(root) {
     });
 
     document
-      .getElementById('btnSubAddFaculty')
-      ?.addEventListener('click', () => {
-        openOrgEntityModal({
-          type: 'faculty',
-          mode: 'create',
-          parentId: orgId,
-        });
-      });
-
-    document
-      .getElementById('btnEmptyAddFac')
-      ?.addEventListener('click', () => {
-        openOrgEntityModal({
-          type: 'faculty',
-          mode: 'create',
-          parentId: orgId,
-        });
-      });
-
-    document
       .getElementById('btnAddMember')
       ?.addEventListener('click', () => openAddMemberModal(orgId));
   }
 
   function renderFacultyTree(faculties) {
     if (faculties.length === 0) {
-      return `
-        <div class="empty-state">
-          <p class="empty-state__title">${t('no_faculties_yet', 'No faculties created yet in this institution.')}</p>
-          <button class="btn btn-primary" id="btnEmptyAddFac">${icons.plus} ${t('btn_create_first_fac', 'Create First Faculty')}</button>
-        </div>
-      `;
+      return `<div class="empty-state"><p class="empty-state__title">${t('no_faculties_yet', 'No faculties created yet in this institution.')}</p></div>`;
     }
-
     return `
       <div class="org-tree">
-        ${faculties
-          .map((f) => {
-            const planCount = f.plan_count != null ? f.plan_count : countPlansForFaculty(f.id);
-            const depts = f.departments || [];
-            return `
-          <details class="org-faculty-node">
+        ${faculties.map((f) => {
+          const planCount = f.plan_count != null ? f.plan_count : countPlansForFaculty(f.id);
+          const depts = f.departments || [];
+          return `
+          <div class="org-faculty-node">
+            <details class="org-faculty-disclosure">
             <summary class="org-faculty-summary">
-              <div class="org-faculty-summary__info">
+              <span class="org-faculty-summary__chevron" aria-hidden="true"></span>
+              <span class="org-faculty-summary__info">
                 <span class="org-faculty-summary__title">${escapeHtml(f.name)}</span>
-                ${f.description ? `<span class="muted-sm">(${escapeHtml(f.description)})</span>` : ''}
-                <span class="status status--neutral">${planCount} ${t('plans', 'plans')}</span>
-              </div>
-
-              <div class="org-faculty-summary__actions">
-                <a class="btn btn-secondary btn-compact" href="#/faculty-report?id=${f.id}">
-                  ${t('conso_report', 'Consolidated Report')}
-                </a>
-
-                <button class="btn btn-secondary btn-compact" data-add-dept="${f.id}" data-fac-name="${escapeHtml(f.name)}">
-                  + ${t('departments_in_fac', 'Department')}
-                </button>
-
-                <button class="btn btn-secondary btn-compact" data-edit-fac="${f.id}" data-fac-name="${escapeHtml(f.name)}" data-fac-desc="${escapeHtml(f.description || '')}">
-                  ${t('btn_rename', 'Rename')}
-                </button>
-
-                <button class="btn-icon" data-delete-fac="${f.id}" title="${t('btn_delete', 'Delete Faculty')}">
-                  ${icons.trash}
-                </button>
-              </div>
+                ${f.description ? `<span class="org-faculty-summary__secondary">${escapeHtml(f.description)}</span>` : ''}
+                <span class="org-faculty-summary__counts">${depts.length} ${t('departments_short', 'ภาควิชา')} · ${planCount} ${t('plans', 'แผนงาน')}</span>
+              </span>
             </summary>
-
-            <!-- Departments under this faculty -->
             <div class="org-dept-container">
-              <div class="org-dept-header">
-                ${t('departments_in_fac', 'Departments')} (${depts.length})
-              </div>
-
-              ${
-                depts.length === 0
-                  ? `<p class="muted-sm">
-                      ${t('no_departments_yet', 'No departments yet. SROI plans can be owned directly by this faculty.')}
-                    </p>`
-                  : `
-                    <div class="org-dept-list">
-                      ${depts
-                        .map((d) => {
-                          const deptPlanCount = d.plan_count != null ? d.plan_count : countPlansForDepartment(d.id);
-                          return `
-                        <div class="org-dept-row">
-                          <div class="org-dept-row__info">
-                            <span class="org-dept-row__name">${escapeHtml(d.name)}</span>
-                            ${d.description ? `<span class="muted-sm">(${escapeHtml(d.description)})</span>` : ''}
-                            <span class="status status--neutral">${deptPlanCount} ${t('plans', 'plans')}</span>
-                          </div>
-
-                          <div class="org-dept-row__actions">
-                            <button
-                              class="btn btn-ghost btn-compact-subtle"
-                              data-edit-dept="${d.id}"
-                              data-dept-name="${escapeHtml(d.name)}"
-                              data-dept-desc="${escapeHtml(d.description || '')}"
-                            >
-                              ${t('btn_rename', 'Rename')}
-                            </button>
-
-                            <button
-                              class="btn-icon"
-                              data-delete-dept="${d.id}"
-                              title="${t('btn_delete', 'Delete Department')}"
-                            >
-                              ${icons.trash}
-                            </button>
-                          </div>
+              ${depts.length === 0
+                ? `<p class="muted-sm">${t('no_departments_yet', 'No departments yet. SROI plans can be owned directly by this faculty.')}</p>`
+                : `<div class="org-dept-list">${depts.map((d) => {
+                    const deptPlanCount = d.plan_count != null ? d.plan_count : countPlansForDepartment(d.id);
+                    return `
+                      <div class="org-dept-row">
+                        <div class="org-dept-row__info">
+                          <span class="org-dept-row__name">${escapeHtml(d.name)}</span>
+                          ${d.description ? `<span class="org-dept-row__secondary">${escapeHtml(d.description)}</span>` : ''}
+                          <span class="org-faculty-summary__counts">${deptPlanCount} ${t('plans', 'แผนงาน')}</span>
                         </div>
-                      `;
-                        })
-                        .join('')}
-                    </div>
-                  `
-              }
+                        <div class="org-dept-row__actions">
+                          <button type="button" class="btn-icon btn-icon--lg org-row-menu-trigger" data-dept-menu="${d.id}" aria-label="${t('department_actions_for', 'Department actions')}: ${escapeHtml(d.name)}" aria-haspopup="menu" aria-expanded="false"><span aria-hidden="true">⋯</span></button>
+                        </div>
+                      </div>`;
+                  }).join('')}</div>`}
             </div>
-          </details>
-        `;
-          })
-          .join('')}
-      </div>
-    `;
+            </details>
+            <div class="org-faculty-actions">
+              <a class="org-report-link" href="#/faculty-report?id=${f.id}">${t('conso_report', 'Consolidated Report')}</a>
+              <button type="button" class="btn btn-primary btn-compact" data-add-dept="${f.id}" data-fac-name="${escapeHtml(f.name)}">${icons.plus} ${t('departments_in_fac', 'Department')}</button>
+              <button type="button" class="btn-icon btn-icon--lg org-row-menu-trigger" data-fac-menu="${f.id}" aria-label="${t('faculty_actions_for', 'Faculty actions')}: ${escapeHtml(f.name)}" aria-haspopup="menu" aria-expanded="false"><span aria-hidden="true">⋯</span></button>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>`;
+  }
+
+  function openOrgRowMenu(anchor, items) {
+    const previous = document.querySelector('.org-row-menu');
+    if (previous) {
+      const sameAnchor = previous._anchor === anchor;
+      previous._close?.();
+      if (sameAnchor) return;
+    }
+    const menu = document.createElement('div');
+    menu.className = 'row-menu org-row-menu';
+    menu.setAttribute('role', 'menu');
+    menu.innerHTML = items.map((item, index) =>
+      `${item.separatorBefore ? '<div class="row-menu__sep" role="separator"></div>' : ''}<button type="button" role="menuitem" class="row-menu__item${item.danger ? ' row-menu__item--danger' : ''}" data-menu-index="${index}">${escapeHtml(item.label)}</button>`
+    ).join('');
+    document.body.appendChild(menu);
+    menu._anchor = anchor;
+    const position = () => {
+      const rect = anchor.getBoundingClientRect();
+      const menuRect = menu.getBoundingClientRect();
+      const top = rect.bottom + menuRect.height + 8 <= window.innerHeight ? rect.bottom + 4 : Math.max(8, rect.top - menuRect.height - 4);
+      menu.style.top = `${top}px`;
+      menu.style.left = `${Math.min(window.innerWidth - menuRect.width - 8, Math.max(8, rect.right - menuRect.width))}px`;
+    };
+    const close = () => {
+      menu.remove(); anchor.setAttribute('aria-expanded', 'false');
+      document.removeEventListener('pointerdown', onOutside, true);
+      document.removeEventListener('keydown', onKey);
+      window.removeEventListener('resize', position);
+      window.removeEventListener('scroll', position, true);
+    };
+    const onOutside = (event) => { if (!menu.contains(event.target) && !anchor.contains(event.target)) close(); };
+    const menuItems = [...menu.querySelectorAll('[role="menuitem"]')];
+    const onKey = (event) => {
+      const current = menuItems.indexOf(document.activeElement);
+      if (event.key === 'Escape') { event.preventDefault(); close(); anchor.focus(); }
+      else if (['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) {
+        event.preventDefault();
+        const next = event.key === 'Home' ? 0 : event.key === 'End' ? menuItems.length - 1 : (current + (event.key === 'ArrowDown' ? 1 : -1) + menuItems.length) % menuItems.length;
+        menuItems[next]?.focus();
+      } else if (event.key === 'Tab') close();
+    };
+    menu._close = close;
+    anchor.setAttribute('aria-expanded', 'true');
+    menuItems.forEach((button) => button.addEventListener('click', () => { const item = items[Number(button.dataset.menuIndex)]; close(); item?.onSelect(); }));
+    position();
+    document.addEventListener('pointerdown', onOutside, true);
+    document.addEventListener('keydown', onKey);
+    window.addEventListener('resize', position);
+    window.addEventListener('scroll', position, true);
+    menuItems[0]?.focus();
   }
 
   function bindFacultyEvents(orgId) {
-    // Prevent details toggle when clicking buttons or links inside summary
-    contentArea.querySelectorAll('.org-faculty-summary__actions button, .org-faculty-summary__actions a').forEach((el) => {
-      el.addEventListener('click', (e) => {
-        e.stopPropagation();
-      });
-    });
-
-    contentArea.querySelectorAll('[data-add-dept]').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        openOrgEntityModal({
-          type: 'department',
-          mode: 'create',
-          parentId: Number(btn.dataset.addDept),
-          parentName: btn.dataset.facName,
-        });
-      });
-    });
-
-    contentArea.querySelectorAll('[data-edit-fac]').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        openOrgEntityModal({
-          type: 'faculty',
-          mode: 'edit',
-          id: Number(btn.dataset.editFac),
-          currentName: btn.dataset.facName,
-          currentDescription: btn.dataset.facDesc,
-        });
-      });
-    });
-
-    contentArea.querySelectorAll('[data-delete-fac]').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const facId = Number(btn.dataset.deleteFac);
-        confirmModal({
+    contentArea.querySelectorAll('[data-add-dept]').forEach((btn) => btn.addEventListener('click', () => {
+      openOrgEntityModal({ type: 'department', mode: 'create', parentId: Number(btn.dataset.addDept), parentName: btn.dataset.facName });
+    }));
+    contentArea.querySelectorAll('[data-fac-menu]').forEach((btn) => btn.addEventListener('click', () => {
+      const faculty = allFaculties.find((f) => Number(f.id) === Number(btn.dataset.facMenu));
+      if (!faculty) return;
+      openOrgRowMenu(btn, [
+        { label: t('btn_rename', 'Rename'), onSelect: () => openOrgEntityModal({ type: 'faculty', mode: 'edit', id: Number(faculty.id), currentName: faculty.name, currentDescription: faculty.description || '' }) },
+        { label: t('btn_delete', 'Delete'), danger: true, separatorBefore: true, onSelect: () => confirmModal({
           title: t('btn_delete', 'Delete Faculty'),
-          message: t(
-            'confirm_delete_fac',
-            'Are you sure you want to delete this faculty? If it or its departments own any plans, deletion will be blocked to protect data.',
-          ),
-          onConfirm: async () => {
-            try {
-              await api.deleteFaculty(facId);
-              showToast(t('deleted_faculty', 'Faculty deleted successfully'), 'success');
-              loadOrgStructure(orgId);
-            } catch (e) {
-              showToast(e.message, 'error');
-            }
-          },
-        });
-      });
-    });
-
-    contentArea.querySelectorAll('[data-edit-dept]').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        openOrgEntityModal({
-          type: 'department',
-          mode: 'edit',
-          id: Number(btn.dataset.editDept),
-          currentName: btn.dataset.deptName,
-          currentDescription: btn.dataset.deptDesc,
-        });
-      });
-    });
-
-    contentArea.querySelectorAll('[data-delete-dept]').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const deptId = Number(btn.dataset.deleteDept);
-        confirmModal({
+          message: t('confirm_delete_fac', 'Are you sure you want to delete this faculty? If it or its departments own any plans, deletion will be blocked to protect data.'),
+          onConfirm: async () => { try { await api.deleteFaculty(Number(faculty.id)); showToast(t('deleted_faculty', 'Faculty deleted successfully'), 'success'); loadOrgStructure(orgId); } catch (e) { showToast(e.message, 'error'); } },
+        }) },
+      ]);
+    }));
+    contentArea.querySelectorAll('[data-dept-menu]').forEach((btn) => btn.addEventListener('click', () => {
+      const departmentId = Number(btn.dataset.deptMenu);
+      const department = allFaculties.flatMap((f) => f.departments || []).find((d) => Number(d.id) === departmentId);
+      if (!department) return;
+      openOrgRowMenu(btn, [
+        { label: t('btn_rename', 'Rename'), onSelect: () => openOrgEntityModal({ type: 'department', mode: 'edit', id: departmentId, currentName: department.name, currentDescription: department.description || '' }) },
+        { label: t('btn_delete', 'Delete'), danger: true, separatorBefore: true, onSelect: () => confirmModal({
           title: t('btn_delete', 'Delete Department'),
-          message: t(
-            'confirm_delete_dept',
-            'Are you sure you want to delete this department? If it owns any plans, deletion will be blocked.',
-          ),
-          onConfirm: async () => {
-            try {
-              await api.deleteDepartment(deptId);
-              showToast(t('deleted_dept', 'Department deleted successfully'), 'success');
-              loadOrgStructure(orgId);
-            } catch (e) {
-              showToast(e.message, 'error');
-            }
-          },
-        });
-      });
-    });
+          message: t('confirm_delete_dept', 'Are you sure you want to delete this department? If it owns any plans, deletion will be blocked.'),
+          onConfirm: async () => { try { await api.deleteDepartment(departmentId); showToast(t('deleted_dept', 'Department deleted successfully'), 'success'); loadOrgStructure(orgId); } catch (e) { showToast(e.message, 'error'); } },
+        }) },
+      ]);
+    }));
   }
 
-  /**
-   * Unified popup function for Add/Edit Faculty and Department
-   */
   function openOrgEntityModal({
     type = 'faculty',
     mode = 'create',
@@ -499,7 +426,7 @@ export async function renderOrg(root) {
       : t('field_dept_name', 'Department Name *');
 
     const descLabel = isFac
-      ? t('field_fac_desc', 'Description / Faculty Code')
+      ? t('field_fac_desc', 'English name / code')
       : t('field_dept_desc', 'Description / Department Code');
 
     const namePlaceholder = isFac
