@@ -59,7 +59,7 @@ export function wizardFooterHtml(currentStep = 1, options = {}) {
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg>
                 <span>${prevText}</span>
               </a>`
-            : `<button class="btn btn-secondary wizard-btn-back" disabled style="opacity: 0.5;">
+            : `<button class="btn btn-secondary wizard-btn-back" disabled >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg>
                 <span>${t('back', 'ย้อนกลับ')}</span>
               </button>`
@@ -68,15 +68,15 @@ export function wizardFooterHtml(currentStep = 1, options = {}) {
 
       <div class="wizard-footer-center">
         ${saveStatusText}
-        <button type="button" class="btn-text btn-open-glossary" style="font-size: 0.75rem; color: var(--primary); display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; cursor: pointer; background: transparent; border: none;">
-          📖 <u>${t('glossary_quick_btn', 'พจนานุกรมคำศัพท์ SROI')}</u>
+        <button type="button" class="btn btn-ghost btn-compact-subtle btn-open-glossary">
+          <u>${t('glossary_quick_btn', 'พจนานุกรมคำศัพท์ SROI')}</u>
         </button>
       </div>
 
       <div class="wizard-footer-right">
         ${
           nextStep
-            ? `<a href="${nextStep.hash}" class="btn btn-primary wizard-btn-next ${canProceed ? '' : 'is-disabled'}" ${canProceed ? '' : 'aria-disabled="true" style="pointer-events: none; opacity: 0.6;"'}>
+            ? `<a href="${nextStep.hash}" class="btn btn-primary wizard-btn-next ${canProceed ? '' : 'is-disabled'}" ${canProceed ? '' : 'aria-disabled="true"'}>
                 <span>${nextText}</span>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
               </a>`

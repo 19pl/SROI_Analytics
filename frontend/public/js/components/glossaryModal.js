@@ -130,19 +130,19 @@ export function openGlossaryModal(filterTerm = null) {
   const isTh = lang !== 'en';
 
   const bodyHtml = `
-    <div class="stack" style="gap: var(--sp-md);">
+    <div class="form-stack stack-md">
       <div class="field">
-        <input type="text" id="glossarySearchInput" class="input" placeholder="${isTh ? '🔍 ค้นหาคำศัพท์ (เช่น Deadweight, ตัวแทนทางการเงิน)...' : '🔍 Search term (e.g. Deadweight, Proxy)...'}" value="${filterTerm ? escapeHtml(filterTerm) : ''}" style="height: 38px;" />
+        <input type="text" id="glossarySearchInput" class="input" placeholder="${isTh ? 'ค้นหาคำศัพท์ (เช่น Deadweight, ตัวแทนทางการเงิน)...' : 'Search term (e.g. Deadweight, Proxy)...'}" value="${filterTerm ? escapeHtml(filterTerm) : ''}"  />
       </div>
 
-      <div id="glossaryListContainer" class="stack" style="gap: var(--sp-sm); max-height: 60vh; overflow-y: auto; padding-right: 4px;">
+      <div id="glossaryListContainer" class="form-stack stack-sm glossary-scroll-list">
         ${renderGlossaryItems(filterTerm, isTh)}
       </div>
     </div>
   `;
 
   openModal({
-    title: isTh ? '📚 พจนานุกรมคำศัพท์ SROI (SROI Glossary)' : '📚 SROI Terminology Glossary',
+    title: isTh ? 'พจนานุกรมคำศัพท์ SROI (SROI Glossary)' : 'SROI Terminology Glossary',
     body: bodyHtml,
     size: 'lg',
     footer: `<button class="btn btn-primary" data-modal-close>${t('close', 'ปิด')}</button>`,
@@ -175,24 +175,24 @@ function renderGlossaryItems(query, isTh) {
   });
 
   if (matched.length === 0) {
-    return `<div class="empty muted" style="padding: var(--sp-lg); text-align: center;">${isTh ? 'ไม่พบคำศัพท์ที่ตรงกับการค้นหา' : 'No matching terms found.'}</div>`;
+    return `<div class="empty-state"><p class="empty-state__text">${isTh ? 'ไม่พบคำศัพท์ที่ตรงกับการค้นหา' : 'No matching terms found.'}</div>`;
   }
 
   return matched
     .map(
       (item) => `
-      <div class="card" style="padding: var(--sp-md); border-left: 4px solid var(--primary); background: var(--surface-card);">
-        <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px;">
-          <h4 style="font-size: 0.9375rem; font-weight: 700; color: var(--primary); margin: 0;">
+      <div class="card glossary-card">
+        <div class="toolbar">
+          <h4 class="panel__title primary-text">
             ${isTh ? escapeHtml(item.th_title) : escapeHtml(item.en_title)}
           </h4>
-          <span class="badge badge-planned" style="font-size: 0.6875rem;">${escapeHtml(item.term)}</span>
+          <span class="status status--neutral">${escapeHtml(item.term)}</span>
         </div>
-        <p style="font-size: 0.8125rem; line-height: 1.5; color: var(--on-background); margin-bottom: 8px;">
+        <p class="muted-sm">
           ${isTh ? escapeHtml(item.th_desc) : escapeHtml(item.en_desc)}
         </p>
-        <div style="background: var(--surface-soft); padding: 8px 12px; border-radius: var(--radius-sm); font-size: 0.75rem; color: var(--muted); border: 1px dashed var(--outline);">
-          <strong>💡 ${isTh ? 'ตัวอย่างจริง:' : 'Example:'}</strong> ${isTh ? escapeHtml(item.example_th) : escapeHtml(item.example_en)}
+        <div class="glossary-example-box">
+          <strong>${isTh ? 'ตัวอย่างจริง:' : 'Example:'}</strong> ${isTh ? escapeHtml(item.example_th) : escapeHtml(item.example_en)}
         </div>
       </div>
     `,

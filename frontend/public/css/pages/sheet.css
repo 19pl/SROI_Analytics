@@ -1008,3 +1008,9 @@
     justify-content: center;
   }
 }
+
+.field-hint--scope {
+  padding: 0 var(--sp-md);
+  margin-top: var(--sp-xs);
+  margin-bottom: var(--sp-xs);
+}

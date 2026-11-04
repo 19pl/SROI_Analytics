@@ -712,3 +712,32 @@
   display: flex;
   justify-content: flex-end;
 }
+
+/* Step 6 stat metric utilities */
+.stat-num--hero {
+  font-size: 2.25rem;
+  font-weight: 800;
+  line-height: 1.2;
+  margin: 4px 0;
+}
+.stat-num--lg {
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.2;
+  margin: 4px 0;
+}
+.stat-num--md {
+  font-size: 1.125rem;
+}
+.stack-top-xs {
+  margin-top: var(--sp-xs);
+}
+.stack-top-sm {
+  margin-top: var(--sp-sm);
+}
+.stack-top-md {
+  margin-top: var(--sp-md);
+}
+.underline {
+  text-decoration: underline;
+}

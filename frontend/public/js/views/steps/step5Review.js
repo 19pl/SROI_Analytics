@@ -5,23 +5,30 @@
  * Fully bilingual (Thai & English).
  */
 
-import { getState } from '../../store.js';
-import { openModal, closeModal } from '../../components/modal.js';
-import { formatBaht, formatRatio } from '../../utils/format.js';
+import { getState, setActiveScenario } from '../../store.js';
+import { formatBaht } from '../../utils/format.js';
 import { escapeHtml } from '../../utils/html.js';
 import { icons } from '../../components/icons.js';
-import { api } from '../../api.js';
 import { t, getLanguage } from '../../i18n.js';
 import { wizardFooterHtml, attachWizardFooterEvents } from '../../components/wizardFooter.js';
+import { openScenarioModal } from '../../components/scenarioModal.js';
 
 export function renderStep5(container) {
-  const { project, review, activeScenarioId, costs, stakeholders, outcomes, investmentSummary } =
-    getState();
+  const {
+    project,
+    review,
+    activeScenarioId,
+    costs = [],
+    stakeholders = [],
+    outcomes = [],
+    investmentSummary,
+    scenarios = [],
+  } = getState();
   const lang = getLanguage();
   const isTh = lang !== 'en';
 
   if (!project) {
-    container.innerHTML = `<div class="alert alert-info">${t('alert_select_project_first', 'Please select or create a project first.')}</div>`;
+    container.innerHTML = `<div class="empty-state"><p class="empty-state__title">${t('alert_select_project_first', 'Please select or create a project first.')}</p></div>`;
     return;
   }
 
@@ -38,92 +45,128 @@ export function renderStep5(container) {
       return {
         step: 1,
         hash: '#/wizard/step-1',
-        label: isTh ? 'แก้ไขในขั้นตอนที่ 1 (เงินลงทุน)' : 'Fix in Step 1 (Investment)',
+        label: isTh ? 'ขั้นตอนที่ 1 (เงินลงทุน)' : 'Step 1 (Investment)',
       };
     if (p.includes('stakeholder'))
       return {
         step: 2,
         hash: '#/wizard/step-2',
-        label: isTh ? 'แก้ไขในขั้นตอนที่ 2 (ผู้มีส่วนได้ส่วนเสีย)' : 'Fix in Step 2 (Stakeholders)',
+        label: isTh ? 'ขั้นตอนที่ 2 (ผู้มีส่วนได้เสีย)' : 'Step 2 (Stakeholders)',
       };
     if (p.includes('outcome') || p.includes('proxy') || p.includes('quantity'))
       return {
         step: 3,
         hash: '#/wizard/step-3',
-        label: isTh ? 'แก้ไขในขั้นตอนที่ 3 (ผลลัพธ์)' : 'Fix in Step 3 (Outcomes)',
+        label: isTh ? 'ขั้นตอนที่ 3 (ผลลัพธ์)' : 'Step 3 (Outcomes)',
       };
     if (p.includes('adjustment') || p.includes('deadweight') || p.includes('attribution'))
       return {
         step: 4,
         hash: '#/wizard/step-4',
-        label: isTh ? 'แก้ไขในขั้นตอนที่ 4 (การปรับปรุง)' : 'Fix in Step 4 (Adjustments)',
+        label: isTh ? 'ขั้นตอนที่ 4 (การปรับปรุง)' : 'Step 4 (Adjustments)',
       };
-    return { step: 1, hash: '#/wizard/step-1', label: isTh ? 'ตรวจสอบข้อมูล' : 'Review Input' };
+    return {
+      step: 1,
+      hash: '#/wizard/step-1',
+      label: isTh ? 'ตรวจสอบข้อมูล' : 'Review Input',
+    };
   };
 
-  container.innerHTML = `
-    <div class="stack" style="gap: var(--sp-xl);">
-      <!-- Guidance Header -->
-      <div class="alert alert-info in-banner" style="background: rgba(25, 118, 210, 0.08); border-left: 4px solid var(--primary); padding: var(--sp-md);">
-        <div>
-          <strong style="font-size: 0.9375rem; color: var(--primary); display: block; margin-bottom: 2px;">
-            ${isTh ? 'ขั้นตอนที่ 5: ตรวจสอบความถูกต้องและแบบจำลองสถานการณ์ (Review & Scenarios)' : 'Step 5: Review & Readiness Check'}
-          </strong>
-          <span style="font-size: 0.8125rem; color: var(--on-background);">
-            ${
-              isTh
-                ? 'ตรวจสอบความครบถ้วนของข้อมูลก่อนประมวลผล หากมีข้อมูลจำเป็นที่ยังขาด ระบบจะมีปุ่มช่วยนำทางกลับไปแก้ไขได้ทันที'
-                : 'Audit data completeness before running calculations. Resolve any blocking inputs with 1-click links.'
-            }
-          </span>
-        </div>
-      </div>
+  const firstBlocker = blockers[0];
+  const firstFix = firstBlocker ? getFixLink(firstBlocker.path) : null;
 
-      <!-- Calculation Readiness Banner -->
-      <div class="card has-stripe" style="--stripe: ${isReady ? 'var(--positive)' : 'var(--negative)'};">
-        <div class="card-head" style="margin-bottom: var(--sp-sm);">
-          <div>
-            <h2 class="card-title" style="display: flex; align-items: center; gap: 8px;">
-              ${isReady ? (isTh ? '✅ ข้อมูลครบถ้วน พร้อมสำหรับการคำนวณ SROI' : '✅ Ready to Calculate SROI') : isTh ? '⚠️ พบข้อมูลที่ต้องแก้ไขก่อนคำนวณ (Calculation Blockers)' : '⚠️ Calculation Blockers Identified'}
-            </h2>
-            <p class="muted" style="font-size: 0.8125rem;">
+  // Step 1 status
+  const step1HasBlocker = blockers.some((b) => {
+    const p = String(b.path).toLowerCase();
+    return p.includes('cost') || p.includes('investment') || p.includes('discount');
+  });
+  const isStep1Ok = costs.length > 0 && !step1HasBlocker;
+
+  // Step 2 status
+  const step2HasBlocker = blockers.some((b) => String(b.path).toLowerCase().includes('stakeholder'));
+  const isStep2Ok = stakeholders.length > 0 && !step2HasBlocker;
+
+  // Step 3 status
+  const step3HasBlocker = blockers.some((b) => {
+    const p = String(b.path).toLowerCase();
+    return p.includes('outcome') || p.includes('proxy') || p.includes('quantity');
+  });
+  const isStep3Ok = outcomes.length > 0 && !step3HasBlocker;
+
+  // Step 4 status
+  const step4HasBlocker = blockers.some((b) => String(b.path).toLowerCase().includes('adjustment'));
+  const isStep4Ok = Boolean(completion.adjustments) && !step4HasBlocker;
+
+  container.innerHTML = `
+    <div class="form-stack stack-lg">
+      <!-- Readiness Banner -->
+      <div class="panel ${isReady ? 'status--ok' : 'status--warn'}">
+        <div class="toolbar">
+          <div class="stack-xs">
+            <div class="cluster">
+              <span class="status ${isReady ? 'status--ok' : 'status--warn'}">
+                ${isReady ? (isTh ? 'พร้อมคำนวณ' : 'Ready') : isTh ? 'ต้องระบุข้อมูลเพิ่ม' : 'Attention needed'}
+              </span>
+              <h2 class="panel__title">
+                ${
+                  isReady
+                    ? isTh
+                      ? 'ข้อมูลครบถ้วน พร้อมสำหรับการคำนวณ SROI'
+                      : 'Ready to calculate'
+                    : isTh
+                      ? `พบ ${blockers.length} รายการที่ต้องแก้ไขก่อนคำนวณ`
+                      : `${blockers.length} items need attention`
+                }
+              </h2>
+            </div>
+            <p class="muted-sm">
               ${
                 isReady
                   ? isTh
-                    ? 'ข้อมูลที่จำเป็นทั้งหมดได้รับการตรวจสอบแล้ว คุณสามารถกดปุ่ม "คำนวณผลลัพธ์ SROI" เพื่อดูแดชบอร์ดสรุปผล'
-                    : 'All mandatory parameters are satisfied. Review audit notes or proceed to final dashboard.'
+                    ? 'ข้อมูลที่จำเป็นทั้งหมดได้รับการตรวจสอบแล้ว คุณสามารถกดปุ่มคำนวณเพื่อดูแดชบอร์ดสรุปผล'
+                    : 'All mandatory parameters are satisfied. You can proceed to view the calculation dashboard.'
                   : isTh
-                    ? 'กรุณาแก้ไขรายการที่ติดขัดด้านล่างเพื่อให้ระบบสามารถคำนวณอัตราส่วน SROI ได้อย่างถูกต้อง'
+                    ? 'กรุณาแก้ไขรายการที่ยังไม่ครบถ้วนเพื่อให้ระบบสามารถคำนวณผลลัพธ์ได้อย่างถูกต้อง'
                     : 'Please resolve the following required inputs before generating final results.'
               }
             </p>
           </div>
-          <a class="btn btn-primary" href="#/wizard/step-6" ${!isReady ? 'style="opacity: 0.5; pointer-events: none;"' : 'style="font-weight: 600; padding: 10px 20px;"'}>
-            ${isTh ? 'คำนวณผลลัพธ์ SROI →' : 'Proceed to Dashboard →'}
-          </a>
+
+          <div>
+            ${
+              isReady
+                ? `
+              <a class="btn btn-primary" href="#/wizard/step-6">
+                ${isTh ? 'คำนวณผลลัพธ์ SROI' : 'Proceed to Dashboard'}
+              </a>
+            `
+                : firstFix
+                  ? `
+              <a class="btn btn-primary" href="${firstFix.hash}">
+                ${isTh ? 'ไปที่รายการแรกที่ต้องแก้ไข' : 'Go to first missing item'} (${firstFix.label})
+              </a>
+            `
+                  : ''
+            }
+          </div>
         </div>
 
         ${
           blockers.length > 0
             ? `
-          <div class="stack" style="gap: var(--sp-xs); margin-top: var(--sp-md);">
-            <div style="font-size: 0.8125rem; font-weight: 700; color: var(--negative); margin-bottom: 2px;">
-              ${isTh ? `รายการจำเป็นที่ต้องแก้ไขก่อน (${blockers.length} รายการ):` : `Required Items to Resolve (${blockers.length}):`}
-            </div>
+          <div class="form-stack stack-xs stack-top-md">
             ${blockers
               .map((b) => {
                 const fix = getFixLink(b.path);
                 return `
-              <div class="review-item blocker" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
-                <div style="display: flex; align-items: center; gap: 8px;">
-                  <span style="font-weight: 700; color: var(--negative);">✕</span>
-                  <div>
-                    <strong style="color: var(--on-background); font-size: 0.875rem;">${escapeHtml(b.message)}</strong>
-                    <span class="muted" style="font-size: 0.75rem; margin-left: 6px;">(${escapeHtml(b.path)})</span>
-                  </div>
+              <div class="cluster cluster--space-between panel panel--soft">
+                <div class="cluster stack-sm">
+                  <span class="status status--warn">${isTh ? 'จำเป็น' : 'Required'}</span>
+                  <span class="strong">${escapeHtml(b.message)}</span>
+                  <span class="muted-sm">(${escapeHtml(b.path)})</span>
                 </div>
-                <a href="${fix.hash}" class="btn btn-secondary" style="height: 28px; font-size: 0.75rem; padding: 0 10px;">
-                  ${fix.label} →
+                <a href="${fix.hash}" class="btn btn-secondary btn-compact">
+                  ${fix.label}
                 </a>
               </div>
             `;
@@ -137,177 +180,229 @@ export function renderStep5(container) {
         ${
           warnings.length > 0
             ? `
-          <div class="stack" style="gap: var(--sp-xs); margin-top: var(--sp-md);">
-            <div style="font-size: 0.8125rem; font-weight: 600; color: var(--warning); margin-bottom: 2px;">
-              ⚠️ ${isTh ? `ข้อสังเกตและสมมติฐานการวิเคราะห์ (${warnings.length} รายการ):` : `Methodology & Audit Warnings (${warnings.length}):`}
+          <details class="disclosure stack-top-md">
+            <summary class="disclosure__summary">
+              ${isTh ? `ข้อสังเกตและสมมติฐาน (${warnings.length} รายการ)` : `Methodology Notes & Warnings (${warnings.length})`}
+            </summary>
+            <div class="panel__hint form-stack stack-xs">
+              ${warnings
+                .map(
+                  (w) => `
+                <div class="muted-sm">• ${escapeHtml(w.message)}</div>
+              `,
+                )
+                .join('')}
             </div>
-            ${warnings
-              .map(
-                (w) => `
-              <div class="review-item warning">
-                <span style="color: var(--warning); font-weight: 700;">•</span>
-                <div style="font-size: 0.8125rem;">${escapeHtml(w.message)}</div>
-              </div>
-            `,
-              )
-              .join('')}
-          </div>
+          </details>
         `
             : ''
         }
       </div>
 
-      <!-- Structured Information Overview Card -->
-      <div class="card">
-        <div class="card-head">
-          <div>
-            <h3 class="card-title">${isTh ? 'สรุปภาพรวมข้อมูลที่บันทึกไว้ (Assessment Summary Overview)' : 'Assessment Summary Overview'}</h3>
-            <p class="muted" style="font-size: 0.8125rem;">${isTh ? 'คลิกที่ชื่อหัวข้อเพื่อย้อนกลับไปแก้ไขข้อมูลในขั้นตอนนั้นๆ ได้ทันที' : 'Click any section to quickly revisit and edit data'}</p>
-          </div>
-        </div>
+      <!-- Checklist Section -->
+      <div class="panel">
+        <h3 class="panel__title">
+          ${isTh ? 'รายการตรวจสอบความพร้อมรายขั้นตอน' : 'Step-by-step Readiness Checklist'}
+        </h3>
 
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: var(--sp-md);">
-          <!-- Step 1 Summary -->
-          <div style="background: var(--surface-soft); padding: 14px; border-radius: var(--radius-md); border: 1px solid var(--outline);">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-              <strong style="font-size: 0.875rem; color: var(--primary);">1. ${isTh ? 'ข้อมูลโครงการและการลงทุน' : 'Project & Costs'}</strong>
-              <a href="#/wizard/step-1" class="muted" style="font-size: 0.75rem;"><u>${isTh ? 'แก้ไข' : 'Edit'}</u></a>
+        <div class="form-stack stack-sm">
+          <!-- Step 1: Project & Investment -->
+          <div class="cluster cluster--space-between panel panel--soft">
+            <div class="cluster stack-md">
+              <span class="status ${isStep1Ok ? 'status--ok' : 'status--warn'}">
+                ${isStep1Ok ? (isTh ? 'สมบูรณ์' : 'Complete') : isTh ? 'ต้องระบุข้อมูล' : 'Incomplete'}
+              </span>
+              <div>
+                <strong class="strong">1. ${isTh ? 'โครงการและเงินลงทุน' : 'Project & Investment'}</strong>
+                <span class="muted-sm">
+                  ${
+                    summary.nominal_total > 0
+                      ? `${isTh ? 'งบประมาณรวม:' : 'Total Investment:'} ${formatBaht(summary.nominal_total)}`
+                      : isTh
+                        ? 'ยังไม่ได้บันทึกงบประมาณ'
+                        : 'No investment entered'
+                  }
+                </span>
+              </div>
             </div>
-            <div style="font-size: 0.8125rem; line-height: 1.6;">
-              <div>• ${isTh ? 'ชื่อ:' : 'Name:'} <strong>${escapeHtml(project.name)}</strong></div>
-              <div>• ${isTh ? 'ระยะเวลาประเมิน:' : 'Horizon:'} <strong>${project.analysis_period_years || 1} ${t('years', 'ปี')}</strong></div>
-              <div>• ${isTh ? 'เงินลงทุนรวม:' : 'Total Investment:'} <strong>${project.currency} ${formatBaht(summary.nominal_total || 0)}</strong></div>
-            </div>
-          </div>
-
-          <!-- Step 2 Summary -->
-          <div style="background: var(--surface-soft); padding: 14px; border-radius: var(--radius-md); border: 1px solid var(--outline);">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-              <strong style="font-size: 0.875rem; color: var(--primary);">2. ${isTh ? 'ผู้มีส่วนได้ส่วนเสีย' : 'Stakeholders'}</strong>
-              <a href="#/wizard/step-2" class="muted" style="font-size: 0.75rem;"><u>${isTh ? 'แก้ไข' : 'Edit'}</u></a>
-            </div>
-            <div style="font-size: 0.8125rem; line-height: 1.6;">
-              <div>• ${isTh ? 'จำนวนกลุ่มที่ระบุ:' : 'Total Groups:'} <strong>${stakeholders.length} ${t('people', 'กลุ่ม')}</strong></div>
-              <div>• ${isTh ? 'กลุ่มเป้าหมายหลัก (S1):' : 'Primary (S1):'} <strong>${stakeholders.filter((s) => s.stakeholder_group === 'primary_beneficiary').length} กลุ่ม</strong></div>
-              <div>• ${isTh ? 'หน่วยงานสนับสนุน (S3/S4):' : 'Supporters (S3/S4):'} <strong>${stakeholders.filter((s) => s.stakeholder_group === 'project_supporter' || s.stakeholder_group === 'other_agency').length} แห่ง</strong></div>
-            </div>
+            <a href="#/wizard/step-1" class="btn btn-secondary btn-compact">
+              ${isTh ? 'แก้ไข' : 'Edit'}
+            </a>
           </div>
 
-          <!-- Step 3 Summary -->
-          <div style="background: var(--surface-soft); padding: 14px; border-radius: var(--radius-md); border: 1px solid var(--outline);">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-              <strong style="font-size: 0.875rem; color: var(--primary);">3. ${isTh ? 'ผลลัพธ์และตัวแทนทางการเงิน' : 'Outcomes & Proxies'}</strong>
-              <a href="#/wizard/step-3" class="muted" style="font-size: 0.75rem;"><u>${isTh ? 'แก้ไข' : 'Edit'}</u></a>
+          <!-- Step 2: Stakeholders -->
+          <div class="cluster cluster--space-between panel panel--soft">
+            <div class="cluster stack-md">
+              <span class="status ${isStep2Ok ? 'status--ok' : 'status--warn'}">
+                ${isStep2Ok ? (isTh ? 'สมบูรณ์' : 'Complete') : isTh ? 'ต้องระบุข้อมูล' : 'Incomplete'}
+              </span>
+              <div>
+                <strong class="strong">2. ${isTh ? 'ผู้มีส่วนได้ส่วนเสีย' : 'Stakeholders'}</strong>
+                <span class="muted-sm">
+                  ${stakeholders.length} ${isTh ? 'กลุ่มที่ระบุ' : 'groups defined'}
+                </span>
+              </div>
             </div>
-            <div style="font-size: 0.8125rem; line-height: 1.6;">
-              <div>• ${isTh ? 'ผลลัพธ์ที่ระบุ:' : 'Total Outcomes:'} <strong>${outcomes.length} รายการ</strong></div>
-              <div>• ${isTh ? 'ผลเชิงบวก (+):' : 'Positive:'} <strong>${outcomes.filter((o) => o.polarity !== 'negative').length}</strong> | ${isTh ? 'ผลเสีย (-):' : 'Harms:'} <strong>${outcomes.filter((o) => o.polarity === 'negative').length}</strong></div>
-              <div>• ${isTh ? 'ประเมินมูลค่าแล้ว:' : 'Monetized:'} <strong>${outcomes.filter((o) => o.proxy_value !== null).length}/${outcomes.length}</strong></div>
-            </div>
+            <a href="#/wizard/step-2" class="btn btn-secondary btn-compact">
+              ${isTh ? 'แก้ไข' : 'Edit'}
+            </a>
           </div>
 
-          <!-- Step 4 Summary -->
-          <div style="background: var(--surface-soft); padding: 14px; border-radius: var(--radius-md); border: 1px solid var(--outline);">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-              <strong style="font-size: 0.875rem; color: var(--primary);">4. ${isTh ? 'การปรับปรุงผลกระทบส่วนเกิน' : 'Impact Adjustments'}</strong>
-              <a href="#/wizard/step-4" class="muted" style="font-size: 0.75rem;"><u>${isTh ? 'แก้ไข' : 'Edit'}</u></a>
+          <!-- Step 3: Outcomes -->
+          <div class="cluster cluster--space-between panel panel--soft">
+            <div class="cluster stack-md">
+              <span class="status ${isStep3Ok ? 'status--ok' : 'status--warn'}">
+                ${isStep3Ok ? (isTh ? 'สมบูรณ์' : 'Complete') : isTh ? 'ต้องระบุข้อมูล' : 'Incomplete'}
+              </span>
+              <div>
+                <strong class="strong">3. ${isTh ? 'ผลลัพธ์และตัวแทนทางการเงิน' : 'Outcomes & Proxies'}</strong>
+                <span class="muted-sm">
+                  ${outcomes.length} ${isTh ? 'ผลลัพธ์ที่ระบุ' : 'outcomes identified'}
+                </span>
+              </div>
             </div>
-            <div style="font-size: 0.8125rem; line-height: 1.6;">
-              <div>• ${isTh ? 'สถานะการประเมิน:' : 'Status:'} <strong>${completion.adjustments ? (isTh ? 'ครบถ้วนสมบูรณ์ ✓' : 'Complete ✓') : isTh ? 'ยังมีช่องว่างที่ไม่ได้ประเมิน' : 'Partially assessed'}</strong></div>
-              <div>• ${isTh ? 'ตัวปรับปรุง:' : 'Deductions:'} Deadweight, Attribution, Displacement, Drop-off</div>
+            <a href="#/wizard/step-3" class="btn btn-secondary btn-compact">
+              ${isTh ? 'แก้ไข' : 'Edit'}
+            </a>
+          </div>
+
+          <!-- Step 4: Adjustments -->
+          <div class="cluster cluster--space-between panel panel--soft">
+            <div class="cluster stack-md">
+              <span class="status ${isStep4Ok ? 'status--ok' : 'status--warn'}">
+                ${isStep4Ok ? (isTh ? 'สมบูรณ์' : 'Complete') : isTh ? 'ต้องระบุข้อมูล' : 'Incomplete'}
+              </span>
+              <div>
+                <strong class="strong">4. ${isTh ? 'การปรับปรุงผลกระทบ' : 'Impact Adjustments'}</strong>
+                <span class="muted-sm">
+                  ${isStep4Ok ? (isTh ? 'ประเมินแล้วทุกผลลัพธ์' : 'All assessed') : isTh ? 'ยังมีช่องว่างที่ไม่ได้ประเมิน' : 'Pending assessment'}
+                </span>
+              </div>
             </div>
+            <a href="#/wizard/step-4" class="btn btn-secondary btn-compact">
+              ${isTh ? 'แก้ไข' : 'Edit'}
+            </a>
           </div>
         </div>
       </div>
 
-      <!-- Sticky Wizard Footer Navigation -->
+      <!-- Scenarios Section (Collapsed in a disclosure) -->
+      <details class="disclosure">
+        <summary class="disclosure__summary">
+          <span>${isTh ? 'แบบจำลองสถานการณ์และความอ่อนไหว (Scenarios)' : 'Alternative Scenarios & Sensitivity'}</span>
+          <span class="muted-sm">${scenarios.length} ${isTh ? 'สถานการณ์' : 'scenarios'}</span>
+        </summary>
+        <div class="panel__hint form-stack stack-md">
+          <div class="toolbar">
+            <p class="muted-sm">
+              ${
+                isTh
+                  ? 'สร้างแบบจำลองสถานการณ์ทางเลือกเพื่อทดสอบความอ่อนไหวของผลลัพธ์ (Sensitivity Testing)'
+                  : 'Define sensitivity scenarios to stress-test your SROI under varying assumptions.'
+              }
+            </p>
+            <button class="btn btn-secondary btn-compact" id="btnAddScenarioReview">
+              ${icons.plus} ${isTh ? 'เพิ่มสถานการณ์' : 'Add Scenario'}
+            </button>
+          </div>
+
+          <div class="table-container">
+            <table class="table table--compact">
+              <thead>
+                <tr>
+                  <th>${isTh ? 'ชื่อสถานการณ์' : 'Scenario'}</th>
+                  <th>${isTh ? 'ประเภท' : 'Type'}</th>
+                  <th>${isTh ? 'อัตราคิดลด override' : 'Discount Rate'}</th>
+                  <th>${isTh ? 'สถานะ' : 'Status'}</th>
+                  <th>${isTh ? 'การดำเนินการ' : 'Action'}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="strong">${isTh ? 'กรณีฐาน (Base Case)' : 'Base Case (Current Project)'}</td>
+                  <td><span class="status status--neutral">${isTh ? 'โครงการจริง' : 'Base'}</span></td>
+                  <td>${project.discount_rate != null ? `${project.discount_rate}%` : '-'}</td>
+                  <td>
+                    ${
+                      !activeScenarioId
+                        ? `<span class="status status--ok">${isTh ? 'กำลังใช้งาน' : 'Active'}</span>`
+                        : `<span class="status status--neutral">${isTh ? 'ไม่ได้เลือก' : 'Inactive'}</span>`
+                    }
+                  </td>
+                  <td>
+                    ${
+                      activeScenarioId
+                        ? `<button class="btn btn-ghost btn-compact-subtle" data-set-scenario="base">${isTh ? 'เปิดใช้' : 'Select'}</button>`
+                        : '-'
+                    }
+                  </td>
+                </tr>
+                ${
+                  scenarios.length === 0
+                    ? `<tr><td colspan="5" class="empty-state">${isTh ? 'ยังไม่มีแบบจำลองสถานการณ์เสริม' : 'No alternative scenarios defined.'}</td></tr>`
+                    : scenarios
+                        .map((s) => {
+                          const isActive = activeScenarioId === s.id;
+                          const disc =
+                            s.assumptions?.global?.discount_rate != null
+                              ? `${(s.assumptions.global.discount_rate * 100).toFixed(1)}%`
+                              : '-';
+                          return `
+                        <tr>
+                          <td class="strong">${escapeHtml(s.name)}</td>
+                          <td><span class="status status--neutral">${escapeHtml(s.kind)}</span></td>
+                          <td>${disc}</td>
+                          <td>
+                            ${
+                              isActive
+                                ? `<span class="status status--ok">${isTh ? 'กำลังใช้งาน' : 'Active'}</span>`
+                                : `<span class="status status--neutral">${isTh ? 'ไม่ได้เลือก' : 'Inactive'}</span>`
+                            }
+                          </td>
+                          <td>
+                            ${
+                              !isActive
+                                ? `<button class="btn btn-ghost btn-compact-subtle" data-set-scenario="${s.id}">${isTh ? 'เปิดใช้' : 'Select'}</button>`
+                                : '-'
+                            }
+                          </td>
+                        </tr>
+                      `;
+                        })
+                        .join('')
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </details>
+
+      <!-- Wizard Footer -->
       ${wizardFooterHtml(5, {
         canProceed: isReady,
         nextLabel: isTh
-          ? 'คำนวณและดูแดชบอร์ดผลลัพธ์ (Step 6) →'
-          : 'Proceed to Results Dashboard (Step 6) →',
+          ? 'คำนวณและดูแดชบอร์ดผลลัพธ์ (Step 6)'
+          : 'Proceed to Results Dashboard (Step 6)',
       })}
     </div>
   `;
 
-  attachWizardFooterEvents(container);
-}
-
-function openAddScenarioModal({ project, onSaved }) {
-  const lang = getLanguage();
-  const isTh = lang !== 'en';
-
-  const formHtml = `
-    <form id="scenarioForm" class="stack" style="gap: var(--sp-md);">
-      <div class="field">
-        <label class="field-label">${t('col_scenario', 'ชื่อสถานการณ์')} *</label>
-        <input type="text" name="name" class="input" required placeholder="${isTh ? 'เช่น สถานการณ์แบบระมัดระวัง (ลดทอนผลลัพธ์ 20%)' : 'e.g. Conservative Cohort Retention'}" />
-      </div>
-      <div class="form-grid">
-        <div class="field">
-          <label class="field-label">${t('col_eval_type', 'ประเภทสถานการณ์')} *</label>
-          <select name="kind" class="input" required>
-            <option value="conservative">${isTh ? 'สถานการณ์แบบระมัดระวัง (Conservative)' : 'Conservative Scenario'}</option>
-            <option value="optimistic">${isTh ? 'สถานการณ์เชิงบวก (Optimistic)' : 'Optimistic Scenario'}</option>
-            <option value="custom">${isTh ? 'สถานการณ์เฉพาะนโยบาย (Custom Policy)' : 'Custom Policy Scenario'}</option>
-          </select>
-        </div>
-        <div class="field">
-          <label class="field-label">${isTh ? 'อัตราคิดลดเฉพาะสถานการณ์นี้ (%)' : 'Global Discount Rate Override (%)'}</label>
-          <input type="number" name="discount_rate" step="0.1" min="0" max="100" class="input" placeholder="${isTh ? 'เว้นว่างเพื่อใช้อัตราตามโครงการเดิม' : 'Leave blank to use base rate'}" />
-        </div>
-      </div>
-      <div class="field">
-        <label class="field-label">${t('description', 'คำอธิบายและสมมติฐาน')}</label>
-        <textarea name="description" class="input" rows="2" placeholder="${isTh ? 'ระบุเหตุผลและสมมติฐานของการทดสอบสถานการณ์นี้' : 'Document the purpose of this sensitivity scenario'}"></textarea>
-      </div>
-      <div id="scenarioModalError" class="alert alert-danger" style="display: none;"></div>
-    </form>
-  `;
-
-  openModal({
-    title: isTh ? 'สร้างแบบจำลองสถานการณ์ใหม่ (Add Scenario)' : 'Create Alternative Scenario',
-    body: formHtml,
-    footer: `
-      <button class="btn btn-secondary" data-modal-close>${t('cancel', 'ยกเลิก')}</button>
-      <button class="btn btn-primary" id="btnSaveScenario">${isTh ? 'บันทึกสถานการณ์' : 'Create Scenario'}</button>
-    `,
-  });
-
-  document.getElementById('btnSaveScenario')?.addEventListener('click', async () => {
-    const form = document.getElementById('scenarioForm');
-    const errBox = document.getElementById('scenarioModalError');
-    if (!form) return;
-
-    const rateVal = form.discount_rate.value ? parseFloat(form.discount_rate.value) / 100 : null;
-
-    const data = {
-      name: form.name.value.trim(),
-      kind: form.kind.value,
-      description: form.description.value.trim(),
-      assumptions: {
-        global: rateVal !== null ? { discount_rate: rateVal } : {},
-        outcomes: {},
+  document.getElementById('btnAddScenarioReview')?.addEventListener('click', () => {
+    openScenarioModal({
+      onSave: async () => {
+        renderStep5(container);
       },
-    };
-
-    if (!data.name) {
-      if (errBox) {
-        errBox.textContent = isTh ? 'กรุณาระบุชื่อสถานการณ์' : 'Please enter a scenario name.';
-        errBox.style.display = 'block';
-      }
-      return;
-    }
-
-    try {
-      await addScenario(data);
-      closeModal();
-      onSaved();
-    } catch (err) {
-      if (errBox) {
-        errBox.textContent = err.message;
-        errBox.style.display = 'block';
-      }
-    }
+    });
   });
+
+  container.querySelectorAll('[data-set-scenario]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const target = btn.dataset.setScenario;
+      const scenId = target === 'base' ? null : Number(target);
+      await setActiveScenario(scenId);
+      renderStep5(container);
+    });
+  });
+
+  attachWizardFooterEvents(container);
 }

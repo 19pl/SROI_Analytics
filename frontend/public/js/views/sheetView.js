@@ -18,6 +18,7 @@ import { getState } from '../store.js';
 import { escapeHtml as esc } from '../utils/html.js';
 import { openModal, closeModal, confirmModal } from '../components/modal.js';
 import { t } from '../i18n.js';
+import { icons } from '../components/icons.js';
 
 // ---- built-in columns (the union of the two workbooks) ----------------------------------------------------------
 // type: text | long | raw (number or formula) | pct | select | calc (read-only result)
@@ -258,14 +259,17 @@ export async function renderSheet(root) {
           </div>
           <span class="sheet-status" id="sheetStatus" role="status" aria-live="polite"></span>
         </div>
-        ${ctx.readOnly ? '' : `<p class="sheet-tip"><span aria-hidden="true">💡</span> ${t('sheet_tip', '')}</p>`}
-        <details class="sheet-settings" ${unset ? 'open' : ''}>
-          <summary><span class="set-title">⚙ ${t('sheet_scope', 'Assessment settings')}</span><span class="set-sum" id="scopeSummary">${esc(scopeSummaryText(p))}</span></summary>
+        ${ctx.readOnly ? '' : `<p class="sheet-tip">${icons.info} ${t('sheet_tip', '')}</p>`}
+        <details class="disclosure sheet-settings" ${unset ? 'open' : ''}>
+          <summary class="disclosure__summary"><span class="set-title">${icons.settings} ${t('sheet_scope', 'Assessment settings')}</span><span class="set-sum muted-sm" id="scopeSummary">${esc(scopeSummaryText(p))}</span></summary>
+          <p class="field-hint" class="field-hint--scope">${t('sheet_scope_desc', 'Configure baseline and evaluation parameters, assessment period, and evaluation methodology')}</p>
           <div class="sheet-scope-grid">
-            <label class="field"><span class="field-label">${t('sheet_y0', 'Y0')}</span>
-              <input class="input" data-scope="y0_label" value="${esc(p.y0_label || '')}" placeholder="${t('sheet_y0_ph', '')}" ${dis} /></label>
-            <label class="field"><span class="field-label">${t('sheet_y1', 'Y1')}</span>
-              <input class="input" data-scope="y1_label" value="${esc(p.y1_label || '')}" placeholder="${t('sheet_y1_ph', '')}" ${dis} /></label>
+            <div class="field"><span class="field-label">${t('sheet_y0', 'Baseline year')}</span>
+              <input class="input" data-scope="y0_label" value="${esc(p.y0_label || '')}" placeholder="${t('sheet_y0_ph', 'e.g. 2566 / 2023')}" ${dis} />
+              <p class="field-hint">${t('sheet_y0_hint', 'Initial baseline conditions prior to project intervention')}</p></div>
+            <div class="field"><span class="field-label">${t('sheet_y1', 'Evaluation year')}</span>
+              <input class="input" data-scope="y1_label" value="${esc(p.y1_label || '')}" placeholder="${t('sheet_y1_ph', 'e.g. 2567 / 2024')}" ${dis} />
+              <p class="field-hint">${t('sheet_y1_hint', 'Measurement period evaluating cumulative changes and impacts')}</p></div>
             <label class="field"><span class="field-label">${t('sheet_eval_type', 'Evaluation type')}</span>
               <select class="input" data-scope="evaluation_type" ${dis}>
                 <option value="evaluative" ${p.evaluation_type === 'evaluative' ? 'selected' : ''}>${t('eval_type_evaluative', 'Evaluative')}</option>
@@ -355,7 +359,7 @@ export async function renderSheet(root) {
 
   function hintOf(c) {
     return c.k === 'adj_y0' || c.k === 'adj_y1'
-      ? ` <span class="hint" title="${esc(t('sheet_adj_hint', ''))}">ⓘ</span>`
+      ? ` <span class="hint" title="${esc(t('sheet_adj_hint', ''))}">${icons.info}</span>`
       : '';
   }
 
@@ -375,7 +379,7 @@ export async function renderSheet(root) {
         : '';
     const edit = ctx.readOnly
       ? ''
-      : ` <button type="button" class="sheet-editcol" data-editcol="${c.id}" title="${esc(t('sheet_col_modal_title', 'Custom topic'))}">✎</button>`;
+      : ` <button type="button" class="sheet-editcol" data-editcol="${c.id}" title="${esc(t('sheet_col_modal_title', 'Custom topic'))}">Edit</button>`;
     return `<label class="fld custom ${span}"><span class="fld-label">${esc(c.label)}${sigma}${edit}</span>${customCell(c, row, kind)}</label>`;
   }
 
@@ -590,8 +594,8 @@ export async function renderSheet(root) {
       const stat = (label, value, cls = '', sub = '') =>
         `<div class="stat ${cls}"><div class="stat-label">${label}</div><div class="stat-val">${value}</div>${sub ? `<div class="stat-sub">${sub}</div>` : ''}</div>`;
       sum.innerHTML = `
-        ${stat(t('sheet_total_input', 'Total input'), `${fmt(r.totals.input.total)} <small>${esc(cur)}</small>`, '', `Y0 ${fmt(r.totals.input.y0)} · Y1 ${fmt(r.totals.input.y1)}`)}
-        ${stat(t('sheet_total_outcome', 'Total outcome'), `${fmt(r.totals.outcome_adjusted.total)} <small>${esc(cur)}</small>`, '', `Y0 ${fmt(r.totals.outcome_adjusted.y0)} · Y1 ${fmt(r.totals.outcome_adjusted.y1)}`)}
+        ${stat(t('sheet_total_input', 'Total input'), `${fmt(r.totals.input.total)} <small>${esc(cur)}</small>`, '', `${t('baseline_year', 'Baseline')}: ${fmt(r.totals.input.y0)} · ${t('evaluation_year', 'Evaluation')}: ${fmt(r.totals.input.y1)}`)}
+        ${stat(t('sheet_total_outcome', 'Total outcome'), `${fmt(r.totals.outcome_adjusted.total)} <small>${esc(cur)}</small>`, '', `${t('baseline_year', 'Baseline')}: ${fmt(r.totals.outcome_adjusted.y0)} · ${t('evaluation_year', 'Evaluation')}: ${fmt(r.totals.outcome_adjusted.y1)}`)}
         ${stat(t('sheet_sroi', 'SROI'), r.blocked ? '–' : fmtRatio(r.sroi), 'sroi', `${t('sheet_sroi_unadj', '')}: ${r.blocked ? '–' : fmtRatio(r.sroi_unadjusted)}`)}
         ${stat(t('sheet_net', 'Net value'), `${fmt(r.net_value)} <small>${esc(cur)}</small>`)}
         ${ctx.readOnly ? '' : `<button class="btn btn-primary sheet-save" id="btnSaveRun">${t('sheet_save_run', 'Save calculation')}</button>`}`;
@@ -606,7 +610,7 @@ export async function renderSheet(root) {
       const blank = (r.warnings || []).filter((w) => w.code === 'VALUE_NOT_ENTERED');
       const n = errs.length + warns.length + blank.length;
       iss.className = `sheet-issues ${errs.length ? 'has-errors' : ''}`;
-      iss.innerHTML = `<summary>${errs.length ? `⛔ ${t('sheet_errors', 'Fix before calculating')} (${errs.length})` : `ⓘ ${t('sheet_warnings', 'Notes')} (${n})`}</summary>
+      iss.innerHTML = `<summary>${errs.length ? `<span class="val--negative">${icons.alertCircle}</span> ${t('sheet_errors', 'Fix before calculating')} (${errs.length})` : `<span class="val--positive">${icons.info}</span> ${t('sheet_warnings', 'Notes')} (${n})`}</summary>
         <ul>${errs.map((e) => `<li class="err">${esc(e.message)} <code>${esc(e.path)}</code></li>`).join('')}
         ${warns.map((w) => `<li class="${w.severity}">${esc(w.message)}</li>`).join('')}
         ${blank.map((w) => `<li class="info">${esc(w.message)}</li>`).join('')}
@@ -956,17 +960,17 @@ export async function renderSheet(root) {
             <select class="input" name="data_type">${types.map(([v, k]) => `<option value="${v}" ${existing?.data_type === v ? 'selected' : ''}>${t(k, v)}</option>`).join('')}</select></div>
           ${
             canCount
-              ? `<div class="field" id="countsWrap"><label class="field-label">${t('sheet_col_counts', 'Use in the calculation?')}</label>
+              ? `<div class="field" id="countsWrap" ${existing?.data_type === 'number' || existing?.data_type === 'percent' ? '' : 'hidden'}><label class="field-label">${t('sheet_col_counts', 'Use in the calculation?')}</label>
             <select class="input" name="counts_toward">
-              <option value="none" ${existing?.counts_toward === 'none' || !existing ? 'selected' : ''}>${t('sheet_col_counts_none', '')}</option>
-              <option value="${b}" ${existing && existing.counts_toward !== 'none' ? 'selected' : ''}>${t(b === 'input' ? 'sheet_col_counts_input' : 'sheet_col_counts_outcome', '')}</option>
+              <option value="none" ${existing?.counts_toward === 'none' || !existing ? 'selected' : ''}>${t('sheet_col_counts_none', 'No calculation use')}</option>
+              <option value="${b}" ${existing && existing.counts_toward !== 'none' ? 'selected' : ''}>${t(b === 'input' ? 'sheet_col_counts_input' : 'sheet_col_counts_outcome', 'Direct factor')}</option>
             </select></div>
-          <div class="field" id="countInWrap"><label class="field-label">${t('sheet_col_count_in', 'Counts in year')}</label>
-            <select class="input" name="count_in"><option value="y0" ${existing?.count_in !== 'y1' ? 'selected' : ''}>Y0</option><option value="y1" ${existing?.count_in === 'y1' ? 'selected' : ''}>Y1</option></select></div>`
+          <div class="field" id="countInWrap" ${(existing?.data_type === 'number' || existing?.data_type === 'percent') && existing?.counts_toward !== 'none' ? '' : 'hidden'}><label class="field-label">${t('sheet_col_count_in', 'Counts in year')}</label>
+            <select class="input" name="count_in"><option value="y0" ${existing?.count_in !== 'y1' ? 'selected' : ''}>${t('baseline_year', 'Baseline year')}</option><option value="y1" ${existing?.count_in === 'y1' ? 'selected' : ''}>${t('evaluation_year', 'Evaluation year')}</option></select></div>`
               : ''
           }
         </div>
-        <div class="field" id="optionsWrap" style="display:none;"><label class="field-label">${t('sheet_col_options', 'Choices (one per line)')}</label>
+        <div class="field" id="optionsWrap" ${existing?.data_type === 'select' ? '' : 'hidden'}><label class="field-label">${t('sheet_col_options', 'Choices (one per line)')}</label>
           <textarea class="input" name="options" rows="4">${esc((existing?.options || []).join('\n'))}</textarea></div>
         <p class="muted" style="font-size:0.75rem;">${t('sheet_formula_hint', '')}</p>
         <div id="sheetColError" class="alert alert-danger" style="display:none;"></div>
@@ -980,12 +984,13 @@ export async function renderSheet(root) {
     const form = document.getElementById('sheetColForm');
     const sync = () => {
       const type = form.data_type.value;
-      document.getElementById('optionsWrap').style.display = type === 'select' ? '' : 'none';
+      const optWrap = document.getElementById('optionsWrap');
+      if (optWrap) optWrap.hidden = type !== 'select';
       const numeric = type === 'number' || type === 'percent';
       const cw = document.getElementById('countsWrap');
       const ciw = document.getElementById('countInWrap');
-      if (cw) cw.style.display = numeric ? '' : 'none';
-      if (ciw) ciw.style.display = numeric && form.counts_toward?.value !== 'none' ? '' : 'none';
+      if (cw) cw.hidden = !numeric;
+      if (ciw) ciw.hidden = !numeric || form.counts_toward?.value === 'none';
     };
     form.data_type.addEventListener('change', sync);
     form.counts_toward?.addEventListener('change', sync);

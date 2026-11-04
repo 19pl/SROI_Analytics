@@ -22,9 +22,9 @@ export async function renderFacultyReport(root) {
 
   if (!facultyId) {
     root.innerHTML = `
-      <div class="card" style="padding: var(--sp-2xl); text-align: center;">
-        <h3 style="margin-bottom: var(--sp-xs); font-size: 1.125rem;">${t('no_data', 'No Faculty Specified')}</h3>
-        <p class="muted" style="margin-bottom: var(--sp-lg);">${t('org_subtitle', 'Please navigate to this report from the Organizational Structure page.')}</p>
+      <div class="empty-state">
+        <h3 class="panel__title">${t('no_data', 'No Faculty Specified')}</h3>
+        <p class="muted-sm">${t('org_subtitle', 'Please navigate to this report from the Organizational Structure page.')}</p>
         <a class="btn btn-primary" href="#/org">${t('back_to_org', 'Go to Organizations & Faculties')}</a>
       </div>
     `;
@@ -32,28 +32,28 @@ export async function renderFacultyReport(root) {
   }
 
   root.innerHTML = `
-    <div class="stack" style="gap: var(--sp-lg);">
+    <div class="form-stack stack-lg">
       <!-- Header -->
-      <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: var(--sp-md); flex-wrap: wrap;">
+      <div class="page-head">
         <div>
-          <a href="#/org" class="muted" style="font-size: 0.8125rem; text-decoration: none; display: inline-block; margin-bottom: 6px; font-weight: 500;">
+          <a href="#/org" class="muted-sm">
             ${t('back_to_org', '← Back to Organizational Structure')}
           </a>
-          <h1 class="page-title" id="facultyReportTitle" style="margin-bottom: 2px;">
+          <h1 class="page-head__title" id="facultyReportTitle">
             ${t('faculty_report_title', 'Faculty Consolidated SROI Report')}
           </h1>
-          <p class="muted page-sub" id="facultyReportSubtitle" style="margin-bottom: 0;">
+          <p class="page-head__sub" id="facultyReportSubtitle">
             ${t('faculty_report_subtitle', 'Multi-plan portfolio analysis across faculty-owned and department-owned SROI assessments')}
           </p>
         </div>
-        <button class="btn btn-secondary" onclick="window.print()" style="font-weight: 600;">
-          📄 ${t('btn_print_pdf', 'Print / Export PDF')}
+        <button class="btn btn-secondary" onclick="window.print()">
+          ${t('btn_print_pdf', 'Print / Export PDF')}
         </button>
       </div>
 
       <!-- Main Content Area -->
       <div id="facultyReportContent">
-        <div class="muted" style="padding: var(--sp-2xl); text-align: center;">${t('loading', 'Loading consolidated report data...')}</div>
+        <div class="empty-state"><p class="empty-state__text">${t('loading', 'Loading consolidated report data...')}</div>
       </div>
     </div>
   `;
@@ -97,72 +97,72 @@ export async function renderFacultyReport(root) {
     const consolidatedNsv = totalPv - totalInv;
 
     content.innerHTML = `
-      <div class="stack" style="gap: var(--sp-lg);">
+      <div class="form-stack stack-lg">
         <!-- Double-Counting Protection Alert -->
-        <div class="alert alert-info has-stripe" style="background: rgba(34, 197, 94, 0.08); --stripe: var(--positive);">
-          <div style="font-weight: 700; margin-bottom: 4px; color: var(--positive-fg);">
-            ${t('anti_double_count_title', '🛡️ Anti-Double-Counting Methodology & Reporting Governance')}
+        <div class="panel panel--soft">
+          <div class="strong val--positive">
+            ${t('anti_double_count_title', 'Anti-Double-Counting Methodology & Reporting Governance')}
           </div>
-          <div style="font-size: 0.875rem; color: var(--on-background); line-height: 1.6;">
+          <div class="muted-sm">
             ${t('anti_double_count_desc', 'Every plan in this faculty has exactly one direct owner: either the Faculty itself or one of its constituent Departments.')}
           </div>
         </div>
 
         <!-- Metric Cards -->
-        <div class="form-grid" style="grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: var(--sp-md);">
-          <div class="card" style="padding: var(--sp-md);">
-            <div class="muted" style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700;">
+        <div class="form-row">
+          <div class="panel">
+            <div class="muted" class="muted-sm uppercase strong">
               ${t('metric_total_plans', 'Total Plans')}
             </div>
-            <div style="font-size: 1.625rem; font-weight: 700; color: var(--on-background); margin: 4px 0;">
+            <div class="stat-num--lg">
               ${plans.length}
             </div>
-            <div class="muted" style="font-size: 0.75rem;">
+            <div class="muted" class="muted-sm">
               ${facultyPlans.length} ${t('metric_faculty_direct', 'Faculty direct')} + ${deptPlans.length} ${t('metric_dept_direct', 'Dept direct')}
             </div>
           </div>
 
-          <div class="card" style="padding: var(--sp-md);">
-            <div class="muted" style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700;">
+          <div class="panel">
+            <div class="muted" class="muted-sm uppercase strong">
               ${t('metric_portfolio_inv', 'Portfolio Investment')}
             </div>
-            <div style="font-size: 1.625rem; font-weight: 700; color: var(--on-background); margin: 4px 0;">
+            <div class="stat-num--lg">
               ฿${formatNumber(totalInv, 0)}
             </div>
-            <div class="muted" style="font-size: 0.75rem;">
+            <div class="muted" class="muted-sm">
               ${t('metric_across_plans', 'Across')} ${calculatedCount} ${t('stat_total_plans', 'calculated plans')}
             </div>
           </div>
 
-          <div class="card" style="padding: var(--sp-md);">
-            <div class="muted" style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700;">
+          <div class="panel">
+            <div class="muted" class="muted-sm uppercase strong">
               ${t('metric_total_pv', 'Total Present Value (PV)')}
             </div>
-            <div style="font-size: 1.625rem; font-weight: 700; color: var(--primary); margin: 4px 0;">
+            <div class="stat-num--lg primary-text">
               ฿${formatNumber(totalPv, 0)}
             </div>
-            <div class="muted" style="font-size: 0.75rem;">
+            <div class="muted" class="muted-sm">
               ${t('metric_discounted_impact', 'Discounted social impact')}
             </div>
           </div>
 
-          <div class="card has-stripe" style="padding: var(--sp-md); --stripe: var(--accent);">
-            <div class="muted" style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700;">
+          <div class="panel">
+            <div class="muted" class="muted-sm uppercase strong">
               ${t('metric_consolidated_sroi', 'Consolidated Portfolio SROI')}
             </div>
-            <div style="font-size: 1.625rem; font-weight: 700; color: var(--primary); margin: 4px 0;">
+            <div class="stat-num--lg primary-text">
               ${consolidatedRatio} : 1
             </div>
-            <div class="muted" style="font-size: 0.75rem;">
+            <div class="muted" class="muted-sm">
               ${t('metric_net_social_value', 'Net Social Value')}: ฿${formatNumber(consolidatedNsv, 0)}
             </div>
           </div>
         </div>
 
         <!-- Section 1: Faculty-Owned Plans -->
-        <div class="card" style="padding: var(--sp-md);">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--sp-sm); flex-wrap: wrap; gap: var(--sp-xs);">
-            <h2 style="font-size: 1rem; font-weight: 700; margin: 0; color: var(--on-background);">
+        <div class="panel">
+          <div class="toolbar">
+            <h2 class="panel__title">
               ${t('section_faculty_plans', 'Direct Faculty-Owned Plans')} (${facultyPlans.length})
             </h2>
             <span class="badge badge-production">${t('badge_faculty_exec', 'Owned by Faculty Executive')}</span>
@@ -170,7 +170,7 @@ export async function renderFacultyReport(root) {
 
           ${
             facultyPlans.length === 0
-              ? `<p class="muted" style="font-size: 0.875rem; padding: var(--sp-md) 0;">${t('no_faculty_plans', 'No plans owned directly by the faculty executive.')}</p>`
+              ? `<p class="empty-state">${t('no_faculty_plans', 'No plans owned directly by the faculty executive.')}</p>`
               : `
             <div class="table-wrap">
               <table class="table">
@@ -198,12 +198,12 @@ export async function renderFacultyReport(root) {
                       </td>
                       <td class="num">${p.latest_run ? '฿' + formatNumber(p.latest_run.investment, 0) : '-'}</td>
                       <td class="num">${p.latest_run ? '฿' + formatNumber(p.latest_run.present_value, 0) : '-'}</td>
-                      <td class="num strong" style="color: var(--primary);">
+                      <td class="num strong" class="primary-text">
                         ${p.latest_run && p.latest_run.sroi_ratio !== null ? Number(p.latest_run.sroi_ratio).toFixed(4) + ' : 1' : t('not_calculated', 'Not calculated')}
                       </td>
                       <td><span class="badge badge-${p.status === 'ready' ? 'production' : 'planned'}">${escapeHtml(p.status)}</span></td>
                       <td>
-                        <button class="btn btn-secondary" data-open-plan="${p.id}" style="height: 28px; font-size: 0.75rem;">
+                        <button class="btn btn-secondary btn-compact" data-open-plan="${p.id}">
                           ${t('btn_open_calculator', 'Open Calculator')}
                         </button>
                       </td>
@@ -219,9 +219,9 @@ export async function renderFacultyReport(root) {
         </div>
 
         <!-- Section 2: Department-Owned Plans -->
-        <div class="card" style="padding: var(--sp-md);">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--sp-sm); flex-wrap: wrap; gap: var(--sp-xs);">
-            <h2 style="font-size: 1rem; font-weight: 700; margin: 0; color: var(--on-background);">
+        <div class="panel">
+          <div class="toolbar">
+            <h2 class="panel__title">
               ${t('section_dept_plans', 'Department-Owned Plans')} (${deptPlans.length})
             </h2>
             <span class="badge badge-integrated">${t('badge_dept_owned', 'Owned by Academic Departments')}</span>
@@ -229,7 +229,7 @@ export async function renderFacultyReport(root) {
 
           ${
             deptPlans.length === 0
-              ? `<p class="muted" style="font-size: 0.875rem; padding: var(--sp-md) 0;">${t('no_dept_plans', 'No plans owned by departments in this faculty.')}</p>`
+              ? `<p class="empty-state">${t('no_dept_plans', 'No plans owned by departments in this faculty.')}</p>`
               : `
             <div class="table-wrap">
               <table class="table">
@@ -259,12 +259,12 @@ export async function renderFacultyReport(root) {
                       </td>
                       <td class="num">${p.latest_run ? '฿' + formatNumber(p.latest_run.investment, 0) : '-'}</td>
                       <td class="num">${p.latest_run ? '฿' + formatNumber(p.latest_run.present_value, 0) : '-'}</td>
-                      <td class="num strong" style="color: var(--primary);">
+                      <td class="num strong" class="primary-text">
                         ${p.latest_run && p.latest_run.sroi_ratio !== null ? Number(p.latest_run.sroi_ratio).toFixed(4) + ' : 1' : t('not_calculated', 'Not calculated')}
                       </td>
                       <td><span class="badge badge-${p.status === 'ready' ? 'production' : 'planned'}">${escapeHtml(p.status)}</span></td>
                       <td>
-                        <button class="btn btn-secondary" data-open-plan="${p.id}" style="height: 28px; font-size: 0.75rem;">
+                        <button class="btn btn-secondary btn-compact" data-open-plan="${p.id}">
                           ${t('btn_open_calculator', 'Open Calculator')}
                         </button>
                       </td>

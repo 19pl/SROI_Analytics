@@ -825,3 +825,134 @@ input[type='number'] {
   height: 26px;
   padding: 0 8px;
 }
+
+.input--fixed {
+  width: 200px;
+}
+
+/* Auth & Account view utilities */
+.auth-detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--sp-md);
+}
+@media (max-width: 600px) {
+  .auth-detail-grid {
+    grid-template-columns: 1fr;
+  }
+}
+.auth-detail-item {
+  padding: var(--sp-sm) var(--sp-md);
+  background: var(--surface-soft);
+  border: 1px solid var(--outline);
+  border-radius: var(--radius-sm);
+}
+.btn-block {
+  width: 100%;
+  justify-content: center;
+}
+.account-container {
+  max-width: 560px;
+  margin: var(--sp-xl) auto;
+}
+
+.auth-detail-val {
+  margin-top: 4px;
+}
+
+/* Sweep utility classes for trace, glossary, faculty-report, footer */
+.trace-formula {
+  font-family: var(--font-mono);
+  font-size: 0.9375rem;
+  background: var(--surface-card);
+  padding: var(--sp-xs) var(--sp-sm);
+  border-radius: var(--radius-sm);
+  margin: var(--sp-xs) 0;
+  overflow-x: auto;
+}
+.trace-card {
+  background: var(--surface-soft);
+  padding: var(--sp-md);
+  border-radius: var(--radius-md);
+  border-left: 4px solid var(--primary);
+}
+.trace-card--positive {
+  border-left-color: var(--positive);
+  background: var(--surface-soft);
+}
+.val--warning {
+  color: var(--warning);
+}
+.wizard-footer-hint {
+  font-size: 0.75rem;
+}
+.glossary-item-card {
+  padding: var(--sp-md);
+  background: var(--surface-soft);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--outline);
+}
+.faculty-report-header {
+  background: linear-gradient(180deg, var(--surface-card) 0%, var(--surface-soft) 100%);
+  padding: var(--sp-lg);
+}
+.trace-table {
+  font-size: 0.8125rem;
+}
+.text-right {
+  text-align: right;
+}
+
+.trace-card--warning {
+  border-left: 4px solid var(--warning);
+  background: var(--surface-soft);
+  padding: var(--sp-md);
+  border-radius: var(--radius-md);
+}
+.trace-card--primary {
+  border-left: 4px solid var(--primary);
+  background: var(--surface-soft);
+  padding: var(--sp-md);
+  border-radius: var(--radius-md);
+}
+.trace-card-title {
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.trace-result-val {
+  font-size: 1.125rem;
+  font-weight: 800;
+}
+.trace-result-hero {
+  font-size: 1.35rem;
+  font-weight: 800;
+}
+.trace-subtext {
+  font-size: 0.8125rem;
+  margin-top: 4px;
+}
+.trace-list {
+  font-size: 0.8125rem;
+  margin: 0;
+  padding-left: 18px;
+}
+
+.glossary-scroll-list {
+  max-height: 60vh;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+.glossary-card {
+  padding: var(--sp-md);
+  border-left: 4px solid var(--primary);
+  background: var(--surface-card);
+  border-radius: var(--radius-sm);
+}
+.glossary-example-box {
+  background: var(--surface-soft);
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  color: var(--muted);
+  border: 1px dashed var(--outline);
+}
