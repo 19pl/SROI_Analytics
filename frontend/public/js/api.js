@@ -198,6 +198,8 @@ export const api = {
   getOrganizations: () => request('/organizations'),
   createOrganization: (name) => request('/organizations', { method: 'POST', body: { name } }),
   getOrgMembers: (orgId) => request(`/organizations/${orgId}/members`),
+  updateOrgMember: (orgId, userId, role) => request(`/organizations/${orgId}/members/${userId}`, { method: 'PATCH', body: { role } }),
+  removeOrgMember: (orgId, userId) => request(`/organizations/${orgId}/members/${userId}`, { method: 'DELETE' }),
   createOrgProxy: (orgId, proxyData) =>
     request(`/organizations/${orgId}/proxies`, { method: 'POST', body: proxyData }),
 

@@ -76,3 +76,76 @@
 .org-faculty-disclosure[open] > .org-dept-container { border-top: 1px solid var(--outline); }
 .org-faculty-disclosure[open] > .org-faculty-summary .org-faculty-summary__chevron { transform: rotate(45deg) translateY(-2px); }
 .org-faculty-node[open] { border-color: var(--primary); }
+
+
+/* Search, membership roles and async refresh states */
+.org-search-box { position: relative; display: flex; align-items: center; min-width: min(240px, 100%); }
+.org-search-box .org-search-input { padding-right: 42px; }
+.org-search-clear { position: absolute; right: 7px; width: 32px; height: 32px; border: 0; border-radius: 50%; background: transparent; color: var(--muted); font-size: 1.35rem; cursor: pointer; }
+.org-search-clear:hover { background: var(--surface-soft); color: var(--on-background); }
+.org-search-clear:focus-visible { outline: 2px solid var(--primary); outline-offset: 1px; }
+.org-search-count { color: var(--muted); font-size: .8rem; white-space: nowrap; }
+.org-search-highlight { background: var(--warning-bg); color: inherit; border-radius: 3px; padding: 0 1px; }
+.org-member-controls { display: flex; align-items: center; gap: 8px; min-width: 150px; }
+.org-member-role { width: auto; min-width: 112px; min-height: 36px; padding: 4px 28px 4px 10px; font-size: .82rem; font-weight: 650; }
+.role-badge { display: inline-flex; align-items: center; border-radius: 999px; border: 1px solid transparent; font-weight: 650; white-space: nowrap; }
+.role-badge--owner { color: var(--warning-fg); background: var(--warning-bg); border-color: var(--warning-border, var(--outline)); }
+.role-badge--editor { color: var(--primary-strong); background: var(--primary-soft); border-color: var(--outline); }
+.role-badge--viewer { color: var(--muted); background: var(--surface-soft); border-color: var(--outline); }
+.org-member-remove { width: 40px; height: 40px; color: var(--negative); font-size: 1.25rem; }
+.org-role-options { border: 0; padding: 0; margin: 0; min-width: 0; }
+.org-role-options legend { margin-bottom: 8px; }
+.org-role-card { display: flex; align-items: flex-start; gap: 12px; padding: 12px; margin: 8px 0; border: 1px solid var(--outline); border-radius: var(--radius-md); cursor: pointer; background: var(--surface); }
+.org-role-card:has(input:checked) { border-color: var(--primary); background: var(--primary-soft); box-shadow: 0 0 0 1px var(--primary); }
+.org-role-card input { width: 18px; height: 18px; margin-top: 2px; accent-color: var(--primary); flex: 0 0 auto; }
+.org-role-card__content { display: grid; gap: 3px; min-width: 0; }
+.org-role-card__content small { color: var(--muted); line-height: 1.45; }
+.org-skeleton { display: grid; gap: 12px; }
+.org-skeleton span { display: block; height: 76px; border-radius: var(--radius-md); background: linear-gradient(90deg, var(--surface-soft), var(--surface), var(--surface-soft)); background-size: 200% 100%; animation: org-skeleton-pulse 1.2s ease-in-out infinite; }
+@keyframes org-skeleton-pulse { to { background-position: -200% 0; } }
+@media (max-width: 760px) { .org-search-box { flex: 1 1 100%; width: 100%; } .org-search-count { width: 100%; } .org-member-controls { min-width: 0; } }
+
+.org-member-role:disabled, .org-member-remove:disabled { opacity: .55; cursor: not-allowed; }
+
+
+/* ---------- Faculty toolbar: search + expand/collapse (theme-aware) ---------- */
+.org-faculty-toolbar { justify-content: space-between; align-items: center; row-gap: var(--sp-sm); }
+.org-faculty-toolbar > .panel__title { margin: 0; flex: 1 1 auto; min-width: 0; }
+.org-list-toolbar { flex: 0 1 auto; margin-left: auto; }
+.org-search-box .org-search-input { height: 40px; width: 240px; font-size: 0.875rem; }
+.org-tree-controls {
+  display: inline-flex; flex-wrap: nowrap; align-items: stretch; gap: 0; padding: 3px;
+  background: var(--surface-soft); border: 1px solid var(--outline-strong); border-radius: 10px;
+}
+.org-tree-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  min-height: 34px; padding: 0 12px; border: 0; border-radius: 7px;
+  background: transparent; color: var(--on-background); font: inherit; font-size: 0.8125rem; font-weight: 600;
+  white-space: nowrap; cursor: pointer;
+  transition: background 150ms var(--ease), color 150ms var(--ease);
+}
+.org-tree-btn svg { flex: none; color: var(--muted); transition: color 150ms var(--ease); }
+.org-tree-btn:hover { background: var(--surface-elevated, var(--surface)); color: var(--primary-strong, var(--primary)); }
+.org-tree-btn:hover svg { color: currentColor; }
+.org-tree-btn:active { transform: translateY(1px); }
+.org-tree-btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 1px; }
+.org-tree-btn + .org-tree-btn { margin-left: 2px; }
+
+@media (max-width: 900px) {
+  .org-faculty-toolbar > .panel__title { flex-basis: 100%; }
+  .org-list-toolbar { width: 100%; margin-left: 0; justify-content: stretch; }
+  .org-search-box { flex: 1 1 220px; min-width: 0; }
+  .org-search-box .org-search-input { width: 100%; }
+}
+@media (max-width: 760px) {
+  .org-list-toolbar { flex-direction: column; align-items: stretch; gap: var(--sp-sm); }
+  .org-search-box { flex: none; width: 100%; }
+  .org-search-count { width: auto; }
+  .org-search-count:empty { display: none; }
+  .org-tree-controls { width: 100%; }
+  .org-tree-btn { flex: 1 1 0; min-height: 40px; }
+}
+@media (max-width: 360px) {
+  .org-tree-btn { padding: 0 6px; font-size: 0.75rem; }
+  .org-tree-btn svg { display: none; }
+}

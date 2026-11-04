@@ -293,6 +293,57 @@ T::test('api: tenant isolation and role-based permissions', function () use ($ca
     T::eq(403, $s, 'viewer cannot promote self');
 });
 
+T::test('api: organization member role updates and faculty hierarchy permissions', function () use ($call, $register) {
+    [, $owner] = $register(['email' => 'rbac-owner@x.org', 'name' => 'Owner', 'password' => 'correct-horse-9']);
+    [, $editor] = $register(['email' => 'rbac-editor@x.org', 'name' => 'Editor', 'password' => 'correct-horse-9']);
+    [, $viewer] = $register(['email' => 'rbac-viewer@x.org', 'name' => 'Viewer', 'password' => 'correct-horse-9']);
+    $oid = $owner['organizations'][0]['id'];
+    $ownerId = $owner['user']['id'];
+    $editorId = $editor['user']['id'];
+    $viewerId = $viewer['user']['id'];
+
+    [$status] = $call('POST', "/organizations/$oid/members", ['email' => 'rbac-editor@x.org', 'role' => 'editor'], $owner['token']);
+    T::eq(201, $status, 'owner adds editor');
+    [$status] = $call('POST', "/organizations/$oid/members", ['email' => 'rbac-viewer@x.org', 'role' => 'viewer'], $owner['token']);
+    T::eq(201, $status, 'owner adds viewer');
+
+    [$status, $fac] = $call('POST', "/organizations/$oid/faculties", ['name' => 'Editor Faculty'], $editor['token']);
+    T::eq(201, $status, 'editor can create faculty');
+    $fid = $fac['data']['id'];
+    [$status] = $call('POST', "/organizations/$oid/faculties", ['name' => 'Viewer Forbidden'], $viewer['token']);
+    T::eq(403, $status, 'viewer cannot create faculty');
+    [$status, $dept] = $call('POST', "/faculties/$fid/departments", ['name' => 'Editor Department'], $editor['token']);
+    T::eq(201, $status, 'editor can create department');
+    $did = $dept['data']['id'];
+    [$status] = $call('PATCH', "/faculties/$fid", ['name' => 'Editor Renamed'], $editor['token']);
+    T::eq(200, $status, 'editor can update faculty');
+    [$status] = $call('DELETE', "/faculties/$fid", null, $editor['token']);
+    T::eq(403, $status, 'editor cannot delete faculty');
+    [$status] = $call('DELETE', "/departments/$did", null, $editor['token']);
+    T::eq(403, $status, 'editor cannot delete department');
+
+    [$status] = $call('PATCH', "/organizations/$oid/members/$viewerId", ['role' => 'editor'], $editor['token']);
+    T::eq(403, $status, 'editor cannot manage member roles');
+    [$status] = $call('PATCH', "/organizations/$oid/members/$viewerId", ['role' => 'editor'], $owner['token']);
+    T::eq(200, $status, 'owner can change member role');
+    [$status] = $call('DELETE', "/organizations/$oid/members/$viewerId", null, $editor['token']);
+    T::eq(403, $status, 'editor cannot remove another member');
+    [$status] = $call('DELETE', "/organizations/$oid/members/$ownerId", null, $owner['token']);
+    T::eq(409, $status, 'last owner cannot remove self');
+    [$status] = $call('DELETE', "/organizations/$oid/members/$editorId", null, $owner['token']);
+    T::eq(204, $status, 'owner can remove another member');
+    [$status] = $call('DELETE', "/departments/$did", null, $owner['token']);
+    T::eq(204, $status, 'owner can delete empty department');
+    [$status] = $call('DELETE', "/faculties/$fid", null, $owner['token']);
+    T::eq(204, $status, 'owner can delete empty faculty');
+
+    // An owner can retain the owner role, but cannot demote the final owner.
+    [$status] = $call('PATCH', "/organizations/$oid/members/$ownerId", ['role' => 'owner'], $owner['token']);
+    T::eq(200, $status, 'last owner may retain owner role');
+    [$status] = $call('PATCH', "/organizations/$oid/members/$ownerId", ['role' => 'viewer'], $owner['token']);
+    T::eq(409, $status, 'last owner cannot be demoted');
+});
+
 T::test('api: incomplete project gives 422 with actionable codes, dashboard reports incomplete', function () use ($call, $register) {
     [, $a] = $register(['email' => 'inc@x.org', 'name' => 'I', 'password' => 'correct-horse-9']);
     [, $p] = $call('POST', '/projects', ['name' => 'Draft', 'currency' => 'THB'], $a['token']);

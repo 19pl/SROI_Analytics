@@ -75,11 +75,19 @@ final class OrganizationController
         $uid = $req->intParam('userId');
         Access::requireOrg($this->app, $req, $oid, 'owner');
         $d = Validator::validate($req->body(), ['role' => ['type' => 'enum', 'in' => ['owner', 'editor', 'viewer'], 'required' => true]]);
-        $this->guardLastOwner($oid, $uid);
-        $n = $this->app->db->run('UPDATE memberships SET role = ? WHERE organization_id = ? AND user_id = ?', [$d['role'], $oid, $uid]);
-        if ($n === 0) {
-            throw HttpException::notFound('Member');
-        }
+        $this->app->db->transaction(function () use ($oid, $uid, $d) {
+            $currentRole = Access::orgRole($this->app, $uid, $oid);
+            if ($currentRole === null) {
+                throw HttpException::notFound('Member');
+            }
+            if ($currentRole === 'owner' && $d['role'] !== 'owner') {
+                $owners = (int)$this->app->db->val("SELECT COUNT(*) FROM memberships WHERE organization_id = ? AND role = 'owner'", [$oid]);
+                if ($owners <= 1) {
+                    throw HttpException::conflict('An organization must keep at least one owner');
+                }
+            }
+            $this->app->db->run('UPDATE memberships SET role = ? WHERE organization_id = ? AND user_id = ?', [$d['role'], $oid, $uid]);
+        });
         Audit::log($this->app, $req, ['id' => null, 'organization_id' => $oid], 'membership', $uid, 'update', null, ['role' => $d['role']]);
         return Response::json(['data' => ['user_id' => $uid, 'role' => $d['role']]]);
     }
@@ -88,27 +96,27 @@ final class OrganizationController
     {
         $oid = $req->intParam('id');
         $uid = $req->intParam('userId');
-        // members may remove themselves; otherwise owner required
+        // Members may leave their own organization; removing another member is owner-only.
         if ($uid !== (int)$req->user['id']) {
             Access::requireOrg($this->app, $req, $oid, 'owner');
         } else {
             Access::requireOrg($this->app, $req, $oid, 'viewer');
         }
-        $this->guardLastOwner($oid, $uid);
-        $n = $this->app->db->run('DELETE FROM memberships WHERE organization_id = ? AND user_id = ?', [$oid, $uid]);
-        if ($n === 0) {
-            throw HttpException::notFound('Member');
-        }
+        $this->app->db->transaction(function () use ($oid, $uid) {
+            $role = Access::orgRole($this->app, $uid, $oid);
+            if ($role === null) {
+                throw HttpException::notFound('Member');
+            }
+            if ($role === 'owner') {
+                $owners = (int)$this->app->db->val("SELECT COUNT(*) FROM memberships WHERE organization_id = ? AND role = 'owner'", [$oid]);
+                if ($owners <= 1) {
+                    throw HttpException::conflict('An organization must keep at least one owner');
+                }
+            }
+            $this->app->db->run('DELETE FROM memberships WHERE organization_id = ? AND user_id = ?', [$oid, $uid]);
+        });
         Audit::log($this->app, $req, ['id' => null, 'organization_id' => $oid], 'membership', $uid, 'delete');
         return Response::noContent();
     }
 
-    private function guardLastOwner(int $oid, int $uid): void
-    {
-        $isOwner = Access::orgRole($this->app, $uid, $oid) === 'owner';
-        $owners = (int)$this->app->db->val("SELECT COUNT(*) FROM memberships WHERE organization_id = ? AND role = 'owner'", [$oid]);
-        if ($isOwner && $owners <= 1) {
-            throw HttpException::conflict('An organization must keep at least one owner');
-        }
-    }
 }

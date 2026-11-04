@@ -1,5 +1,5 @@
 import { api, getCurrentUser } from '../api.js';
-import { openModal, closeModal, confirmModal } from '../components/modal.js';
+import { openModal, closeModal } from '../components/modal.js';
 import { escapeHtml } from '../utils/html.js';
 import { icons } from '../components/icons.js';
 import { t } from '../i18n.js';
@@ -12,6 +12,13 @@ export async function renderOrg(root) {
     return;
   }
   const user = getCurrentUser();
+  const roleRank = { viewer: 1, editor: 2, owner: 3 };
+  let currentOrgRole = 'viewer';
+  const canEditStructure = () => (roleRank[currentOrgRole] || 0) >= roleRank.editor;
+  const canDeleteStructure = () => currentOrgRole === 'owner';
+  const canManageMembers = () => currentOrgRole === 'owner';
+  let expandedFacultyIds = new Set();
+  let searchQuery = '';
 
   root.innerHTML = `
     <div class="form-stack stack-lg">
@@ -24,7 +31,7 @@ export async function renderOrg(root) {
           </p>
         </div>
         <div class="page-head__actions">
-          <button class="btn btn-primary" id="btnNewFaculty">${icons.plus} ${t('btn_add_faculty', 'Add Faculty')}</button>
+          <button class="btn btn-primary" id="btnNewFaculty" hidden>${icons.plus} ${t('btn_add_faculty', 'Add Faculty')}</button>
         </div>
       </div>
 
@@ -64,9 +71,7 @@ export async function renderOrg(root) {
 
       <!-- Main Content Area -->
       <div id="orgContentArea">
-        <div class="empty-state">
-          <p class="empty-state__text">${t('loading', 'Loading organizational data...')}</p>
-        </div>
+        <div class="org-skeleton" role="status" aria-label="${t('loading', 'กำลังโหลดข้อมูล')}" aria-live="polite"><span></span><span></span><span></span></div>
       </div>
     </div>
   `;
@@ -93,32 +98,38 @@ export async function renderOrg(root) {
         organizations[0] || { id: 1, name: 'มหาวิทยาลัยนเรศวร (Naresuan University)' };
 
       currentOrgId = Number(nuOrg.id);
+      currentOrgRole = nuOrg.role || 'viewer';
+      const addFaculty = document.getElementById('btnNewFaculty');
+      if (addFaculty) addFaculty.hidden = !canEditStructure();
       if (orgDisplayName) {
         orgDisplayName.textContent = nuOrg.name;
       }
-      await loadOrgStructure(currentOrgId);
+      await loadOrgStructure(currentOrgId, { showLoading: true });
     } catch (err) {
       contentArea.innerHTML = `<div class="field-error">${escapeHtml(err.message)}</div>`;
       showToast(err.message, 'error');
     }
   }
 
-  async function loadOrgStructure(orgId) {
-    contentArea.innerHTML = `
-      <div class="empty-state">
-        <p class="empty-state__text">${t('loading', 'Loading faculties and departments...')}</p>
-      </div>
-    `;
+  async function loadOrgStructure(orgId, { showLoading = false } = {}) {
+    contentArea.querySelectorAll('.org-faculty-node').forEach((row) => {
+      const detail = row.querySelector('.org-faculty-disclosure');
+      const id = Number(row.dataset.facultyId);
+      if (detail?.open) expandedFacultyIds.add(id); else if (detail) expandedFacultyIds.delete(id);
+    });
+    const scrollTop = window.scrollY;
+    if (showLoading) contentArea.innerHTML = `<div class="org-skeleton" aria-label="${t('loading', 'กำลังโหลดข้อมูล')}"><span></span><span></span><span></span></div>`;
     try {
-      const [facRes, memRes, projRes] = await Promise.all([
+      const [facRes, memRes, projRes, deletedProjRes] = await Promise.all([
         api.getFaculties(orgId),
         api.getOrgMembers(orgId),
-        api.getProjects().catch(() => ({ data: [] })),
+        api.getProjects({ organization_id: orgId }).catch(() => ({ data: [] })),
+        api.getProjects({ organization_id: orgId, deleted: true }).catch(() => ({ data: [] })),
       ]);
 
       const faculties = facRes.data || [];
       const members = memRes.data || [];
-      allProjects = projRes.data || [];
+      allProjects = [...(projRes.data || []), ...(deletedProjRes.data || [])];
 
       // For each faculty, fetch departments
       const facWithDepts = await Promise.all(
@@ -145,6 +156,7 @@ export async function renderOrg(root) {
       if (statMemCount) statMemCount.textContent = allMembers.length;
 
       renderStructureView(orgId, allFaculties, allMembers, allProjects);
+      window.scrollTo(0, scrollTop);
     } catch (err) {
       contentArea.innerHTML = `<div class="field-error">${escapeHtml(err.message)}</div>`;
       showToast(err.message, 'error');
@@ -166,31 +178,38 @@ export async function renderOrg(root) {
   }
 
   function renderStructureView(orgId, faculties, members, projects) {
+    const ownerCount = members.filter((member) => member.role === 'owner').length;
     contentArea.innerHTML = `
       <div class="form-stack stack-lg">
         <!-- Faculties Section -->
         <div>
-          <div class="toolbar">
+          <div class="toolbar org-faculty-toolbar">
             <h2 class="panel__title">
               ${t('fac_and_dept_count', 'Faculties & Departments')}
             </h2>
             <div class="org-list-toolbar">
-              <input
-                type="search"
-                id="searchFacultyInput"
-                class="input org-search-input"
-                aria-label="${t('search_faculties_placeholder', 'Search faculties...')}"
-                placeholder="${t('search_faculties_placeholder', 'Search faculties...')}"
-              />
+              <div class="org-search-box">
+                <input type="search" id="searchFacultyInput" class="input org-search-input"
+                  aria-label="${t('search_faculties_placeholder', 'ค้นหาคณะหรือภาควิชา')}"
+                  placeholder="${t('search_faculties_placeholder', 'ค้นหาคณะหรือภาควิชา')}" value="${escapeHtml(searchQuery)}" />
+                <button type="button" class="org-search-clear" id="btnClearFacultySearch" aria-label="${t('clear_search', 'ล้างคำค้นหา')}" ${searchQuery ? '' : 'hidden'}>×</button>
+              </div>
+              <span class="org-search-count" id="facultySearchCount" aria-live="polite"></span>
               <div class="org-tree-controls" role="group" aria-label="${t('faculty_tree_controls', 'Faculty tree controls')}">
-                <button type="button" class="btn btn-ghost btn-compact" id="btnExpandAll">${t('expand_all', 'Expand all')}</button>
-                <button type="button" class="btn btn-ghost btn-compact" id="btnCollapseAll">${t('collapse_all', 'Collapse all')}</button>
+                <button type="button" class="org-tree-btn" id="btnExpandAll">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="7 13 12 18 17 13"/><polyline points="7 6 12 11 17 6"/></svg>
+                  <span>${t('expand_all', 'Expand all')}</span>
+                </button>
+                <button type="button" class="org-tree-btn" id="btnCollapseAll">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="7 11 12 6 17 11"/><polyline points="7 18 12 13 17 18"/></svg>
+                  <span>${t('collapse_all', 'Collapse all')}</span>
+                </button>
               </div>
             </div>
           </div>
 
           <div id="facultyCardsList">
-            ${renderFacultyTree(faculties)}
+            ${renderFacultyTree(getFilteredFaculties(faculties))}
           </div>
         </div>
 
@@ -200,12 +219,10 @@ export async function renderOrg(root) {
             <h2 class="panel__title">
               ${t('org_members_title', 'Organization Members')}
             </h2>
-            <button class="btn btn-secondary btn-compact" id="btnAddMember">
-              ${icons.plus} ${t('btn_add_member', 'Add Member')}
-            </button>
+            <button class="btn btn-secondary btn-compact" id="btnAddMember" ${canManageMembers() ? '' : 'hidden'}>${icons.plus} ${t('btn_add_member', 'Add Member')}</button>
           </div>
           <div class="table-wrap">
-            <table class="table">
+            <table class="table org-members-table">
               <thead>
                 <tr>
                   <th>${t('col_member_name', 'Name')}</th>
@@ -214,21 +231,7 @@ export async function renderOrg(root) {
                 </tr>
               </thead>
               <tbody>
-                ${
-                  members.length === 0
-                    ? `<tr><td colspan="3" class="empty-state">${t('no_data', 'No members found.')}</td></tr>`
-                    : members
-                        .map(
-                          (m) => `
-                        <tr>
-                          <td class="strong">${escapeHtml(m.name || m.email)}</td>
-                          <td>${escapeHtml(m.email)}</td>
-                          <td><span class="status status--neutral">${escapeHtml(m.role)}</span></td>
-                        </tr>
-                      `,
-                        )
-                        .join('')
-                }
+                ${renderMemberRows(members, ownerCount)}
               </tbody>
             </table>
           </div>
@@ -237,29 +240,28 @@ export async function renderOrg(root) {
     `;
 
     bindFacultyEvents(orgId);
+    bindMemberEvents(orgId);
+    bindFacultyDisclosureState();
+    updateSearchCount(allFaculties);
 
     document.getElementById('btnExpandAll')?.addEventListener('click', () => {
-      contentArea.querySelectorAll('.org-faculty-disclosure').forEach((node) => { node.open = true; });
+      contentArea.querySelectorAll('.org-faculty-disclosure').forEach((node) => { node.open = true; expandedFacultyIds.add(Number(node.closest('.org-faculty-node')?.dataset.facultyId)); });
     });
     document.getElementById('btnCollapseAll')?.addEventListener('click', () => {
-      contentArea.querySelectorAll('.org-faculty-disclosure').forEach((node) => { node.open = false; });
+      contentArea.querySelectorAll('.org-faculty-disclosure').forEach((node) => { node.open = false; expandedFacultyIds.delete(Number(node.closest('.org-faculty-node')?.dataset.facultyId)); });
     });
-
-    // Search filter for faculties
     const searchInput = document.getElementById('searchFacultyInput');
-    searchInput?.addEventListener('input', (e) => {
-      const q = e.target.value.toLowerCase().trim();
-      const filtered = faculties.filter(
-        (f) =>
-          f.name.toLowerCase().includes(q) ||
-          (f.description && f.description.toLowerCase().includes(q)) ||
-          (f.departments && f.departments.some((d) => d.name.toLowerCase().includes(q))),
-      );
-      const container = document.getElementById('facultyCardsList');
-      if (container) {
-        container.innerHTML = renderFacultyTree(filtered);
-        bindFacultyEvents(orgId);
-      }
+    searchInput?.addEventListener('input', (event) => {
+      searchQuery = event.target.value.trim();
+      document.getElementById('btnClearFacultySearch').hidden = !searchQuery;
+      refreshFacultyTree({ autoExpand: Boolean(searchQuery) });
+    });
+    document.getElementById('btnClearFacultySearch')?.addEventListener('click', () => {
+      searchQuery = '';
+      searchInput.value = '';
+      document.getElementById('btnClearFacultySearch').hidden = true;
+      searchInput.focus();
+      refreshFacultyTree();
     });
 
     document
@@ -269,7 +271,9 @@ export async function renderOrg(root) {
 
   function renderFacultyTree(faculties) {
     if (faculties.length === 0) {
-      return `<div class="empty-state"><p class="empty-state__title">${t('no_faculties_yet', 'No faculties created yet in this institution.')}</p></div>`;
+      return allFaculties.length === 0
+        ? `<div class="empty-state"><p class="empty-state__title">${t('no_faculties_yet', 'ยังไม่มีข้อมูลคณะในสถาบันนี้')}</p></div>`
+        : `<div class="empty-state"><p class="empty-state__title">${t('search_no_results', 'ไม่พบข้อมูลที่ตรงกับการค้นหา')}</p></div>`;
     }
     return `
       <div class="org-tree">
@@ -277,14 +281,14 @@ export async function renderOrg(root) {
           const planCount = f.plan_count != null ? f.plan_count : countPlansForFaculty(f.id);
           const depts = f.departments || [];
           return `
-          <div class="org-faculty-node">
+          <div class="org-faculty-node" data-faculty-id="${f.id}">
             <details class="org-faculty-disclosure">
             <summary class="org-faculty-summary">
               <span class="org-faculty-summary__chevron" aria-hidden="true"></span>
               <span class="org-faculty-summary__info">
-                <span class="org-faculty-summary__title">${escapeHtml(f.name)}</span>
-                ${f.description ? `<span class="org-faculty-summary__secondary">${escapeHtml(f.description)}</span>` : ''}
-                <span class="org-faculty-summary__counts">${depts.length} ${t('departments_short', 'ภาควิชา')} · ${planCount} ${t('plans', 'แผนงาน')}</span>
+                <span class="org-faculty-summary__title">${highlightText(f.name)}</span>
+                ${f.description ? `<span class="org-faculty-summary__secondary">${highlightText(f.description)}</span>` : ''}
+                <span class="org-faculty-summary__counts">${f._totalDepartmentCount ?? depts.length} ${t('departments_short', 'ภาควิชา')} · ${planCount} ${t('plans', 'แผนงาน')}</span>
               </span>
             </summary>
             <div class="org-dept-container">
@@ -295,12 +299,12 @@ export async function renderOrg(root) {
                     return `
                       <div class="org-dept-row">
                         <div class="org-dept-row__info">
-                          <span class="org-dept-row__name">${escapeHtml(d.name)}</span>
-                          ${d.description ? `<span class="org-dept-row__secondary">${escapeHtml(d.description)}</span>` : ''}
+                          <span class="org-dept-row__name">${highlightText(d.name)}</span>
+                          ${d.description ? `<span class="org-dept-row__secondary">${highlightText(d.description)}</span>` : ''}
                           <span class="org-faculty-summary__counts">${deptPlanCount} ${t('plans', 'แผนงาน')}</span>
                         </div>
                         <div class="org-dept-row__actions">
-                          <button type="button" class="btn-icon btn-icon--lg org-row-menu-trigger" data-dept-menu="${d.id}" aria-label="${t('department_actions_for', 'Department actions')}: ${escapeHtml(d.name)}" aria-haspopup="menu" aria-expanded="false"><span aria-hidden="true">⋯</span></button>
+                          ${canEditStructure() ? `<button type="button" class="btn-icon btn-icon--lg org-row-menu-trigger" data-dept-menu="${d.id}" aria-label="${t('department_actions_for', 'Department actions')}: ${escapeHtml(d.name)}" aria-haspopup="menu" aria-expanded="false"><span aria-hidden="true">⋯</span></button>` : ''}
                         </div>
                       </div>`;
                   }).join('')}</div>`}
@@ -308,8 +312,8 @@ export async function renderOrg(root) {
             </details>
             <div class="org-faculty-actions">
               <a class="org-report-link" href="#/faculty-report?id=${f.id}">${t('conso_report', 'Consolidated Report')}</a>
-              <button type="button" class="btn btn-primary btn-compact" data-add-dept="${f.id}" data-fac-name="${escapeHtml(f.name)}">${icons.plus} ${t('departments_in_fac', 'Department')}</button>
-              <button type="button" class="btn-icon btn-icon--lg org-row-menu-trigger" data-fac-menu="${f.id}" aria-label="${t('faculty_actions_for', 'Faculty actions')}: ${escapeHtml(f.name)}" aria-haspopup="menu" aria-expanded="false"><span aria-hidden="true">⋯</span></button>
+              ${canEditStructure() ? `<button type="button" class="btn btn-primary btn-compact" data-add-dept="${f.id}" data-fac-name="${escapeHtml(f.name)}">${icons.plus} ${t('departments_in_fac', 'Department')}</button>` : ''}
+              ${canEditStructure() ? `<button type="button" class="btn-icon btn-icon--lg org-row-menu-trigger" data-fac-menu="${f.id}" aria-label="${t('faculty_actions_for', 'Faculty actions')}: ${escapeHtml(f.name)}" aria-haspopup="menu" aria-expanded="false"><span aria-hidden="true">⋯</span></button>` : ''}
             </div>
           </div>`;
         }).join('')}
@@ -376,11 +380,12 @@ export async function renderOrg(root) {
       if (!faculty) return;
       openOrgRowMenu(btn, [
         { label: t('btn_rename', 'Rename'), onSelect: () => openOrgEntityModal({ type: 'faculty', mode: 'edit', id: Number(faculty.id), currentName: faculty.name, currentDescription: faculty.description || '' }) },
-        { label: t('btn_delete', 'Delete'), danger: true, separatorBefore: true, onSelect: () => confirmModal({
-          title: t('btn_delete', 'Delete Faculty'),
-          message: t('confirm_delete_fac', 'Are you sure you want to delete this faculty? If it or its departments own any plans, deletion will be blocked to protect data.'),
-          onConfirm: async () => { try { await api.deleteFaculty(Number(faculty.id)); showToast(t('deleted_faculty', 'Faculty deleted successfully'), 'success'); loadOrgStructure(orgId); } catch (e) { showToast(e.message, 'error'); } },
-        }) },
+        ...(canDeleteStructure() ? [{ label: t('btn_delete', 'Delete'), danger: true, separatorBefore: true, onSelect: () => openOrgConfirm({
+          title: `${t('delete_faculty_title', 'ลบคณะ')} ${escapeHtml(faculty.name)}`,
+          message: `${t('delete_faculty_confirm_prefix', 'คุณกำลังลบคณะ')} <strong>${escapeHtml(faculty.name)}</strong><br>${faculty.departments.length} ${t('departments_short', 'ภาควิชา')} · ${faculty.departments.reduce((n,d) => n + countPlansForDepartment(d.id), countPlansForFaculty(faculty.id))} ${t('plans', 'แผนงาน')}<br>${t('delete_blocked_explanation', 'ระบบจะไม่ลบข้อมูลแผนงานโดยอัตโนมัติ หากยังมีแผนงานที่ใช้งานอยู่จะไม่อนุญาตให้ลบ')}`,
+          confirmText: t('btn_delete', 'ลบ'),
+          onConfirm: async () => { await api.deleteFaculty(Number(faculty.id)); allFaculties = allFaculties.filter((item) => Number(item.id) !== Number(faculty.id)); updateOrgStats(); refreshFacultyTree(); showToast(t('deleted_faculty', 'ลบคณะสำเร็จ'), 'success'); },
+        }) }] : []),
       ]);
     }));
     contentArea.querySelectorAll('[data-dept-menu]').forEach((btn) => btn.addEventListener('click', () => {
@@ -389,11 +394,12 @@ export async function renderOrg(root) {
       if (!department) return;
       openOrgRowMenu(btn, [
         { label: t('btn_rename', 'Rename'), onSelect: () => openOrgEntityModal({ type: 'department', mode: 'edit', id: departmentId, currentName: department.name, currentDescription: department.description || '' }) },
-        { label: t('btn_delete', 'Delete'), danger: true, separatorBefore: true, onSelect: () => confirmModal({
-          title: t('btn_delete', 'Delete Department'),
-          message: t('confirm_delete_dept', 'Are you sure you want to delete this department? If it owns any plans, deletion will be blocked.'),
-          onConfirm: async () => { try { await api.deleteDepartment(departmentId); showToast(t('deleted_dept', 'Department deleted successfully'), 'success'); loadOrgStructure(orgId); } catch (e) { showToast(e.message, 'error'); } },
-        }) },
+        ...(canDeleteStructure() ? [{ label: t('btn_delete', 'Delete'), danger: true, separatorBefore: true, onSelect: () => openOrgConfirm({
+          title: `${t('delete_department_title', 'ลบภาควิชา')} ${escapeHtml(department.name)}`,
+          message: `${t('delete_department_confirm_prefix', 'คุณกำลังลบภาควิชา')} <strong>${escapeHtml(department.name)}</strong><br>${countPlansForDepartment(departmentId)} ${t('plans', 'แผนงาน')}<br>${t('delete_blocked_explanation', 'ระบบจะไม่ลบข้อมูลแผนงานโดยอัตโนมัติ หากยังมีแผนงานที่ใช้งานอยู่จะไม่อนุญาตให้ลบ')}`,
+          confirmText: t('btn_delete', 'ลบ'),
+          onConfirm: async () => { await api.deleteDepartment(departmentId); allFaculties = allFaculties.map((faculty) => ({ ...faculty, departments: (faculty.departments || []).filter((item) => Number(item.id) !== departmentId) })); updateOrgStats(); refreshFacultyTree(); showToast(t('deleted_dept', 'ลบภาควิชาสำเร็จ'), 'success'); },
+        }) }] : []),
       ]);
     }));
   }
@@ -462,7 +468,9 @@ export async function renderOrg(root) {
       `,
     });
 
-    document.getElementById('btnSubmitOrgEntity')?.addEventListener('click', async () => {
+    document.getElementById('btnSubmitOrgEntity')?.addEventListener('click', async (event) => {
+      const submitButton = event.currentTarget;
+      if (submitButton.disabled) return;
       const form = document.getElementById('orgEntityForm');
       const errBox = document.getElementById('orgEntityError');
       const name = form.name.value.trim();
@@ -477,87 +485,234 @@ export async function renderOrg(root) {
         return;
       }
 
+      if (name.length > 200 || description.length > 2000) {
+        errBox.textContent = t('org_validation_length', 'ชื่อไม่เกิน 200 ตัวอักษร และคำอธิบายไม่เกิน 2,000 ตัวอักษร');
+        errBox.hidden = false; return;
+      }
+      submitButton.disabled = true;
+      submitButton.textContent = t('saving', 'กำลังบันทึก...');
       try {
         if (isFac) {
           if (isCreate) {
-            await api.createFaculty(parentId, { name, description });
+            const response = await api.createFaculty(parentId, { name, description });
+            allFaculties.push({ ...response.data, departments: [] });
+            updateOrgStats(); refreshFacultyTree();
             showToast(t('created_faculty', 'Faculty created successfully'), 'success');
           } else {
-            await api.updateFaculty(id, { name, description });
+            const response = await api.updateFaculty(id, { name, description });
+            allFaculties = allFaculties.map((faculty) => Number(faculty.id) === Number(id) ? { ...faculty, ...response.data } : faculty);
+            refreshFacultyTree();
             showToast(t('updated_faculty', 'Faculty updated successfully'), 'success');
           }
         } else {
           if (isCreate) {
-            await api.createDepartment(parentId, { name, description });
+            const response = await api.createDepartment(parentId, { name, description });
+            allFaculties = allFaculties.map((faculty) => Number(faculty.id) === Number(parentId) ? { ...faculty, departments: [...(faculty.departments || []), response.data] } : faculty);
+            expandedFacultyIds.add(Number(parentId));
+            updateOrgStats(); refreshFacultyTree();
             showToast(t('created_dept', 'Department created successfully'), 'success');
           } else {
-            await api.updateDepartment(id, { name, description });
+            const response = await api.updateDepartment(id, { name, description });
+            allFaculties = allFaculties.map((faculty) => ({ ...faculty, departments: (faculty.departments || []).map((dept) => Number(dept.id) === Number(id) ? { ...dept, ...response.data } : dept) }));
+            refreshFacultyTree();
             showToast(t('updated_dept', 'Department updated successfully'), 'success');
           }
         }
         closeModal();
-        loadOrgStructure(currentOrgId);
       } catch (err) {
-        errBox.textContent = err.message;
+        errBox.textContent = localizeOrgError(err);
         errBox.hidden = false;
+        submitButton.disabled = false;
+        submitButton.textContent = submitLabel;
+      }
+    });
+  }
+
+  function openOrgConfirm({ title, message, confirmText, onConfirm }) {
+    openModal({
+      title,
+      body: `<div class="org-confirm-message">${message}</div><div id="orgConfirmError" class="field-error" role="alert" hidden></div>`,
+      footer: `<button class="btn btn-secondary" data-modal-close>${t('cancel','ยกเลิก')}</button><button class="btn btn-danger" id="btnConfirmOrgAction">${confirmText || t('confirm','ยืนยัน')}</button>`,
+    });
+    document.getElementById('btnConfirmOrgAction')?.addEventListener('click', async (event) => {
+      const button = event.currentTarget;
+      if (button.disabled) return;
+      button.disabled = true;
+      button.textContent = t('saving','กำลังดำเนินการ...');
+      try { await onConfirm(); closeModal(); }
+      catch (error) {
+        const errorBox = document.getElementById('orgConfirmError');
+        if (errorBox) { errorBox.textContent = localizeOrgError(error); errorBox.hidden = false; }
+        button.disabled = false;
+        button.textContent = confirmText || t('confirm','ยืนยัน');
       }
     });
   }
 
   function openAddMemberModal(orgId) {
     openModal({
-      title: t('modal_add_member_title', 'Add Member to Organization'),
+      title: t('modal_add_member_title', 'เพิ่มสมาชิกในองค์กร'),
       body: `
         <form id="addMemberForm" class="form-stack">
-          <div class="field">
-            <label class="field-label">${t('field_user_email', 'User Email *')}</label>
-            <input type="email" name="email" class="input" required placeholder="colleague@nu.ac.th" />
-            <p class="field-hint">${t('email_nu_hint', 'Enter an official university email ending with @nu.ac.th')}</p>
-          </div>
-          <div class="field">
-            <label class="field-label">${t('field_role', 'Role *')}</label>
-            <select name="role" class="input">
-              <option value="owner">${t('role_owner_desc', 'Owner — Full control of organization, faculties, and plans')}</option>
-              <option value="editor" selected>${t('role_editor_desc', 'Editor — Can create, edit, and evaluate SROI plans')}</option>
-              <option value="viewer">${t('role_viewer_desc', 'Viewer — Read-only access to plans and reports')}</option>
-            </select>
-          </div>
-          <div id="addMemberError" class="field-error" hidden></div>
-        </form>
-      `,
-      footer: `
-        <button class="btn btn-secondary" data-modal-close>${t('cancel', 'Cancel')}</button>
-        <button class="btn btn-primary" id="btnSubmitMember">${t('btn_add_member', 'Add Member')}</button>
-      `,
+          <div class="field"><label class="field-label" for="memberEmail">${t('field_user_email', 'อีเมลผู้ใช้งาน *')}</label>
+            <input id="memberEmail" type="email" name="email" class="input" required maxlength="254" placeholder="colleague@nu.ac.th" />
+            <p class="field-hint">${t('email_nu_hint', 'ใช้อีเมลมหาวิทยาลัยที่ลงท้ายด้วย @nu.ac.th')}</p></div>
+          <fieldset class="field org-role-options"><legend class="field-label">${t('field_role', 'บทบาท *')}</legend>
+            ${[['owner','role_owner_th','role_owner_desc'],['editor','role_editor_th','role_editor_desc'],['viewer','role_viewer_th','role_viewer_desc']].map(([v,n,d]) => `<label class="org-role-card"><input type="radio" name="role" value="${v}" ${v==='editor'?'checked':''}/><span class="org-role-card__content"><strong>${t(n,n==='role_owner_th'?'เจ้าของ':n==='role_editor_th'?'ผู้แก้ไข':'ผู้ดู')}</strong><small>${t(d,d)}</small></span></label>`).join('')}
+          </fieldset>
+          <div id="addMemberError" class="field-error" role="alert" hidden></div>
+        </form>`,
+      footer: `<button class="btn btn-secondary" data-modal-close>${t('cancel','ยกเลิก')}</button><button class="btn btn-primary" id="btnSubmitMember">${t('btn_add_member','เพิ่มสมาชิก')}</button>`,
     });
-
-    document.getElementById('btnSubmitMember')?.addEventListener('click', async () => {
+    document.getElementById('btnSubmitMember')?.addEventListener('click', async (event) => {
+      const button = event.currentTarget;
+      if (button.disabled) return;
       const form = document.getElementById('addMemberForm');
-      const errBox = document.getElementById('addMemberError');
-      const email = form.email.value.trim();
-      const role = form.role.value;
-
-      // Validate email ending with @nu.ac.th
-      const emailLower = email.toLowerCase();
-      if (!email || !emailLower.endsWith('@nu.ac.th') || !emailLower.includes('@')) {
-        errBox.textContent = t(
-          'err_nu_email_required',
-          'Please enter a valid Naresuan University email address ending with @nu.ac.th',
-        );
-        errBox.hidden = false;
-        return;
-      }
-
+      const error = document.getElementById('addMemberError');
+      const email = form.elements.email.value.trim().toLowerCase();
+      const role = form.elements.role.value;
+      if (!/^[^\s@]+@nu\.ac\.th$/i.test(email)) { error.textContent = t('err_nu_email_required','กรุณาใช้อีเมลที่ลงท้ายด้วย @nu.ac.th'); error.hidden = false; return; }
+      button.disabled = true; button.textContent = t('saving','กำลังบันทึก...');
       try {
-        await api.post(`/organizations/${orgId}/members`, { email, role });
-        showToast(t('member_added', 'Member added successfully'), 'success');
-        closeModal();
-        loadOrgStructure(orgId);
-      } catch (err) {
-        errBox.textContent = err.message;
-        errBox.hidden = false;
-      }
+        const response = await api.post(`/organizations/${orgId}/members`, { email, role });
+        allMembers.push(response.data);
+        updateOrgStats(); refreshMemberTable();
+        closeModal(); showToast(t('member_added','เพิ่มสมาชิกสำเร็จ'),'success');
+      } catch (err) { error.textContent = localizeOrgError(err); error.hidden = false; button.disabled = false; button.textContent = t('btn_add_member','เพิ่มสมาชิก'); }
     });
+  }
+
+  function renderMemberRows(members, ownerCount = members.filter((member) => member.role === 'owner').length) {
+    if (!members.length) return `<tr><td colspan="3" class="empty-state">${t('no_data','ไม่พบสมาชิก')}</td></tr>`;
+    return members.map((member) => `
+      <tr>
+        <td class="strong">${escapeHtml(memberDisplayName(member))}</td>
+        <td>${escapeHtml(member.email)}</td>
+        <td>${canManageMembers()
+          ? `<div class="org-member-controls"><select class="input org-member-role role-badge role-badge--${escapeHtml(member.role)}" data-member-role="${member.user_id}" aria-label="${t('change_member_role','เปลี่ยนบทบาท')} ${escapeHtml(memberDisplayName(member))}" ${member.role === 'owner' && ownerCount <= 1 ? 'disabled' : ''}><option value="owner" ${member.role === 'owner' ? 'selected' : ''}>${t('role_owner_th','เจ้าของ')}</option><option value="editor" ${member.role === 'editor' ? 'selected' : ''}>${t('role_editor_th','ผู้แก้ไข')}</option><option value="viewer" ${member.role === 'viewer' ? 'selected' : ''}>${t('role_viewer_th','ผู้ดู')}</option></select><button type="button" class="btn-icon org-member-remove" data-remove-member="${member.user_id}" aria-label="${t('remove_member','นำสมาชิกออก')} ${escapeHtml(memberDisplayName(member))}" ${member.role === 'owner' && ownerCount <= 1 ? 'disabled title="' + t('last_owner_warning','องค์กรต้องมีเจ้าของอย่างน้อยหนึ่งคน') + '"' : ''}>×</button></div>`
+          : `<span class="role-badge role-badge--${escapeHtml(member.role)}">${roleLabel(member.role)}</span>`}</td>
+      </tr>`).join('');
+  }
+
+  function bindFacultyDisclosureState(autoExpand = false) {
+    contentArea.querySelectorAll('.org-faculty-disclosure').forEach((node) => {
+      const id = Number(node.closest('.org-faculty-node')?.dataset.facultyId);
+      if (autoExpand) expandedFacultyIds.add(id);
+      node.open = expandedFacultyIds.has(id);
+      node.addEventListener('toggle', () => node.open ? expandedFacultyIds.add(id) : expandedFacultyIds.delete(id));
+    });
+  }
+
+  function refreshFacultyTree({ autoExpand = false } = {}) {
+    contentArea.querySelectorAll('.org-faculty-node').forEach((row) => {
+      const detail = row.querySelector('.org-faculty-disclosure');
+      const id = Number(row.dataset.facultyId);
+      if (detail?.open) expandedFacultyIds.add(id); else if (detail) expandedFacultyIds.delete(id);
+    });
+    const container = document.getElementById('facultyCardsList');
+    if (!container) return;
+    container.innerHTML = renderFacultyTree(getFilteredFaculties(allFaculties));
+    bindFacultyEvents(currentOrgId);
+    bindFacultyDisclosureState(autoExpand);
+    updateSearchCount(allFaculties);
+  }
+
+  function refreshMemberTable() {
+    const tbody = contentArea.querySelector('.org-members-table tbody');
+    if (!tbody) return;
+    tbody.innerHTML = renderMemberRows(allMembers);
+    bindMemberEvents(currentOrgId);
+  }
+
+  function updateOrgStats() {
+    if (statFacCount) statFacCount.textContent = allFaculties.length;
+    if (statDeptCount) statDeptCount.textContent = allFaculties.reduce((count, faculty) => count + (faculty.departments || []).length, 0);
+    if (statMemCount) statMemCount.textContent = allMembers.length;
+  }
+
+  function bindMemberEvents(orgId) {
+    contentArea.querySelectorAll('[data-member-role]').forEach((select) => {
+      select.addEventListener('change', async () => {
+        const oldRole = select.dataset.previousRole || select.querySelector('option[selected]')?.value || select.value;
+        const nextRole = select.value;
+        select.disabled = true;
+        try {
+          await api.updateOrgMember(orgId, Number(select.dataset.memberRole), nextRole);
+          allMembers = allMembers.map((member) => Number(member.user_id) === Number(select.dataset.memberRole) ? { ...member, role: nextRole } : member);
+          if (Number(select.dataset.memberRole) === Number(user?.id)) {
+            currentOrgRole = nextRole;
+            const addFacultyButton = document.getElementById('btnNewFaculty');
+            const addMemberButton = document.getElementById('btnAddMember');
+            if (addFacultyButton) addFacultyButton.hidden = !canEditStructure();
+            if (addMemberButton) addMemberButton.hidden = !canManageMembers();
+            refreshFacultyTree();
+          }
+          refreshMemberTable();
+          showToast(t('member_role_updated','เปลี่ยนบทบาทสมาชิกแล้ว'),'success');
+        } catch (err) { select.value = oldRole; showToast(localizeOrgError(err),'error'); }
+        finally { select.disabled = false; }
+      });
+      select.dataset.previousRole = select.value;
+    });
+    contentArea.querySelectorAll('[data-remove-member]').forEach((button) => button.addEventListener('click', () => {
+      const member = allMembers.find((m) => Number(m.user_id) === Number(button.dataset.removeMember));
+      if (!member) return;
+      const ownerCount = allMembers.filter((m) => m.role === 'owner').length;
+      openOrgConfirm({ title: t('remove_member_title','นำสมาชิกออกจากองค์กร'),
+        message: `${t('remove_member_confirm','ยืนยันการนำสมาชิกออก')} <strong>${escapeHtml(memberDisplayName(member))}</strong> (${escapeHtml(member.email)})?${member.role === 'owner' && ownerCount <= 1 ? `<br><strong>${t('last_owner_warning','ไม่สามารถนำเจ้าของคนสุดท้ายออกได้')}</strong>` : ''}`,
+        confirmText: t('remove_member','นำออก'),
+        onConfirm: async () => {
+          await api.removeOrgMember(orgId, Number(member.user_id));
+          allMembers = allMembers.filter((item) => Number(item.user_id) !== Number(member.user_id));
+          updateOrgStats(); refreshMemberTable();
+          showToast(t('member_removed','นำสมาชิกออกแล้ว'),'success');
+          if (Number(member.user_id) === Number(user?.id)) window.location.hash = '#/projects';
+        }
+      });
+    }));
+  }
+
+  function memberDisplayName(member) {
+    const name = (member.name || '').trim();
+    if (name && name.toLowerCase() !== 'your name') return name;
+    const prefix = (member.email || '').split('@')[0] || '';
+    return prefix.replace(/[._-]+/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) || '—';
+  }
+  function roleLabel(role) { return ({ owner: t('role_owner_th','เจ้าของ'), editor: t('role_editor_th','ผู้แก้ไข'), viewer: t('role_viewer_th','ผู้ดู') })[role] || role; }
+  function localizeOrgError(error) {
+    const message = error?.message || '';
+    if (error?.status === 403) return t('permission_denied','คุณไม่มีสิทธิ์ดำเนินการนี้');
+    if (error?.status === 409) return message.toLowerCase().includes('owner') ? t('last_owner_warning','องค์กรต้องมีเจ้าของอย่างน้อยหนึ่งคน') : t('org_conflict','ไม่สามารถดำเนินการได้ เนื่องจากยังมีข้อมูลที่เกี่ยวข้อง');
+    if (error?.status === 422) return t('org_validation_error','ข้อมูลไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง');
+    return message || t('org_operation_failed','ดำเนินการไม่สำเร็จ กรุณาลองอีกครั้ง');
+  }
+  function highlightText(value) {
+    const safe = escapeHtml(value || '');
+    if (!searchQuery) return safe;
+    const escaped = searchQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    try { return safe.replace(new RegExp(`(${escaped})`, 'ig'), '<mark class="org-search-highlight">$1</mark>'); }
+    catch (_) { return safe; }
+  }
+
+  function getFilteredFaculties(faculties) {
+    const q = searchQuery.toLocaleLowerCase();
+    if (!q) return faculties;
+    return faculties.map((faculty) => {
+      const facultyMatches = [faculty.name, faculty.description].some((v) => (v || '').toLocaleLowerCase().includes(q));
+      const matchingDepartments = (faculty.departments || []).filter((dept) => [dept.name, dept.description].some((v) => (v || '').toLocaleLowerCase().includes(q)));
+      return facultyMatches ? faculty : (matchingDepartments.length ? { ...faculty, departments: matchingDepartments, _totalDepartmentCount: (faculty.departments || []).length } : null);
+    }).filter(Boolean);
+  }
+  function updateSearchCount(all, filtered = getFilteredFaculties(all)) {
+    const count = document.getElementById('facultySearchCount');
+    if (!count) return;
+    const q = searchQuery.toLocaleLowerCase();
+    const total = all.reduce((n, faculty) => {
+      const facultyMatch = [faculty.name, faculty.description].some((v) => (v || '').toLocaleLowerCase().includes(q));
+      const departmentMatches = (faculty.departments || []).filter((dept) => [dept.name, dept.description].some((v) => (v || '').toLocaleLowerCase().includes(q))).length;
+      return n + (facultyMatch ? 1 : 0) + departmentMatches;
+    }, 0);
+    count.textContent = searchQuery ? `${total} ${t('search_results','ผลลัพธ์')}` : '';
   }
 
   document.getElementById('btnNewFaculty')?.addEventListener('click', () => {
