@@ -73,14 +73,16 @@ export function stepperHtml(currentStep = 1, completedSteps = []) {
 
   const items = STEPS.map(({ step, labelKey, descKey, label, desc, hash }, index) => {
     const isActive = step === currentStep;
-    const isDone = (completedSteps.includes(step) || step < currentStep) && step > 0;
+    const isDone = completedSteps.includes(step) && step > 0;
+    const isPartial = !isDone && step > 0 && step < currentStep;
     const displayLabel = labelKey ? t(labelKey, label) : label;
     const displayDesc = descKey ? t(descKey, desc) : desc;
 
     const iconContent = isDone && !isActive ? '✓' : step;
+    const stateText = isDone ? t('step_state_done', 'complete') : isPartial ? t('step_state_partial', 'incomplete') : '';
 
     const itemHtml = `
-      <a class="step-item ${isActive ? 'is-active' : ''} ${isDone ? 'is-done' : ''} ${step === 0 ? 'step-welcome' : ''}" href="${hash}" aria-label="${displayLabel}: ${displayDesc}" title="${displayLabel}: ${displayDesc}">
+      <a class="step-item ${isActive ? 'is-active' : ''} ${isDone ? 'is-done' : ''} ${isPartial ? 'is-partial' : ''} ${step === 0 ? 'step-welcome' : ''}" href="${hash}" aria-label="${displayLabel}: ${displayDesc}${stateText ? ` (${stateText})` : ''}" title="${displayLabel}: ${displayDesc}">
         <span class="step-num">${iconContent}</span>
         ${isActive ? `<span class="step-label">${displayLabel}</span><span class="step-mobile-label">${mobileLabel}</span>` : ''}
       </a>

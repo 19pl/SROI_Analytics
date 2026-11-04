@@ -6,6 +6,7 @@
 import { getState } from '../store.js';
 import { icons } from '../components/icons.js';
 import { stepperHtml } from '../components/stepper.js';
+import { completedSteps } from '../utils/readiness.js';
 import { renderHelpPanel } from '../components/helpPanel.js';
 import { isGuest, guestStepHtml } from '../components/guestNotice.js';
 import { renderStep0 } from './steps/step0Welcome.js';
@@ -38,22 +39,14 @@ export function renderCalculator(root) {
     return;
   }
 
-  // Calculate completed steps dynamically based on store state
-  const completedSteps = [];
-  if (project) {
-    completedSteps.push(0); // Welcome reviewed
-    if (costs && costs.length > 0) completedSteps.push(1);
-    if (stakeholders && stakeholders.length > 0) completedSteps.push(2);
-    if (outcomes && outcomes.length > 0) completedSteps.push(3);
-    if (review?.completion?.adjustments) completedSteps.push(4);
-    if (review?.ready) completedSteps.push(5);
-  }
+  // Completion comes from the shared readiness helper (never from entity counts)
+  const done = completedSteps(review);
 
   root.innerHTML = `
     <div class="wizard-container">
       <div style="display: flex; justify-content: space-between; align-items: center; gap: var(--sp-md);">
         <div style="flex: 1; min-width: 0;">
-          ${stepperHtml(stepNum, completedSteps)}
+          ${stepperHtml(stepNum, done)}
         </div>
         <button type="button" class="btn btn-secondary" id="btnToggleHelp" style="align-self: flex-start; margin-top: 2px; white-space: nowrap;">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -133,5 +126,28 @@ export function renderCalculator(root) {
       break;
     default:
       renderStep1(contentContainer);
+  }
+
+  decorateStepHeader(contentContainer, stepNum);
+}
+
+/** One consistent header on every step: "Step N of 6" eyebrow above the page title. */
+function decorateStepHeader(container, stepNum) {
+  if (stepNum < 1 || stepNum > 6) return;
+  const head = container.querySelector('.page-head');
+  const eyebrow = `<div class="page-head__eyebrow">${t('step_mobile_word', 'Step')} ${stepNum} ${t('of_word', 'of')} 6</div>`;
+  if (head) {
+    const titleWrap = head.querySelector('.page-head__title')?.parentElement;
+    if (titleWrap && !titleWrap.querySelector('.page-head__eyebrow')) titleWrap.insertAdjacentHTML('afterbegin', eyebrow);
+    return;
+  }
+  // Steps without a header (Step 5) get one from the step's own i18n title
+  const stack = container.firstElementChild;
+  if (stack) {
+    const title = t(`step${stepNum}_title`, '');
+    stack.insertAdjacentHTML(
+      'afterbegin',
+      `<header class="page-head"><div>${eyebrow}<h1 class="page-head__title">${title}</h1><p class="page-head__sub">${t(`step${stepNum}_desc`, '')}</p></div></header>`,
+    );
   }
 }

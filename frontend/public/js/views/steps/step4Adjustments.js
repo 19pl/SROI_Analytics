@@ -28,6 +28,11 @@ function retainedFactor(vals) {
   return (1 - dw) * (1 - at) * (1 - dp);
 }
 
+/** Same rule as the backend review: all three deductions entered AND a source or justification recorded. */
+function isAssessed(vals) {
+  return retainedFactor(vals) !== null && Boolean((vals.justification || '').trim() || (vals.source || '').trim());
+}
+
 let activeOutcomeId = null;
 
 export function renderStep4(container) {
@@ -55,9 +60,11 @@ export function renderStep4(container) {
       attribution: adj.attribution ?? null,
       displacement: adj.displacement ?? null,
       drop_off: adj.drop_off ?? null,
+      justification: adj.justification || '',
+      source: adj.source || '',
     };
     const factor = retainedFactor(vals);
-    const isComplete = factor !== null;
+    const isComplete = isAssessed(vals);
     const factorText = isComplete ? `${(factor * 100).toFixed(1)}%` : '–';
 
     return `
@@ -269,7 +276,7 @@ export function renderStep4(container) {
       return;
     }
     const f = retainedFactor(vals);
-    const isComplete = f !== null;
+    const isComplete = isAssessed(vals);
     cell.textContent = isComplete ? `${(f * 100).toFixed(1)}% ${isTh ? 'คงเหลือ' : 'retained'}` : '–';
     if (statusPill) {
       statusPill.className = `status ${isComplete ? 'status--ok' : 'status--draft'}`;
@@ -280,7 +287,7 @@ export function renderStep4(container) {
   const paintProgress = () => {
     const done = [...accordionList.querySelectorAll('.adj-accordion-item')].filter((itemEl) => {
       const v = readRow(itemEl);
-      return !v.error && retainedFactor(v) !== null;
+      return !v.error && isAssessed(v);
     }).length;
     const el = container.querySelector('#adjProgress');
     if (el) el.textContent = `${isTh ? 'ประเมินแล้ว' : 'Assessed'}: ${done}/${outcomes.length}`;

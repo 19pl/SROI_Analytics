@@ -184,7 +184,7 @@ final class OutcomeController extends ProjectResource
         $out = [
             'deadweight' => $a['deadweight'], 'attribution' => $a['attribution'], 'displacement' => $a['displacement'],
             'drop_off' => $a['drop_off'], 'justification' => $a['justification'], 'source' => $a['source'],
-            'assessed' => $a['deadweight'] !== null || $a['attribution'] !== null || $a['displacement'] !== null,
+            'assessed' => $a['deadweight'] !== null && $a['attribution'] !== null && $a['displacement'] !== null,
             'updated_by' => $a['updated_by_name'] ?? null,
             'updated_at' => $a['updated_at'],
         ];

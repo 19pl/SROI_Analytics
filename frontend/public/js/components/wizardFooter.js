@@ -4,7 +4,7 @@
  * Includes live save indicator, Back button, Next/Continue button, and Glossary shortcut.
  */
 
-import { t } from '../i18n.js';
+import { t, getLanguage } from '../i18n.js';
 import { STEPS } from './stepper.js';
 import { openGlossaryModal } from './glossaryModal.js';
 
@@ -14,8 +14,20 @@ import { openGlossaryModal } from './glossaryModal.js';
  * @param {Object} options - optional custom handlers or flags
  * @returns {string} HTML string
  */
+const SHORT = {
+  0: { th: 'เริ่มต้น', en: 'Start' },
+  1: { th: 'โครงการ', en: 'Project' },
+  2: { th: 'ผู้มีส่วนได้เสีย', en: 'Stakeholders' },
+  3: { th: 'ผลลัพธ์', en: 'Outcomes' },
+  4: { th: 'การปรับค่า', en: 'Adjust' },
+  5: { th: 'ตรวจสอบ', en: 'Review' },
+  6: { th: 'ผลลัพธ์', en: 'Results' },
+};
+const shortLabel = (n) => SHORT[n]?.[getLanguage() === 'en' ? 'en' : 'th'] ?? '';
+
 export function wizardFooterHtml(currentStep = 1, options = {}) {
-  const { canProceed = true, nextLabel = null, prevLabel = null, isSaving = false } = options;
+  // Labels are intentionally short and derived from the step; per-step overrides are ignored for consistency.
+  const { canProceed = true } = options;
 
   let prevStep = null;
   let nextStep = null;
@@ -35,20 +47,8 @@ export function wizardFooterHtml(currentStep = 1, options = {}) {
     nextStep = STEPS.find((s) => s.step === currentStep + 1);
   }
 
-  const prevText =
-    prevLabel ||
-    (prevStep
-      ? `${t('btn_back_to', 'ย้อนกลับ:')} ${prevStep.labelKey ? t(prevStep.labelKey, prevStep.label) : prevStep.label}`
-      : null);
-  const nextText =
-    nextLabel ||
-    (nextStep
-      ? `${t('btn_continue_to', 'บันทึกและไปต่อ:')} ${nextStep.labelKey ? t(nextStep.labelKey, nextStep.label) : nextStep.label}`
-      : null);
-
-  const saveStatusText = isSaving
-    ? `<span class="save-status is-saving">⏳ ${t('status_saving', 'กำลังบันทึก...')}</span>`
-    : `<span class="save-status is-saved">✓ ${t('status_all_saved', 'บันทึกข้อมูลเรียบร้อยแล้ว')}</span>`;
+  const prevText = prevStep ? `${t('back', 'ย้อนกลับ')}` : null;
+  const nextText = nextStep ? `${t('btn_next_short', 'ถัดไป:')} ${shortLabel(nextStep.step)}` : null;
 
   return `
     <nav class="wizard-footer" aria-label="${t('wizard_nav_aria', 'การนำทางขั้นตอนการประเมิน')}">
@@ -64,13 +64,6 @@ export function wizardFooterHtml(currentStep = 1, options = {}) {
                 <span>${t('back', 'ย้อนกลับ')}</span>
               </button>`
         }
-      </div>
-
-      <div class="wizard-footer-center">
-        ${saveStatusText}
-        <button type="button" class="btn btn-ghost btn-compact-subtle btn-open-glossary">
-          <u>${t('glossary_quick_btn', 'พจนานุกรมคำศัพท์ SROI')}</u>
-        </button>
       </div>
 
       <div class="wizard-footer-right">

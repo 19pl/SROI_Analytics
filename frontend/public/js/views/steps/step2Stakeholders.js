@@ -151,7 +151,7 @@ export function renderStep2(container) {
               <div class="muted-sm">${escapeHtml(isTh ? info.th_desc : info.en_desc)}</div>
             </div>
             <button type="button" class="btn btn-secondary btn-sm" data-add-in="${g.key}">
-              ${icons.plus} ${isTh ? `+ เพิ่มในกลุ่ม ${g.code}` : `+ Add to ${g.code}`}
+              ${icons.plus} ${isTh ? `เพิ่มในกลุ่ม ${g.code}` : `Add to ${g.code}`}
             </button>
           </div>
         </div>`;
@@ -166,7 +166,7 @@ export function renderStep2(container) {
           </div>
           <div class="page-head__actions">
             ${total ? `<span class="muted-sm">${t('in_funding_total', 'เงินสนับสนุนรวม')}: <b>${escapeHtml(project.currency)} ${formatBaht(total)}</b></span>` : ''}
-            <button type="button" class="btn btn-secondary btn-sm" data-add-in="${g.key}">${icons.plus} ${isTh ? `+ เพิ่มในกลุ่ม ${g.code}` : `+ Add to ${g.code}`}</button>
+            <button type="button" class="btn btn-secondary btn-sm" data-add-in="${g.key}">${icons.plus} ${isTh ? `เพิ่มในกลุ่ม ${g.code}` : `Add to ${g.code}`}</button>
           </div>
         </div>
         <div class="table-wrap">
@@ -200,7 +200,7 @@ export function renderStep2(container) {
         </div>
         <div class="page-head__actions">
           <button type="button" class="btn btn-primary" id="btnTopAddStakeholder">
-            ${icons.plus} ${isTh ? '+ เพิ่มผู้มีส่วนได้ส่วนเสีย' : '+ Add Stakeholder'}
+            ${icons.plus} ${isTh ? 'เพิ่มผู้มีส่วนได้ส่วนเสีย' : 'Add Stakeholder'}
           </button>
         </div>
       </header>
