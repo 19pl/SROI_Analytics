@@ -17,12 +17,16 @@ final class HtmlExporter
 
         $o = '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
             . '<title>' . $e($d['meta']['title']) . '</title><style>'
-            . 'body{font:14px/1.5 system-ui,sans-serif;color:#0f172a;max-width:960px;margin:2rem auto;padding:0 1rem}'
+            . 'body{font:14px/1.5 "Sarabun","Noto Sans Thai",Tahoma,system-ui,sans-serif;color:#0f172a;max-width:960px;margin:2rem auto;padding:0 1rem}'
             . 'h1{font-size:28px}h2{font-size:20px;margin-top:2rem;border-bottom:1px solid #e2e8f0;padding-bottom:.25rem}'
             . '.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}'
             . '.card{border:1px solid #e2e8f0;border-radius:8px;padding:12px;background:#fff}.card b{display:block;font-size:22px}'
             . 'table{border-collapse:collapse;width:100%;margin:.5rem 0;font-size:13px}th,td{border:1px solid #e2e8f0;padding:4px 8px;text-align:left}'
             . 'td.n{text-align:right;font-variant-numeric:tabular-nums}th{background:#f8fafc}.neg{color:#b91c1c}.small{color:#64748b;font-size:12px}'
+            . 'th,td{overflow-wrap:anywhere;word-break:break-word;vertical-align:top}.card{min-width:0;overflow-wrap:anywhere}.card b{font-size:20px}img,svg{max-width:100%}'
+            . '@page{size:A4;margin:14mm}'
+            . '@media print{body{max-width:none;margin:0;padding:0;font-size:11px}h1{font-size:22px}h2{font-size:17px;break-after:avoid}h3{break-after:avoid}'
+            . 'table{font-size:10px}thead{display:table-header-group}tr,.card{break-inside:avoid}p,li{orphans:3;widows:3}}'
             . '</style></head><body>';
         $o .= '<h1>' . $e($d['meta']['title']) . '</h1>';
         $o .= '<p class="small">' . $e($d['project']['organization_name'] ?? '') . ' · Scenario: ' . $e($d['meta']['scenario']['name'])

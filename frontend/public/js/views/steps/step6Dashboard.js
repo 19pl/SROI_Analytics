@@ -15,7 +15,7 @@ import { openModal, closeModal } from '../../components/modal.js';
 import { formatBaht, formatRatio } from '../../utils/format.js';
 import { escapeHtml } from '../../utils/html.js';
 import { icons } from '../../components/icons.js';
-import { api } from '../../api.js';
+import { api, API_BASE } from '../../api.js';
 import { t, getLanguage } from '../../i18n.js';
 import { wizardFooterHtml, attachWizardFooterEvents } from '../../components/wizardFooter.js';
 import { openCalculationTraceModal } from '../../components/calculationTraceModal.js';
@@ -560,11 +560,21 @@ function openExportReportModal({ project, activeScenarioId }) {
         <div class="panel__hint form-stack stack-md" id="exportDownloadSection" hidden>
           <h4 class="strong">${isTh ? 'ดาวน์โหลดในรูปแบบต่างๆ:' : 'Download Formats:'}</h4>
           <div class="cluster stack-sm">
-            <button class="btn btn-secondary btn-compact" id="btnDownloadHtml">HTML Print View</button>
-            <button class="btn btn-secondary btn-compact" id="btnDownloadPdf">PDF Document</button>
-            <button class="btn btn-secondary btn-compact" id="btnDownloadCsv">CSV Dataset</button>
-            <button class="btn btn-secondary btn-compact" id="btnDownloadJson">JSON Snapshot</button>
-            <button class="btn btn-secondary btn-compact" id="btnShareLink">${isTh ? 'สร้างลิงก์สาธารณะ (Share Link)' : 'Generate Share Link'}</button>
+            <button type="button" class="btn btn-secondary btn-compact" id="btnPrintPdf" title="${isTh ? 'เปิดหน้าต่างพิมพ์ แล้วเลือก Save as PDF (รองรับภาษาไทยครบถ้วน)' : 'Opens the print dialog, choose Save as PDF (full Thai support)'}">${isTh ? 'PDF (พิมพ์ / บันทึกเป็น PDF)' : 'PDF (Print / Save as PDF)'}</button>
+            <button type="button" class="btn btn-secondary btn-compact" id="btnDownloadHtml">HTML Print View</button>
+            <button type="button" class="btn btn-secondary btn-compact" id="btnDownloadPdf" title="${isTh ? 'ไฟล์ PDF พื้นฐาน รองรับเฉพาะตัวอักษรละติน (ภาษาไทยจะไม่แสดง)' : 'Basic PDF file, Latin characters only (Thai text will not show)'}">${isTh ? 'PDF พื้นฐาน (เฉพาะอังกฤษ)' : 'PDF (basic, Latin only)'}</button>
+            <span class="cluster">
+              <select id="csvDataset" class="input" aria-label="CSV dataset">
+                <option value="outcomes">CSV: outcomes</option>
+                <option value="investment">CSV: investment</option>
+                <option value="results">CSV: results</option>
+                <option value="annual">CSV: annual</option>
+                <option value="stakeholders">CSV: stakeholders</option>
+              </select>
+              <button type="button" class="btn btn-secondary btn-compact" id="btnDownloadCsv">CSV Dataset</button>
+            </span>
+            <button type="button" class="btn btn-secondary btn-compact" id="btnDownloadJson">JSON Snapshot</button>
+            <button type="button" class="btn btn-secondary btn-compact" id="btnShareLink">${isTh ? 'สร้างลิงก์สาธารณะ (Share Link)' : 'Generate Share Link'}</button>
           </div>
           <div id="shareLinkContainer" class="stack-top-xs" hidden></div>
         </div>
@@ -580,17 +590,20 @@ function openExportReportModal({ project, activeScenarioId }) {
 
   let activeReportId = null;
 
-  document.getElementById('btnCreateAndExport')?.addEventListener('click', async () => {
+  const generate = async () => {
     const form = document.getElementById('reportGenForm');
+    const genBtn = document.getElementById('btnCreateAndExport');
     const downloadSec = document.getElementById('exportDownloadSection');
     const shareDisclosure = document.getElementById('shareDisclosure');
-    if (!form) return;
+    if (!form || genBtn?.disabled) return;
 
+    if (genBtn) genBtn.disabled = true;
     try {
       const runRes = await runCalculation(activeScenarioId);
       const runId = runRes?.run?.id;
-      const repRes = await createReport(runId, form.type.value, form.title.value.trim());
+      const repRes = await createReport(runId, form.type.value, form.title.value.trim(), activeScenarioId);
       activeReportId = repRes?.id || repRes?.report?.id;
+      if (!activeReportId) throw new Error('The server did not return a report id.');
 
       if (downloadSec) {
         downloadSec.hidden = false;
@@ -606,7 +619,16 @@ function openExportReportModal({ project, activeScenarioId }) {
       );
     } catch (err) {
       showToast(`Report generation failed: ${err.message}`, 'error');
+    } finally {
+      if (genBtn) genBtn.disabled = false;
     }
+  };
+
+  document.getElementById('btnCreateAndExport')?.addEventListener('click', generate);
+  // Pressing Enter in the title box used to submit the <form> natively and reload the whole app.
+  document.getElementById('reportGenForm')?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    generate();
   });
 
   const triggerDownload = async (format) => {
@@ -618,11 +640,12 @@ function openExportReportModal({ project, activeScenarioId }) {
       return;
     }
     try {
-      const blob = await api.exportReport(activeReportId, format);
+      const dataset = format === 'csv' ? document.getElementById('csvDataset')?.value || 'outcomes' : null;
+      const blob = await api.exportReport(activeReportId, format, dataset);
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `SROI_Report_${project.id}_${activeReportId}.${format === 'html' ? 'html' : format}`;
+      a.download = `SROI_Report_${project.id}_${activeReportId}${dataset ? `_${dataset}` : ''}.${format}`;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -633,6 +656,38 @@ function openExportReportModal({ project, activeScenarioId }) {
     }
   };
 
+  // Full-Unicode PDF: render the HTML report in a hidden frame and let the browser print it ("Save as PDF").
+  const printAsPdf = async () => {
+    if (!activeReportId) {
+      showToast(isTh ? 'กรุณาสร้างเอกสารรายงานก่อนดาวน์โหลด' : 'Please generate the report document first.', 'error');
+      return;
+    }
+    try {
+      const html = await (await api.exportReport(activeReportId, 'html')).text();
+      const frame = document.createElement('iframe');
+      frame.setAttribute('aria-hidden', 'true');
+      frame.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;';
+      const prevTitle = document.title;
+      const cleanup = () => {
+        document.title = prevTitle;
+        frame.remove();
+      };
+      frame.onload = () => {
+        const w = frame.contentWindow;
+        document.title = w.document.title || prevTitle; // becomes the suggested PDF file name
+        w.onafterprint = cleanup;
+        w.focus();
+        w.print();
+        setTimeout(cleanup, 120000);
+      };
+      frame.srcdoc = html;
+      document.body.appendChild(frame);
+    } catch (err) {
+      showToast(`Export failed: ${err.message}`, 'error');
+    }
+  };
+
+  document.getElementById('btnPrintPdf')?.addEventListener('click', printAsPdf);
   document.getElementById('btnDownloadHtml')?.addEventListener('click', () => triggerDownload('html'));
   document.getElementById('btnDownloadPdf')?.addEventListener('click', () => triggerDownload('pdf'));
   document.getElementById('btnDownloadCsv')?.addEventListener('click', () => triggerDownload('csv'));
@@ -642,7 +697,9 @@ function openExportReportModal({ project, activeScenarioId }) {
     if (!activeReportId) return;
     try {
       const res = await api.shareReport(activeReportId);
-      const shareUrl = res?.data?.url || `${window.location.origin}/api/v1/shared/${res?.data?.token}`;
+      // The API lives on its own origin (not the frontend's). ?format=html makes the link open as a readable page.
+      const apiOrigin = API_BASE.replace(/\/api\/v1\/?$/, '');
+      const shareUrl = res?.data?.url || `${apiOrigin}${res?.data?.path || `/api/v1/shared/${res?.data?.token}`}?format=html`;
       const box = document.getElementById('shareLinkContainer');
       if (box) {
         box.innerHTML = `

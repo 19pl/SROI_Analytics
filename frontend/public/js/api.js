@@ -3,7 +3,7 @@
  * Communicates with PHP REST API on http://localhost:8000/api/v1
  */
 
-const API_BASE =
+export const API_BASE =
   (typeof localStorage !== 'undefined' && localStorage.getItem('sroi_api_base_url')) ||
   window.API_BASE_URL ||
   'http://localhost:8000/api/v1';
@@ -347,10 +347,10 @@ export const api = {
 
   // Reports & Exports
   getReports: (projectId) => request(`/projects/${projectId}/reports`),
-  createReport: (projectId, runId, type = 'detailed', title = '') =>
+  createReport: (projectId, runId, type = 'detailed', title = '', scenarioId = null) =>
     request(`/projects/${projectId}/reports`, {
       method: 'POST',
-      body: { calculation_run_id: runId, type, title },
+      body: { calculation_run_id: runId, type, title, ...(scenarioId ? { scenario_id: scenarioId } : {}) },
     }),
   getReport: (reportId) => request(`/reports/${reportId}`),
   exportReport: async (reportId, format = 'pdf', dataset = null) => {

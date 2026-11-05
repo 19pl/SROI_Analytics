@@ -319,9 +319,9 @@ export async function loadReports() {
   return state.reports;
 }
 
-export async function createReport(runId, type = 'detailed', title = '') {
+export async function createReport(runId, type = 'detailed', title = '', scenarioId = null) {
   if (!state.project?.id) return;
-  const res = await api.createReport(state.project.id, runId, type, title);
+  const res = await api.createReport(state.project.id, runId, type, title, scenarioId);
   await loadReports();
   return res.data;
 }

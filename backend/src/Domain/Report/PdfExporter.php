@@ -28,7 +28,7 @@ final class PdfExporter
         $h = $d['headline'];
         $money = fn($v) => $v === null ? '-' : $cur . ' ' . number_format((float)$v, 2);
 
-        $this->text($d['meta']['title'], 'F2', 20);
+        $this->wrappedText($d['meta']['title'], 'F2', 20);
         $this->y -= 6;
         $this->para(($d['project']['organization_name'] ?? '') . ' | Scenario: ' . $d['meta']['scenario']['name'] . ' | Methodology v' . $d['meta']['methodology_version']
             . ' | Generated ' . $d['meta']['generated_at'], 8.5);
@@ -143,37 +143,56 @@ final class PdfExporter
     private function enc(string $s): string
     {
         $s = str_replace(['฿', "\r", "\t"], ['THB ', '', '  '], $s);
-        $s = (string)iconv('UTF-8', 'Windows-1252//TRANSLIT//IGNORE', $s);
+        $c = @iconv('UTF-8', 'Windows-1252//TRANSLIT//IGNORE', $s);
+        if ($c === false) {
+            $c = mb_convert_encoding($s, 'Windows-1252', 'UTF-8');
+        }
         // iconv may drop untranslatable characters silently; replace remaining control characters
-        return preg_replace('/[\x00-\x08\x0B-\x1F]/', '?', $s) ?? '';
+        return preg_replace('/[\x00-\x08\x0B-\x1F]/', '?', (string)$c) ?? '';
+    }
+
+    /** Escape text that is ALREADY in Windows-1252, so it is never converted twice (that used to drop accents and dashes). */
+    private function escEncoded(string $s): string
+    {
+        return str_replace(['\\', '(', ')'], ['\\\\', '\\(', '\\)'], $s);
     }
 
     private function esc(string $s): string
     {
-        return str_replace(['\\', '(', ')'], ['\\\\', '\\(', '\\)'], $this->enc($s));
+        return $this->escEncoded($this->enc($s));
     }
 
-    private function text(string $s, string $font, float $size, float $x = self::M): void
+    private function text(string $s, string $font, float $size, float $x = self::M, bool $encoded = false): void
     {
         $this->ensure($size * 1.4);
         $this->y -= $size;
-        $this->cur .= sprintf("BT /%s %.1f Tf %.2f %.2f Td (%s) Tj ET\n", $font, $size, $x, $this->y, $this->esc($s));
+        $this->cur .= sprintf("BT /%s %.1f Tf %.2f %.2f Td (%s) Tj ET\n", $font, $size, $x, $this->y, $encoded ? $this->escEncoded($s) : $this->esc($s));
         $this->y -= $size * 0.35;
+    }
+
+    /** One row per wrapped line so long titles and headings never run past the right margin (bold Helvetica averages about 0.6 em per character). */
+    private function wrappedText(string $s, string $font, float $size): void
+    {
+        $per = max(12, (int)floor((self::W - 2 * self::M) / ($size * 0.6)));
+        foreach (explode("\n", wordwrap($this->enc($s), $per, "\n", true)) as $line) {
+            $this->text($line, $font, $size, self::M, true);
+        }
     }
 
     private function heading(string $s, float $size = 14): void
     {
         $this->ensure($size * 3);
         $this->gap($size * 0.6);
-        $this->text($s, 'F2', $size);
+        $this->wrappedText($s, 'F2', $size);
         $this->gap(2);
     }
 
     private function para(string $s, float $size = 10): void
     {
-        $per = (int)floor((self::W - 2 * self::M) / ($size * 0.5));
+        // Helvetica averages about 0.5 em but capitals and digits are wider; 0.56 keeps full lines inside the margin
+        $per = (int)floor((self::W - 2 * self::M) / ($size * 0.56));
         foreach (explode("\n", wordwrap($this->enc($s), max(20, $per), "\n", true)) as $line) {
-            $this->text($line, 'F1', $size);
+            $this->text($line, 'F1', $size, self::M, true);
         }
     }
 
@@ -204,7 +223,9 @@ final class PdfExporter
             }
             return $out;
         };
-        foreach ($fmt($head) as $line) {
+        $headLines = $fmt($head);
+        $this->ensure((count($headLines) + count($fmt($rows[0]))) * $size * 1.4); // keep the header with its first row
+        foreach ($headLines as $line) {
             $this->mono($line, $size, true);
         }
         foreach ($rows as $r) {
@@ -221,7 +242,7 @@ final class PdfExporter
     {
         $this->ensure($size * 1.4);
         $this->y -= $size * 1.15;
-        $this->cur .= sprintf("BT /%s %.1f Tf %.2f %.2f Td (%s) Tj ET\n", $bold ? 'F4' : 'F3', $size, self::M, $this->y, $this->esc($line));
+        $this->cur .= sprintf("BT /%s %.1f Tf %.2f %.2f Td (%s) Tj ET\n", $bold ? 'F4' : 'F3', $size, self::M, $this->y, $this->escEncoded($line));
     }
 
     /** @param list<array{0:string,1:float}> $items */
@@ -237,7 +258,7 @@ final class PdfExporter
             $this->ensure(16);
             $this->y -= 12;
             $w = max(1.0, abs($v) / $max * $barMax);
-            $this->cur .= sprintf("BT /F1 8 Tf %.2f %.2f Td (%s) Tj ET\n", self::M, $this->y, $this->esc(mb_strimwidth($label, 0, 34, '...')));
+            $this->cur .= sprintf("BT /F1 8 Tf %.2f %.2f Td (%s) Tj ET\n", self::M, $this->y, $this->esc(mb_strimwidth($label, 0, 27, '...')));
             $this->cur .= sprintf("%s rg %.2f %.2f %.2f 8 re f\n", $v >= 0 ? '0.08 0.50 0.24' : '0.73 0.11 0.11', self::M + 150, $this->y - 1, $w);
             $this->cur .= sprintf("0 g BT /F1 8 Tf %.2f %.2f Td (%s) Tj ET\n", self::M + 155 + $w, $this->y, $this->esc(number_format($v, 2) . ' ' . $cur));
             $this->cur .= "0 g\n";
