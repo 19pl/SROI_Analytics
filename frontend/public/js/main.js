@@ -57,6 +57,10 @@ function moveNavIndicator() {
   indicator.classList.add('is-visible');
 }
 
+// Re-measure when web fonts finish loading or the window resizes (wrapped labels change item heights).
+document.fonts?.ready?.then(() => moveNavIndicator());
+window.addEventListener('resize', () => moveNavIndicator());
+
 function highlightActiveNav(route) {
   document.querySelectorAll('.nav-item').forEach((link) => {
     const href = link.getAttribute('href');
