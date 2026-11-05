@@ -34,10 +34,23 @@ export function openModal({ title, body, footer = '', size = '', onClose = null 
     if (e.key === 'Escape') doClose();
   };
 
+  // Only treat a click on the backdrop as "close" when the press STARTED on the backdrop too.
+  // Otherwise selecting text inside the form and releasing the mouse outside it
+  // fires a click on the overlay (common ancestor) and closes the modal by accident.
+  let pressStartedOnOverlay = false;
+  overlay.addEventListener('mousedown', (e) => {
+    pressStartedOnOverlay = e.target === overlay;
+  });
+
   overlay.addEventListener('click', (e) => {
-    if (e.target === overlay || e.target.closest('[data-modal-close]')) {
+    if (e.target.closest('[data-modal-close]')) {
+      doClose();
+      return;
+    }
+    if (e.target === overlay && pressStartedOnOverlay) {
       doClose();
     }
+    pressStartedOnOverlay = false;
   });
 
   document.addEventListener('keydown', handleKey);
