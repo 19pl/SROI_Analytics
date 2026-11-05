@@ -523,134 +523,210 @@ export function renderStep6(container) {
 function openExportReportModal({ project, activeScenarioId }) {
   const lang = getLanguage();
   const isTh = lang !== 'en';
+  const L = (th, en) => (isTh ? th : en);
+
+  const CSV_DATASETS = [
+    ['outcomes', L('ผลลัพธ์แยกตามปี', 'Outcomes by year')],
+    ['investment', L('รายการเงินลงทุน', 'Investment items')],
+    ['results', L('ตัวเลขสรุปหลัก', 'Headline results')],
+    ['annual', L('สรุปรายปี', 'Annual totals')],
+    ['stakeholders', L('แยกตามผู้มีส่วนได้ส่วนเสีย', 'By stakeholder')],
+  ];
+
+  const row = ({ tag, title, desc, extra = '', action }) => `
+    <li class="exp-row">
+      <span class="exp-tag" aria-hidden="true">${tag}</span>
+      <div class="exp-row__main">
+        <div class="exp-row__title">${title}</div>
+        <div class="exp-row__desc">${desc}</div>
+        ${extra}
+      </div>
+      <div class="exp-row__action">${action}</div>
+    </li>`;
 
   const modalHtml = `
-    <div class="form-stack stack-md">
-      <p class="muted-sm">
-        ${
-          isTh
-            ? 'สร้างรายงานสรุปผลการประเมินความคุ้มค่าทางสังคมอย่างเป็นทางการ สำหรับเสนอต่อคณะกรรมการ แหล่งทุน หรือผู้บริหารมหาวิทยาลัย'
-            : 'Generate an official reproducible impact report snapshot for university committees or funders.'
-        }
-      </p>
+    <div class="exp">
+      <!-- Step 1: create the report -->
+      <div id="expStepCreate" class="form-stack stack-md">
+        <p class="muted-sm">
+          ${L(
+            'สร้างรายงานสรุปผลการประเมินความคุ้มค่าทางสังคมอย่างเป็นทางการ สำหรับเสนอต่อคณะกรรมการ แหล่งทุน หรือผู้บริหารมหาวิทยาลัย แล้วเลือกรูปแบบไฟล์ในขั้นถัดไป',
+            'Create an official, reproducible impact report for committees or funders. You will choose the file format in the next step.',
+          )}
+        </p>
 
-      <form id="reportGenForm" class="form-stack">
-        <div class="field">
-          <label class="field-label">${t('col_report_title', 'ชื่อรายงาน')} <span class="field-hint field-hint--primary">${isTh ? 'จำเป็น' : 'Required'}</span></label>
-          <input type="text" name="title" class="input" value="${escapeHtml(project.name)} — รายงานผลการประเมินความคุ้มค่าทางสังคม (SROI)" required />
-        </div>
-        <div class="field">
-          <label class="field-label">${t('col_eval_type', 'ประเภทรายงาน')}</label>
-          <select name="type" class="input">
-            <option value="detailed" selected>${isTh ? 'รายงานฉบับสมบูรณ์ (Detailed Analysis Report — ครบทุกขั้นตอน)' : 'Detailed Analysis Report (12-section audit trail)'}</option>
-            <option value="executive">${isTh ? 'รายงานสรุปสำหรับผู้บริหาร (Executive Summary Report)' : 'Executive Summary Report (Key metrics & findings)'}</option>
-          </select>
-        </div>
-      </form>
+        <form id="reportGenForm" class="form-stack">
+          <div class="field">
+            <label class="field-label" for="expTitle">${t('col_report_title', 'ชื่อรายงาน')} <span class="field-hint field-hint--primary">${L('จำเป็น', 'Required')}</span></label>
+            <input type="text" id="expTitle" name="title" class="input" value="${escapeHtml(project.name)} — รายงานผลการประเมินความคุ้มค่าทางสังคม (SROI)" required />
+          </div>
+          <div class="field">
+            <label class="field-label" for="expType">${t('col_eval_type', 'ประเภทรายงาน')}</label>
+            <select id="expType" name="type" class="input">
+              <option value="detailed" selected>${L('รายงานฉบับสมบูรณ์ (ครบทุกขั้นตอน)', 'Detailed report (full audit trail)')}</option>
+              <option value="executive">${L('รายงานสรุปสำหรับผู้บริหาร', 'Executive summary (key metrics & findings)')}</option>
+            </select>
+          </div>
+        </form>
 
-      <div class="cluster cluster--end stack-top-sm">
-        <button class="btn btn-secondary" data-modal-close>${t('cancel', 'ยกเลิก')}</button>
-        <button class="btn btn-primary" id="btnCreateAndExport">${t('btn_export_report', 'สร้างเอกสารรายงาน')}</button>
+        <div class="cluster cluster--end">
+          <button type="button" class="btn btn-secondary" data-modal-close>${t('cancel', 'ยกเลิก')}</button>
+          <button type="button" class="btn btn-primary" id="btnCreateAndExport">${L('สร้างรายงาน', 'Create report')}</button>
+        </div>
       </div>
 
-      <details class="disclosure stack-top-md" id="shareDisclosure">
-        <summary class="disclosure__summary">
-          <span>${isTh ? 'ตัวเลือกการแชร์และดาวน์โหลด (Share & Export Options)' : 'Share & Export Options'}</span>
-        </summary>
-        <div class="panel__hint form-stack stack-md" id="exportDownloadSection" hidden>
-          <h4 class="strong">${isTh ? 'ดาวน์โหลดในรูปแบบต่างๆ:' : 'Download Formats:'}</h4>
-          <div class="cluster stack-sm">
-            <button type="button" class="btn btn-secondary btn-compact" id="btnPrintPdf" title="${isTh ? 'เปิดหน้าต่างพิมพ์ แล้วเลือก Save as PDF (รองรับภาษาไทยครบถ้วน)' : 'Opens the print dialog, choose Save as PDF (full Thai support)'}">${isTh ? 'PDF (พิมพ์ / บันทึกเป็น PDF)' : 'PDF (Print / Save as PDF)'}</button>
-            <button type="button" class="btn btn-secondary btn-compact" id="btnDownloadHtml">HTML Print View</button>
-            <button type="button" class="btn btn-secondary btn-compact" id="btnDownloadPdf" title="${isTh ? 'ไฟล์ PDF พื้นฐาน รองรับเฉพาะตัวอักษรละติน (ภาษาไทยจะไม่แสดง)' : 'Basic PDF file, Latin characters only (Thai text will not show)'}">${isTh ? 'PDF พื้นฐาน (เฉพาะอังกฤษ)' : 'PDF (basic, Latin only)'}</button>
-            <span class="cluster">
-              <select id="csvDataset" class="input" aria-label="CSV dataset">
-                <option value="outcomes">CSV: outcomes</option>
-                <option value="investment">CSV: investment</option>
-                <option value="results">CSV: results</option>
-                <option value="annual">CSV: annual</option>
-                <option value="stakeholders">CSV: stakeholders</option>
-              </select>
-              <button type="button" class="btn btn-secondary btn-compact" id="btnDownloadCsv">CSV Dataset</button>
-            </span>
-            <button type="button" class="btn btn-secondary btn-compact" id="btnDownloadJson">JSON Snapshot</button>
-            <button type="button" class="btn btn-secondary btn-compact" id="btnShareLink">${isTh ? 'สร้างลิงก์สาธารณะ (Share Link)' : 'Generate Share Link'}</button>
+      <!-- Step 2: pick a format (replaces step 1 once the report exists) -->
+      <div id="expStepResult" class="form-stack stack-md" hidden>
+        <div class="exp-ready">
+          <span class="exp-ready__tick" aria-hidden="true">✓</span>
+          <div>
+            <div class="strong">${L('สร้างรายงานเรียบร้อยแล้ว', 'Report created')}</div>
+            <div class="muted-sm" id="expReadyTitle"></div>
           </div>
-          <div id="shareLinkContainer" class="stack-top-xs" hidden></div>
         </div>
-      </details>
+
+        <ul class="exp-list">
+          ${row({
+            tag: 'PDF',
+            title: L('PDF (แนะนำ)', 'PDF (recommended)'),
+            desc: L('เปิดหน้าต่างพิมพ์ แล้วเลือก “Save as PDF” — แสดงภาษาไทยได้ครบถ้วน', 'Opens your print dialog, choose “Save as PDF”. Shows Thai text correctly.'),
+            action: `<button type="button" class="btn btn-primary btn-compact" id="btnPrintPdf">${L('เปิดหน้าต่างพิมพ์', 'Print / Save PDF')}</button>`,
+          })}
+          ${row({
+            tag: 'CSV',
+            title: L('ข้อมูลสำหรับ Excel (CSV)', 'Spreadsheet data (CSV)'),
+            desc: L('เลือกตารางข้อมูลที่ต้องการดาวน์โหลด', 'Choose which data table to download.'),
+            extra: `<label class="exp-select"><span class="sr-only">${L('ตารางข้อมูล', 'Data table')}</span>
+              <select id="csvDataset" class="input">${CSV_DATASETS.map(([v, label]) => `<option value="${v}">${escapeHtml(label)}</option>`).join('')}</select></label>`,
+            action: `<button type="button" class="btn btn-secondary btn-compact" id="btnDownloadCsv">${L('ดาวน์โหลด', 'Download')}</button>`,
+          })}
+          ${row({
+            tag: 'HTML',
+            title: L('หน้าเว็บรายงาน (HTML)', 'Web page (HTML)'),
+            desc: L('ไฟล์เดียวที่เปิดในเบราว์เซอร์และพิมพ์ได้', 'A single file you can open in a browser and print.'),
+            action: `<button type="button" class="btn btn-secondary btn-compact" id="btnDownloadHtml">${L('ดาวน์โหลด', 'Download')}</button>`,
+          })}
+          ${row({
+            tag: 'JSON',
+            title: L('สแนปช็อตข้อมูลทั้งหมด (JSON)', 'Full data snapshot (JSON)'),
+            desc: L('สำหรับตรวจสอบย้อนหลังหรือนำไปประมวลผลต่อ', 'For auditing or further processing.'),
+            action: `<button type="button" class="btn btn-secondary btn-compact" id="btnDownloadJson">${L('ดาวน์โหลด', 'Download')}</button>`,
+          })}
+          ${row({
+            tag: 'LINK',
+            title: L('ลิงก์แชร์ (อ่านอย่างเดียว)', 'Share link (read-only)'),
+            desc: L('ใครก็ตามที่มีลิงก์เปิดดูรายงานได้ ไม่ต้องเข้าสู่ระบบ ใช้ได้ 30 วัน', 'Anyone with the link can view the report without signing in. Valid for 30 days.'),
+            extra: '<div id="shareLinkContainer" hidden></div>',
+            action: `<button type="button" class="btn btn-secondary btn-compact" id="btnShareLink">${L('สร้างลิงก์', 'Create link')}</button>`,
+          })}
+        </ul>
+
+        <details class="exp-more">
+          <summary>${L('ตัวเลือกอื่นๆ', 'More options')}</summary>
+          <div class="exp-more__body">
+            <span class="muted-sm">${L('ไฟล์ PDF พื้นฐานจากเซิร์ฟเวอร์ รองรับเฉพาะตัวอักษรละติน (ภาษาไทยจะไม่แสดง)', 'Basic server-made PDF file. Latin characters only; Thai text will not show.')}</span>
+            <button type="button" class="btn btn-secondary btn-compact" id="btnDownloadPdf">${L('ดาวน์โหลด PDF พื้นฐาน', 'Download basic PDF')}</button>
+          </div>
+        </details>
+
+        <div class="cluster cluster--space-between">
+          <button type="button" class="btn btn-secondary" id="btnExpBack">← ${L('สร้างรายงานใหม่', 'Create another')}</button>
+          <button type="button" class="btn btn-primary" data-modal-close>${L('เสร็จสิ้น', 'Done')}</button>
+        </div>
+      </div>
     </div>
   `;
 
   openModal({
-    title: isTh ? 'ส่งออกรายงานการประเมิน SROI' : 'Generate & Export Impact Report',
+    title: L('ส่งออกรายงานการประเมิน SROI', 'Export Impact Report'),
     body: modalHtml,
     size: 'lg',
   });
 
   let activeReportId = null;
 
+  const stepCreate = document.getElementById('expStepCreate');
+  const stepResult = document.getElementById('expStepResult');
+  const showStep = (step) => {
+    stepCreate.hidden = step !== 'create';
+    stepResult.hidden = step !== 'result';
+  };
+
+  /** disable a button and show "Preparing…" while its async action runs */
+  const busy = async (btn, fn) => {
+    if (!btn || btn.disabled) return;
+    const label = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = L('กำลังเตรียมไฟล์…', 'Preparing…');
+    try {
+      await fn();
+    } finally {
+      btn.disabled = false;
+      btn.textContent = label;
+    }
+  };
+
+  // ---- Step 1: create ------------------------------------------------------------------------
   const generate = async () => {
     const form = document.getElementById('reportGenForm');
     const genBtn = document.getElementById('btnCreateAndExport');
-    const downloadSec = document.getElementById('exportDownloadSection');
-    const shareDisclosure = document.getElementById('shareDisclosure');
     if (!form || genBtn?.disabled) return;
+    const title = form.title.value.trim();
+    if (!title) {
+      showToast(L('กรุณาระบุชื่อรายงาน', 'Please enter a report title.'), 'error');
+      form.title.focus();
+      return;
+    }
 
-    if (genBtn) genBtn.disabled = true;
+    const label = genBtn.textContent;
+    genBtn.disabled = true;
+    genBtn.textContent = L('กำลังสร้างรายงาน…', 'Creating report…');
     try {
       const runRes = await runCalculation(activeScenarioId);
       const runId = runRes?.run?.id;
-      const repRes = await createReport(runId, form.type.value, form.title.value.trim(), activeScenarioId);
+      const repRes = await createReport(runId, form.type.value, title, activeScenarioId);
       activeReportId = repRes?.id || repRes?.report?.id;
       if (!activeReportId) throw new Error('The server did not return a report id.');
 
-      if (downloadSec) {
-        downloadSec.hidden = false;
-      }
-      if (shareDisclosure) {
-        shareDisclosure.open = true;
-      }
-      showToast(
-        isTh
-          ? 'สร้างเอกสารรายงานสำเร็จแล้ว สามารถเลือกดาวน์โหลดหรือแชร์ลิงก์ได้'
-          : 'Report snapshot generated successfully! Select download or sharing options below.',
-        'success',
-      );
+      document.getElementById('expReadyTitle').textContent = title;
+      const link = document.getElementById('shareLinkContainer');
+      link.hidden = true; // a new report invalidates any link shown for the previous one
+      link.innerHTML = '';
+      showStep('result');
     } catch (err) {
       showToast(`Report generation failed: ${err.message}`, 'error');
     } finally {
-      if (genBtn) genBtn.disabled = false;
+      genBtn.disabled = false;
+      genBtn.textContent = label;
     }
   };
 
   document.getElementById('btnCreateAndExport')?.addEventListener('click', generate);
-  // Pressing Enter in the title box used to submit the <form> natively and reload the whole app.
+  // Enter in the title box used to submit the <form> natively and reload the whole app
   document.getElementById('reportGenForm')?.addEventListener('submit', (e) => {
     e.preventDefault();
     generate();
   });
+  document.getElementById('btnExpBack')?.addEventListener('click', () => showStep('create'));
 
-  const triggerDownload = async (format) => {
-    if (!activeReportId) {
-      showToast(
-        isTh ? 'กรุณาสร้างเอกสารรายงานก่อนดาวน์โหลด' : 'Please generate the report document first.',
-        'error',
-      );
-      return;
-    }
+  // ---- Step 2: formats -----------------------------------------------------------------------
+  const saveBlob = (blob, filename) => {
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+  };
+
+  const download = async (format) => {
     try {
       const dataset = format === 'csv' ? document.getElementById('csvDataset')?.value || 'outcomes' : null;
       const blob = await api.exportReport(activeReportId, format, dataset);
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `SROI_Report_${project.id}_${activeReportId}${dataset ? `_${dataset}` : ''}.${format}`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.URL.revokeObjectURL(url);
-      showToast(isTh ? 'เริ่มดาวน์โหลดไฟล์แล้ว' : 'Download started', 'info');
+      saveBlob(blob, `SROI_Report_${project.id}_${activeReportId}${dataset ? `_${dataset}` : ''}.${format}`);
+      showToast(L('เริ่มดาวน์โหลดไฟล์แล้ว', 'Download started'), 'info');
     } catch (err) {
       showToast(`Export failed: ${err.message}`, 'error');
     }
@@ -658,10 +734,6 @@ function openExportReportModal({ project, activeScenarioId }) {
 
   // Full-Unicode PDF: render the HTML report in a hidden frame and let the browser print it ("Save as PDF").
   const printAsPdf = async () => {
-    if (!activeReportId) {
-      showToast(isTh ? 'กรุณาสร้างเอกสารรายงานก่อนดาวน์โหลด' : 'Please generate the report document first.', 'error');
-      return;
-    }
     try {
       const html = await (await api.exportReport(activeReportId, 'html')).text();
       const frame = document.createElement('iframe');
@@ -687,34 +759,41 @@ function openExportReportModal({ project, activeScenarioId }) {
     }
   };
 
-  document.getElementById('btnPrintPdf')?.addEventListener('click', printAsPdf);
-  document.getElementById('btnDownloadHtml')?.addEventListener('click', () => triggerDownload('html'));
-  document.getElementById('btnDownloadPdf')?.addEventListener('click', () => triggerDownload('pdf'));
-  document.getElementById('btnDownloadCsv')?.addEventListener('click', () => triggerDownload('csv'));
-  document.getElementById('btnDownloadJson')?.addEventListener('click', () => triggerDownload('json'));
+  const bind = (id, fn) => {
+    const btn = document.getElementById(id);
+    btn?.addEventListener('click', () => busy(btn, fn));
+  };
+  bind('btnPrintPdf', printAsPdf);
+  bind('btnDownloadCsv', () => download('csv'));
+  bind('btnDownloadHtml', () => download('html'));
+  bind('btnDownloadJson', () => download('json'));
+  bind('btnDownloadPdf', () => download('pdf'));
 
-  document.getElementById('btnShareLink')?.addEventListener('click', async () => {
-    if (!activeReportId) return;
+  bind('btnShareLink', async () => {
     try {
       const res = await api.shareReport(activeReportId);
       // The API lives on its own origin (not the frontend's). ?format=html makes the link open as a readable page.
       const apiOrigin = API_BASE.replace(/\/api\/v1\/?$/, '');
       const shareUrl = res?.data?.url || `${apiOrigin}${res?.data?.path || `/api/v1/shared/${res?.data?.token}`}?format=html`;
       const box = document.getElementById('shareLinkContainer');
-      if (box) {
-        box.innerHTML = `
-          <div class="panel panel--soft form-stack stack-xs">
-            <strong class="strong">${isTh ? 'ลิงก์รายงานสำหรับเปิดดูออนไลน์:' : 'Shareable Web Link:'}</strong>
-            <input type="text" class="input" readonly value="${escapeHtml(shareUrl)}" id="shareUrlInput" />
-            <button class="btn btn-secondary btn-compact" id="btnCopyShareUrl">${isTh ? 'คัดลอกลิงก์' : 'Copy Link'}</button>
-          </div>
-        `;
-        box.hidden = false;
-        document.getElementById('btnCopyShareUrl')?.addEventListener('click', () => {
-          navigator.clipboard.writeText(shareUrl);
-          showToast(isTh ? 'คัดลอกลิงก์แล้ว' : 'Link copied to clipboard', 'success');
-        });
-      }
+      if (!box) return;
+      box.innerHTML = `
+        <div class="exp-link">
+          <input type="text" class="input" readonly value="${escapeHtml(shareUrl)}" id="shareUrlInput" aria-label="${L('ลิงก์แชร์', 'Share link')}" />
+          <button type="button" class="btn btn-secondary btn-compact" id="btnCopyShareUrl">${L('คัดลอก', 'Copy')}</button>
+        </div>`;
+      box.hidden = false;
+      const input = document.getElementById('shareUrlInput');
+      input?.addEventListener('focus', () => input.select());
+      document.getElementById('btnCopyShareUrl')?.addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(shareUrl);
+        } catch (e) {
+          input?.select();
+          document.execCommand?.('copy');
+        }
+        showToast(L('คัดลอกลิงก์แล้ว', 'Link copied to clipboard'), 'success');
+      });
     } catch (err) {
       showToast(`Failed to create share link: ${err.message}`, 'error');
     }

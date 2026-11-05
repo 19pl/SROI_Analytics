@@ -741,3 +741,77 @@
 .underline {
   text-decoration: underline;
 }
+
+
+/* ---------- Export report dialog (Step 6) ---------- */
+.exp-ready {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-md);
+  padding: var(--sp-md);
+  border-radius: var(--radius-md);
+  background: var(--positive-bg);
+  color: var(--positive-fg);
+}
+.exp-ready__tick {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-pill);
+  background: var(--positive);
+  color: #fff;
+  font-weight: 700;
+}
+.exp-ready .muted-sm { color: inherit; opacity: 0.85; overflow-wrap: anywhere; }
+.exp-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--outline);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+.exp-row {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr) auto;
+  align-items: start;
+  gap: var(--sp-md);
+  padding: var(--sp-md);
+  background: var(--surface-elevated);
+}
+.exp-row + .exp-row { border-top: 1px solid var(--outline); }
+.exp-tag {
+  display: grid;
+  place-items: center;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  background: var(--primary-soft);
+  color: var(--primary-strong);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+.exp-row__title { font-weight: 600; }
+.exp-row__desc { margin-top: 2px; font-size: 0.8125rem; color: var(--muted); line-height: 1.4; }
+.exp-row__action { align-self: center; white-space: nowrap; }
+.exp-select { display: block; margin-top: var(--sp-sm); max-width: 320px; }
+.exp-select .input { width: 100%; }
+.exp-link { display: flex; gap: var(--sp-sm); margin-top: var(--sp-sm); }
+.exp-link .input { flex: 1; min-width: 0; }
+.exp-more { font-size: 0.875rem; }
+.exp-more summary { cursor: pointer; color: var(--muted); }
+.exp-more__body {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-md);
+  margin-top: var(--sp-sm);
+}
+@media (max-width: 560px) {
+  .exp-row { grid-template-columns: minmax(0, 1fr); }
+  .exp-tag { width: 52px; }
+  .exp-row__action { justify-self: start; }
+  .exp-more__body { flex-direction: column; align-items: flex-start; }
+}
