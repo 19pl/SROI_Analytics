@@ -13,10 +13,65 @@ import { showToast } from '../components/toast.js';
 import { escapeHtml } from '../utils/html.js';
 import { t, getLanguage } from '../i18n.js';
 import { isGuest, renderGuestPage } from '../components/guestNotice.js';
+import { formatCurrency } from '../utils/format.js';
 
 const PAGE_SIZE = 10;
 const STATUS_ORDER = { draft: 0, ready: 1, archived: 2 };
 const STATUS_FILTERS = ['all', 'draft', 'ready', 'archived'];
+
+const MIN_COMPARE = 2;
+const MAX_COMPARE = 4;
+const SORT_STORAGE_KEY = 'sroi_projects_sort';
+
+/**
+ * Everything the list can be sorted by.
+ * kind decides the wording of the direction button (newest/oldest, A→Z, highest/lowest) and the default direction.
+ */
+const SORT_OPTIONS = [
+  { key: 'updated', kind: 'date', labelKey: 'sort_updated', fallback: 'Last updated' },
+  { key: 'created', kind: 'date', labelKey: 'sort_created', fallback: 'Date created' },
+  { key: 'calculated', kind: 'date', labelKey: 'sort_calculated', fallback: 'Last calculated' },
+  { key: 'name', kind: 'text', labelKey: 'sort_name', fallback: 'Plan name' },
+  { key: 'owner', kind: 'text', labelKey: 'sort_owner', fallback: 'Direct owner' },
+  { key: 'sroi', kind: 'number', labelKey: 'sort_sroi', fallback: 'SROI ratio' },
+  { key: 'investment', kind: 'number', labelKey: 'sort_investment', fallback: 'Total investment' },
+  { key: 'benefit', kind: 'number', labelKey: 'sort_benefit', fallback: 'Present value of benefits' },
+  { key: 'npv', kind: 'number', labelKey: 'sort_npv', fallback: 'Net social value' },
+  { key: 'period', kind: 'number', labelKey: 'sort_period', fallback: 'Analysis period' },
+  { key: 'type', kind: 'text', labelKey: 'sort_type', fallback: 'Evaluation type' },
+  { key: 'status', kind: 'text', labelKey: 'sort_status', fallback: 'Status' },
+];
+const SORT_META = Object.fromEntries(SORT_OPTIONS.map((o) => [o.key, o]));
+const defaultDir = (key) => (SORT_META[key]?.kind === 'text' ? 'asc' : 'desc');
+
+function loadSavedSort() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(SORT_STORAGE_KEY) || 'null');
+    if (saved && SORT_META[saved.key] && (saved.dir === 'asc' || saved.dir === 'desc')) return saved;
+  } catch (e) {
+    /* storage unavailable or corrupt: fall back to the default */
+  }
+  return { key: 'updated', dir: 'desc' };
+}
+
+function saveSort(key, dir) {
+  try {
+    localStorage.setItem(SORT_STORAGE_KEY, JSON.stringify({ key, dir }));
+  } catch (e) {
+    /* not critical */
+  }
+}
+
+const periodYears = (p) => (p.assessment_months ? p.assessment_months / 12 : Number(p.analysis_period_years) || 5);
+const runValue = (p, field) => {
+  const v = p.latest_run?.[field];
+  return v === null || v === undefined ? null : Number(v);
+};
+const timeOf = (iso) => {
+  if (!iso) return null;
+  const ms = new Date(iso).getTime();
+  return Number.isNaN(ms) ? null : ms;
+};
 
 // API status value -> pill class + translated label
 const STATUS_PILL = {
@@ -59,6 +114,54 @@ function timeAgo(iso) {
     if (Math.abs(sec) >= size) return rtf.format(Math.round(sec / size), unit);
   }
   return rtf.format(0, 'second');
+}
+
+/** Exact local date and time, e.g. "5 Nov 2026, 13:52" ('' when missing). Timestamps are stored in UTC. */
+function formatDateTime(iso) {
+  const ms = timeOf(iso);
+  if (ms === null) return '';
+  return new Date(ms).toLocaleString(getLanguage() === 'th' ? 'th-TH' : 'en-GB', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+/** A length of time in the two largest useful units, e.g. "3 d 4 h", "2 h 15 min", "< 1 min". */
+function formatSpan(ms) {
+  if (ms === null || ms === undefined || ms < 0) return '';
+  const min = Math.floor(ms / 60000);
+  const d = Math.floor(min / 1440);
+  const h = Math.floor((min % 1440) / 60);
+  const m = min % 60;
+  const unit = { d: t('unit_d', 'd'), h: t('unit_h', 'h'), m: t('unit_min', 'min') };
+  if (d > 0) return h > 0 ? `${d} ${unit.d} ${h} ${unit.h}` : `${d} ${unit.d}`;
+  if (h > 0) return m > 0 ? `${h} ${unit.h} ${m} ${unit.m}` : `${h} ${unit.h}`;
+  if (m > 0) return `${m} ${unit.m}`;
+  return `< 1 ${unit.m}`;
+}
+
+/** Money in the plan's own currency; falls back to a plain number if the currency code is unusable. */
+function money(value, currency) {
+  if (value === null || value === undefined) return '–';
+  try {
+    return formatCurrency(value, currency || 'THB');
+  } catch (e) {
+    return `${Number(value).toLocaleString()} ${currency || ''}`.trim();
+  }
+}
+
+/** Dates cell: exact date/time on the first line, relative age (and an optional note) below it. */
+function dateCell(iso, note = '') {
+  const exact = formatDateTime(iso);
+  if (!exact) return '<span class="muted-sm">–</span>';
+  const ago = timeAgo(iso);
+  return `<div class="date-cell" title="${escapeHtml(exact)}">
+    <time datetime="${escapeHtml(iso)}">${escapeHtml(exact)}</time>
+    <span class="muted-sm">${escapeHtml(ago)}${note ? ` · ${escapeHtml(note)}` : ''}</span>
+  </div>`;
 }
 
 // ---------------------------------------------------------------------------
@@ -199,12 +302,22 @@ export async function renderProjects(root) {
                 } <span class="chip__count" data-count="${s}">0</span></button>`,
             ).join('')}
           </div>
+
+          <div class="sort-control">
+            <label class="sort-control__label" for="sortSelect">${t('sort_by', 'Sort by')}</label>
+            <select id="sortSelect" class="input sort-control__select">
+              ${SORT_OPTIONS.map((o) => `<option value="${o.key}">${escapeHtml(t(o.labelKey, o.fallback))}</option>`).join('')}
+            </select>
+            <button type="button" class="btn btn-secondary btn-sm sort-control__dir" id="sortDirBtn"></button>
+          </div>
         </div>
       </section>
 
       <div id="projectsTableContainer" class="stack-md" aria-live="polite" aria-busy="true">
         ${skeletonHtml()}
       </div>
+
+      <div id="compareBar" class="compare-bar" role="region" aria-label="${t('compare_title', 'Compare plans')}" hidden></div>
     </div>
   `;
 
@@ -213,11 +326,17 @@ export async function renderProjects(root) {
   const filterFaculty = document.getElementById('filterFaculty');
   const filterDept = document.getElementById('filterDept');
   const chipsEl = document.getElementById('statusChips');
+  const sortSelect = document.getElementById('sortSelect');
+  const sortDirBtn = document.getElementById('sortDirBtn');
+  const compareBar = document.getElementById('compareBar');
 
   let faculties = [];
   let nuOrgId = 1;
   let allProjects = [];
-  const view = { status: 'all', sortKey: 'updated', sortDir: 'desc', page: 1 };
+  const saved = loadSavedSort();
+  const view = { status: 'all', sortKey: saved.key, sortDir: saved.dir, page: 1 };
+  /** Plans ticked for comparison. Kept across paging, searching and filtering. */
+  const selected = new Set();
 
   // ----- Organization / faculty metadata ------------------------------------
   async function loadFacultiesForOrg(orgId) {
@@ -280,24 +399,57 @@ export async function renderProjects(root) {
 
   const sortValue = {
     name: (p) => (p.name || '').toLowerCase(),
-    owner: (p) => (p.owner_name || '').toLowerCase(),
-    sroi: (p) => (p.latest_run && p.latest_run.sroi_ratio !== null ? Number(p.latest_run.sroi_ratio) : null),
+    owner: (p) => (p.owner_name || '').toLowerCase() || null,
+    sroi: (p) => runValue(p, 'sroi_ratio'),
+    investment: (p) => runValue(p, 'investment'),
+    benefit: (p) => runValue(p, 'present_value'),
+    npv: (p) => runValue(p, 'net_social_value'),
+    period: (p) => periodYears(p),
+    type: (p) => p.evaluation_type || null,
     status: (p) => STATUS_ORDER[p.status] ?? 9,
-    updated: (p) => (p.updated_at ? new Date(p.updated_at).getTime() : 0),
+    updated: (p) => timeOf(p.updated_at),
+    created: (p) => timeOf(p.created_at),
+    calculated: (p) => timeOf(p.latest_run?.created_at),
   };
 
+  /** Sorts by the chosen key; plans without a value sink to the bottom in either direction, ties fall back to newest first. */
   function sortProjects(list) {
     const get = sortValue[view.sortKey] || sortValue.updated;
     const dir = view.sortDir === 'asc' ? 1 : -1;
+    const tiebreak = (a, b) => (timeOf(b.created_at) ?? 0) - (timeOf(a.created_at) ?? 0) || b.id - a.id;
     return [...list].sort((a, b) => {
       const va = get(a);
       const vb = get(b);
-      if (va === null && vb === null) return 0;
-      if (va === null) return 1; // plans without a value always sink to the bottom
+      if (va === null && vb === null) return tiebreak(a, b);
+      if (va === null) return 1;
       if (vb === null) return -1;
-      if (typeof va === 'string') return va.localeCompare(vb, getLanguage()) * dir;
-      return (va - vb) * dir;
+      const cmp = typeof va === 'string' ? va.localeCompare(vb, getLanguage()) : va - vb;
+      return cmp * dir || tiebreak(a, b);
     });
+  }
+
+  /** Wording of the direction button depends on what is being sorted. */
+  function directionLabel() {
+    const kind = SORT_META[view.sortKey]?.kind;
+    const asc = view.sortDir === 'asc';
+    if (kind === 'date') return asc ? t('sort_oldest', 'Oldest first') : t('sort_newest', 'Newest first');
+    if (kind === 'text') return asc ? t('sort_az', 'A → Z') : t('sort_za', 'Z → A');
+    return asc ? t('sort_lowest', 'Lowest first') : t('sort_highest', 'Highest first');
+  }
+
+  function syncSortControls() {
+    sortSelect.value = view.sortKey;
+    sortDirBtn.textContent = `${view.sortDir === 'asc' ? '↑' : '↓'} ${directionLabel()}`;
+    sortDirBtn.setAttribute('aria-label', `${t('sort_direction', 'Sort direction')}: ${directionLabel()}`);
+  }
+
+  function applySort(key, dir) {
+    view.sortKey = key;
+    view.sortDir = dir;
+    view.page = 1;
+    saveSort(key, dir);
+    syncSortControls();
+    filterAndRenderProjects();
   }
 
   function updateChips(searchFiltered) {
@@ -319,6 +471,34 @@ export async function renderProjects(root) {
     const byStatus =
       view.status === 'all' ? searchFiltered : searchFiltered.filter((p) => p.status === view.status);
     renderTable(sortProjects(byStatus));
+    updateCompareBar();
+  }
+
+  // ----- Comparison bar -------------------------------------------------------
+  function updateCompareBar() {
+    const n = selected.size;
+    compareBar.hidden = n === 0;
+    if (n === 0) return;
+    const hint =
+      n < MIN_COMPARE
+        ? t('compare_pick_more', 'Pick at least {min} plans to compare').replace('{min}', MIN_COMPARE)
+        : n >= MAX_COMPARE
+          ? t('compare_max_hint', 'You can compare up to {n} plans').replace('{n}', MAX_COMPARE)
+          : '';
+    compareBar.innerHTML = `
+      <span class="compare-bar__count">${escapeHtml(t('compare_selected', '{n} selected').replace('{n}', n))}</span>
+      ${hint ? `<span class="muted-sm compare-bar__hint">${escapeHtml(hint)}</span>` : ''}
+      <span class="compare-bar__spacer"></span>
+      <button type="button" class="btn btn-secondary btn-sm" id="btnClearCompare">${t('compare_clear', 'Clear')}</button>
+      <button type="button" class="btn btn-primary btn-sm" id="btnRunCompare" ${n < MIN_COMPARE ? 'disabled' : ''}>${t('compare_run', 'Compare')}</button>`;
+    document.getElementById('btnClearCompare').addEventListener('click', () => {
+      selected.clear();
+      filterAndRenderProjects();
+    });
+    document.getElementById('btnRunCompare').addEventListener('click', () => {
+      const picked = allProjects.filter((p) => selected.has(p.id));
+      if (picked.length >= MIN_COMPARE) openCompareModal(picked);
+    });
   }
 
   const hasActiveFilters = () =>
@@ -344,6 +524,9 @@ export async function renderProjects(root) {
 
       const res = await api.getProjects(filters);
       allProjects = res?.data || [];
+      // Plans that were deleted (or are no longer visible) can't stay selected for comparison
+      const known = new Set(allProjects.map((p) => p.id));
+      selected.forEach((id) => !known.has(id) && selected.delete(id));
       filterAndRenderProjects();
     } catch (err) {
       container.innerHTML = `
@@ -401,10 +584,34 @@ export async function renderProjects(root) {
     const ago = timeAgo(p.updated_at);
     const label = t('more_actions', 'More actions');
 
+    // Second line under the SROI ratio shows the money figure the list is currently sorted by
+    const metric = { investment: 'investment', benefit: 'present_value', npv: 'net_social_value' }[view.sortKey];
+    const metricHtml =
+      metric && hasSroi
+        ? `<div class="muted-sm sroi-metric">${escapeHtml(t(SORT_META[view.sortKey].labelKey, ''))}: ${escapeHtml(money(runValue(p, metric), p.currency))}</div>`
+        : '';
+
+    // How long it took from creating the plan to its latest calculation
+    const createdMs = timeOf(p.created_at);
+    const calcMs = timeOf(p.latest_run?.created_at);
+    const took = createdMs !== null && calcMs !== null ? formatSpan(calcMs - createdMs) : '';
+
+    const checked = selected.has(p.id);
+    const full = !checked && selected.size >= MAX_COMPARE;
+
     return `
-      <tr data-project-id="${p.id}">
+      <tr data-project-id="${p.id}"${checked ? ' class="is-selected"' : ''}>
         <td class="strong cell-name">
           <div class="plan-name__row">
+            <input
+              type="checkbox"
+              class="compare-check"
+              data-compare="${p.id}"
+              ${checked ? 'checked' : ''}
+              ${full ? 'disabled' : ''}
+              aria-label="${escapeHtml(t('compare_select', 'Select to compare'))}: ${escapeHtml(p.name)}"
+              title="${escapeHtml(full ? t('compare_max_hint', 'You can compare up to {n} plans').replace('{n}', MAX_COMPARE) : t('compare_select', 'Select to compare'))}"
+            />
             <button type="button" class="plan-name" data-open-project="${p.id}">${escapeHtml(p.name)}</button>
             ${p.calc_method === 'sheet' ? `<span class="badge badge-integrated">${t('sheet_badge', 'Sheet')}</span>` : ''}
           </div>
@@ -412,9 +619,11 @@ export async function renderProjects(root) {
         </td>
         <td class="cell-owner" data-label="${t('col_owner', 'Direct Owner')}">${ownerCell(p)}</td>
         <td data-label="${t('col_type_period', 'Type & period')}">${typeLabel} · ${periodLabel}</td>
-        <td class="num" data-label="${t('col_sroi_ratio', 'SROI Ratio')}">${sroiHtml}</td>
+        <td class="num" data-label="${t('col_sroi_ratio', 'SROI Ratio')}">${sroiHtml}${metricHtml}</td>
         <td data-label="${t('col_status', 'Status')}">${statusPill(p.status)}</td>
-        <td data-label="${t('col_updated', 'Updated')}">${ago ? `<span class="muted-sm">${escapeHtml(ago)}</span>` : '<span class="muted-sm">–</span>'}</td>
+        <td data-label="${t('col_created', 'Created')}">${dateCell(p.created_at)}</td>
+        <td data-label="${t('col_calculated', 'Last calculated')}">${dateCell(p.latest_run?.created_at, took ? t('took_after', '{span} after creation').replace('{span}', took) : '')}</td>
+        <td data-label="${t('col_updated', 'Updated')}">${ago ? `<span class="muted-sm" title="${escapeHtml(formatDateTime(p.updated_at))}">${escapeHtml(ago)}</span>` : '<span class="muted-sm">–</span>'}</td>
         <td class="cell-actions">
           <div class="row-actions">
             <button type="button" class="btn btn-secondary btn-sm" data-open-project="${p.id}">${t('open', 'Open')}</button>
@@ -484,6 +693,8 @@ export async function renderProjects(root) {
                 <th>${t('col_type_period', 'Type & period')}</th>
                 ${sortableTh('sroi', t('col_sroi_ratio', 'SROI Ratio'), 'num')}
                 ${sortableTh('status', t('col_status', 'Status'))}
+                ${sortableTh('created', t('col_created', 'Created'))}
+                ${sortableTh('calculated', t('col_calculated', 'Last calculated'))}
                 ${sortableTh('updated', t('col_updated', 'Updated'))}
                 <th class="col-actions"><span class="sr-only">${t('col_actions', 'Actions')}</span></th>
               </tr>
@@ -588,15 +799,30 @@ export async function renderProjects(root) {
     container.querySelectorAll('[data-sort]').forEach((btn) => {
       btn.addEventListener('click', () => {
         const key = btn.dataset.sort;
-        if (view.sortKey === key) {
-          view.sortDir = view.sortDir === 'asc' ? 'desc' : 'asc';
-        } else {
-          view.sortKey = key;
-          view.sortDir = key === 'sroi' || key === 'updated' ? 'desc' : 'asc';
-        }
-        view.page = 1;
-        filterAndRenderProjects();
+        // Same column again flips the direction; a new column starts in its natural direction
+        applySort(key, view.sortKey === key ? (view.sortDir === 'asc' ? 'desc' : 'asc') : defaultDir(key));
         container.querySelector(`[data-sort="${key}"]`)?.focus();
+      });
+    });
+
+    container.querySelectorAll('[data-compare]').forEach((box) => {
+      box.addEventListener('change', () => {
+        const id = Number(box.dataset.compare);
+        if (box.checked) {
+          if (selected.size >= MAX_COMPARE) {
+            box.checked = false;
+            return;
+          }
+          selected.add(id);
+        } else {
+          selected.delete(id);
+        }
+        box.closest('tr')?.classList.toggle('is-selected', box.checked);
+        // At the limit the other boxes lock; below it they unlock again
+        container.querySelectorAll('[data-compare]').forEach((other) => {
+          other.disabled = !other.checked && selected.size >= MAX_COMPARE;
+        });
+        updateCompareBar();
       });
     });
 
@@ -618,7 +844,7 @@ export async function renderProjects(root) {
     // The whole row opens the plan; buttons and the menu keep their own behaviour
     container.querySelectorAll('tbody tr').forEach((tr) => {
       tr.addEventListener('click', (e) => {
-        if (e.target.closest('button, a, .row-actions')) return;
+        if (e.target.closest('button, a, input, .row-actions')) return;
         openProject(Number(tr.dataset.projectId));
       });
     });
@@ -664,6 +890,10 @@ export async function renderProjects(root) {
     loadList({ quiet: true });
   });
 
+  sortSelect.addEventListener('change', () => applySort(sortSelect.value, defaultDir(sortSelect.value)));
+  sortDirBtn.addEventListener('click', () => applySort(view.sortKey, view.sortDir === 'asc' ? 'desc' : 'asc'));
+  syncSortControls();
+
   searchInput?.addEventListener('input', () => {
     view.page = 1;
     filterAndRenderProjects();
@@ -691,6 +921,139 @@ export async function renderProjects(root) {
   document.getElementById('btnCreateNewProject')?.addEventListener('click', triggerCreateModal);
 
   loadList();
+}
+
+// ---------------------------------------------------------------------------
+// Side-by-side comparison of 2–4 plans
+// ---------------------------------------------------------------------------
+
+function ownerText(p) {
+  const level = p.owner_level || (p.department_id ? 'department' : p.faculty_id ? 'faculty' : 'organization');
+  if (level === 'department') return `${t('owner_tag_dept', 'Dept')}: ${p.department_name || p.owner_name || '–'}`;
+  if (level === 'faculty') return `${t('owner_tag_faculty', 'Faculty')}: ${p.faculty_name || p.owner_name || '–'}`;
+  return `${t('owner_tag_univ', 'University')}: ${t('owner_general', 'University-wide')}`;
+}
+
+function openCompareModal(plans) {
+  // Oldest plan first, so the timeline reads left to right
+  const cols = [...plans].sort((a, b) => (timeOf(a.created_at) ?? 0) - (timeOf(b.created_at) ?? 0) || a.id - b.id);
+  const firstCreated = timeOf(cols[0].created_at);
+  const sameCurrency = new Set(cols.map((p) => p.currency)).size === 1;
+
+  /**
+   * One row. values: raw numbers (for highlighting) or null; cell(p, i) renders each column.
+   * best: 'max' | 'min' | null — which value gets the highlight. Skipped when every column is equal.
+   */
+  const row = (label, cell, { values = null, best = null, hint = '' } = {}) => {
+    let winners = new Set();
+    if (values && best) {
+      const present = values.filter((v) => v !== null);
+      if (present.length >= 2) {
+        const target = best === 'max' ? Math.max(...present) : Math.min(...present);
+        if (present.some((v) => v !== target)) winners = new Set(values.map((v, i) => (v === target ? i : -1)));
+      }
+    }
+    return `<tr>
+      <th scope="row">${escapeHtml(label)}${hint ? `<span class="compare-table__hint">${escapeHtml(hint)}</span>` : ''}</th>
+      ${cols
+        .map((p, i) => {
+          const win = winners.has(i);
+          return `<td class="${win ? 'is-best' : ''}">${cell(p, i)}${win ? `<span class="sr-only"> (${escapeHtml(best === 'max' ? t('compare_highest', 'highest') : t('compare_lowest', 'lowest'))})</span>` : ''}</td>`;
+        })
+        .join('')}
+    </tr>`;
+  };
+  const group = (title) => `<tr class="compare-table__group"><th colspan="${cols.length + 1}" scope="colgroup">${escapeHtml(title)}</th></tr>`;
+  const dash = '<span class="muted-sm">–</span>';
+  const when = (iso) => {
+    const exact = formatDateTime(iso);
+    return exact ? `<time datetime="${escapeHtml(iso)}">${escapeHtml(exact)}</time><div class="muted-sm">${escapeHtml(timeAgo(iso))}</div>` : dash;
+  };
+  const noteMoney = sameCurrency ? '' : t('compare_currency_note', 'Different currencies – not highlighted');
+
+  const sroiVals = cols.map((p) => runValue(p, 'sroi_ratio'));
+  const maxSroi = Math.max(0, ...sroiVals.filter((v) => v !== null));
+  const sroiCell = (p, i) => {
+    const v = sroiVals[i];
+    if (v === null) return `<span class="sroi-empty">${t('sroi_not_calculated', 'Not calculated')}</span>`;
+    const pct = maxSroi > 0 ? Math.max(2, Math.round((Math.max(v, 0) / maxSroi) * 100)) : 0;
+    return `<span class="sroi-value">${v.toFixed(2)} : 1</span><span class="cmp-bar" aria-hidden="true"><i style="width:${pct}%"></i></span>`;
+  };
+  const moneyRow = (label, field, opts = {}) => {
+    const values = cols.map((p) => runValue(p, field));
+    return row(label, (p, i) => (values[i] === null ? dash : escapeHtml(money(values[i], p.currency))), {
+      values: sameCurrency ? values : null,
+      hint: noteMoney,
+      ...opts,
+    });
+  };
+
+  const createdMs = cols.map((p) => timeOf(p.created_at));
+  const calcMs = cols.map((p) => timeOf(p.latest_run?.created_at));
+  const spans = cols.map((_, i) => (createdMs[i] !== null && calcMs[i] !== null ? Math.max(0, calcMs[i] - createdMs[i]) : null));
+
+  const body = `
+    <p class="muted-sm compare-note">${escapeHtml(t('compare_order_note', 'Plans are ordered from the oldest to the newest.'))}</p>
+    <div class="table-wrap">
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <td></td>
+            ${cols
+              .map(
+                (p) => `<th scope="col">
+                  <div class="compare-table__name">${escapeHtml(p.name)}</div>
+                  <div>${statusPill(p.status)}</div>
+                </th>`,
+              )
+              .join('')}
+          </tr>
+        </thead>
+        <tbody>
+          ${group(t('compare_group_timeline', 'Timeline'))}
+          ${row(t('col_created', 'Created'), (p) => when(p.created_at))}
+          ${row(t('compare_order', 'Creation order'), (p, i) => `#${i + 1}`)}
+          ${row(
+            t('compare_after_first', 'Created after the first plan'),
+            (p, i) => (i === 0 || createdMs[i] === null || firstCreated === null ? dash : `+ ${escapeHtml(formatSpan(createdMs[i] - firstCreated))}`),
+          )}
+          ${row(t('col_calculated', 'Last calculated'), (p) => when(p.latest_run?.created_at))}
+          ${row(t('compare_time_to_calc', 'Creation → latest calculation'), (p, i) => (spans[i] === null ? dash : escapeHtml(formatSpan(spans[i]))), {
+            values: spans,
+            best: 'min',
+            hint: t('compare_time_hint', 'Shortest is highlighted'),
+          })}
+          ${row(t('col_updated', 'Updated'), (p) => when(p.updated_at))}
+
+          ${group(t('compare_group_setup', 'Plan setup'))}
+          ${row(t('col_owner', 'Direct Owner'), (p) => escapeHtml(ownerText(p)))}
+          ${row(t('sheet_mode_label', 'Assessment Method'), (p) =>
+            p.calc_method === 'sheet' ? t('sheet_mode_sheet_title', 'Sheet Mode') : t('sheet_mode_wizard_title', 'Guided Assistant'),
+          )}
+          ${row(t('field_eval_type', 'Evaluation Type'), (p) =>
+            p.evaluation_type === 'forecast' ? t('eval_type_forecast_short', 'Forecast') : t('eval_type_evaluative_short', 'Evaluative'),
+          )}
+          ${row(t('compare_period', 'Analysis period'), (p) =>
+            p.assessment_months ? `${p.assessment_months} ${t('months', 'Months')}` : `${p.analysis_period_years || 5} ${t('years', 'Years')}`,
+          )}
+          ${row(t('field_currency', 'Currency'), (p) => escapeHtml(p.currency || '–'))}
+          ${row(t('field_category', 'Project Category'), (p) => (p.category ? escapeHtml(p.category) : dash))}
+
+          ${group(t('compare_group_results', 'Results'))}
+          ${row(t('col_sroi_ratio', 'SROI Ratio'), sroiCell, { values: sroiVals, best: 'max', hint: t('compare_best_hint', 'Highest is highlighted') })}
+          ${moneyRow(t('sort_investment', 'Total investment'), 'investment')}
+          ${moneyRow(t('sort_benefit', 'Present value of benefits'), 'present_value', { best: 'max' })}
+          ${moneyRow(t('sort_npv', 'Net social value'), 'net_social_value', { best: 'max' })}
+        </tbody>
+      </table>
+    </div>`;
+
+  openModal({
+    title: t('compare_title', 'Compare plans'),
+    body: `<div class="compare">${body}</div>`,
+    footer: `<button type="button" class="btn btn-primary" data-modal-close>${t('close', 'Close')}</button>`,
+    size: 'lg',
+  });
 }
 
 function skeletonHtml() {
