@@ -161,8 +161,9 @@ export function renderStep1(container) {
           </div>
 
           <div class="field">
-            <label class="field-label" for="s1Desc">${L('โครงการนี้ทำเพื่ออะไร (สั้นๆ ก็พอ)', 'What is the project for? (a sentence is enough)')} ${opt}</label>
+            <label class="field-label" for="s1Desc">${L('โครงการนี้ทำเพื่ออะไร (โดยสังเขป)', 'What is the project for? (in brief)')} ${req}</label>
             <textarea id="s1Desc" name="description" class="input" rows="2" placeholder="${L('เช่น ตรวจสายตาผู้สูงอายุในตำบลเพื่อค้นหาและส่งต่อผู้ที่มีปัญหาการมองเห็น', 'e.g. Screen older adults for vision problems and refer those who need care')}">${escapeHtml(project.description || '')}</textarea>
+            <span class="s1-err" id="s1DescErr" hidden>${L('กรุณากรอกวัตถุประสงค์ของโครงการ', 'Please describe what the project is for')}</span>
           </div>
 
           <div class="field s1-narrow">
@@ -367,6 +368,7 @@ export function renderStep1(container) {
   const dirtyEl = document.getElementById('s1Dirty');
   const savedEl = document.getElementById('s1Saved');
   const nameErr = document.getElementById('s1NameErr');
+  const descErr = document.getElementById('s1DescErr');
   const footerStatus = container.querySelector('.wizard-footer .save-status');
   const footerSavedHtml = footerStatus ? footerStatus.innerHTML : '';
   let dirty = false;
@@ -441,6 +443,12 @@ export function renderStep1(container) {
       form.name.setAttribute('aria-invalid', 'true');
       return false;
     }
+    if (!form.description.value.trim()) {
+      if (descErr) descErr.hidden = false;
+      form.description.focus();
+      form.description.setAttribute('aria-invalid', 'true');
+      return false;
+    }
     let years = 1;
     if (horizonSelect && horizonSelect.value !== 'Other') {
       years = parseInt(horizonSelect.value, 10);
@@ -494,10 +502,14 @@ export function renderStep1(container) {
     if (nameErr) nameErr.hidden = true;
     form.name.removeAttribute('aria-invalid');
   });
+  form?.description?.addEventListener('input', () => {
+    if (descErr) descErr.hidden = true;
+    form.description.removeAttribute('aria-invalid');
+  });
 
   // "Continue" must save first — it used to be a plain link that silently dropped edits.
   container.querySelector('.wizard-btn-next')?.addEventListener('click', async (e) => {
-    if (!dirty) return;
+    if (!dirty && form?.description?.value.trim()) return;
     e.preventDefault();
     const href = e.currentTarget.getAttribute('href');
     if (await saveProfile()) window.location.hash = href;
