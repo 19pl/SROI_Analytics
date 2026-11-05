@@ -16,7 +16,7 @@ export const routes = [
     render: renderProjects,
   },
   {
-    path: '#/wizard/step-1',
+    path: '#/wizard/step-0',
     labelKey: 'nav_calculator',
     label: 'SROI Calculator',
     icon: icons.calculator,

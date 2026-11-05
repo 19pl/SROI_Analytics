@@ -22,8 +22,8 @@ import { t } from '../i18n.js';
 let isHelpOpen = false;
 
 export function renderCalculator(root) {
-  const hash = window.location.hash || '#/wizard/step-0';
-  let stepNum = 0;
+  const hash = (window.location.hash || '#/wizard/step-0').split('?')[0];
+  let stepNum = 0; // bare "#/wizard" (no step in the URL) opens Step 0
   const match = hash.match(/step-(\d)/);
   if (match) {
     stepNum = parseInt(match[1], 10);

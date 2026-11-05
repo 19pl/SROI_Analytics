@@ -256,8 +256,8 @@ export function renderStep2(container) {
       const id = btn.dataset.toggleStk;
       const detailRow = document.getElementById(`stkDetail-${id}`);
       if (!detailRow) return;
-      const isOpen = detailRow.style.display !== 'none';
-      detailRow.style.display = isOpen ? 'none' : 'table-row';
+      const isOpen = !detailRow.hidden;
+      detailRow.hidden = isOpen;
       btn.setAttribute('aria-expanded', String(!isOpen));
       btn.style.transform = isOpen ? 'none' : 'rotate(180deg)';
     });
@@ -367,7 +367,7 @@ function openStakeholderModal({ initialData = null, defaultGroup = null, onSaved
 
   const matchedPreset = initialData
     ? BENEFICIARY_PRESETS.find((p) => p.th === initialData.name || p.en === initialData.name)
-    : (defaultGroup ? BENEFICIARY_PRESETS.find((p) => p.group === defaultGroup) : null);
+    : null;
   const initialPresetVal = matchedPreset ? matchedPreset.id : (initialData ? '__other__' : '');
 
   const rows = initialData
@@ -518,7 +518,7 @@ function openStakeholderModal({ initialData = null, defaultGroup = null, onSaved
 
   const showErr = (msg) => {
     errBox.textContent = msg;
-    errBox.style.display = 'block';
+    errBox.hidden = false;
   };
 
   const getEffectiveName = () => {
@@ -532,17 +532,17 @@ function openStakeholderModal({ initialData = null, defaultGroup = null, onSaved
   const syncPresetUI = () => {
     const isOther = presetSelect.value === '__other__';
     const isChosen = presetSelect.value !== '';
-    customNameRow.style.display = isOther ? 'grid' : 'none';
+    customNameRow.hidden = !isOther;
 
     // Reveal Section 2 and Section 3 only once stakeholder is selected
-    stkSection2.style.display = isChosen ? 'grid' : 'none';
+    stkSection2.hidden = !isChosen;
 
     if (isOther) {
       customNameInput.focus();
     } else if (isChosen) {
       const found = BENEFICIARY_PRESETS.find((p) => p.id === presetSelect.value);
       if (found) {
-        group = groupByKey(found.group) || group;
+        // NOTE: the S1–S4 group is intentionally NOT changed here; the user picks it themselves.
         if (found.unit && !unitTouched) {
           form.count_unit.value = found.unit;
           if (unitPresetSelect) unitPresetSelect.value = found.unit;
@@ -641,7 +641,7 @@ function openStakeholderModal({ initialData = null, defaultGroup = null, onSaved
 
   // Save handler
   const save = async () => {
-    errBox.style.display = 'none';
+    errBox.hidden = true;
     const name = getEffectiveName();
     if (!name) {
       showErr(isTh ? 'กรุณาระบุชื่อผู้ได้รับผลประโยชน์' : 'Please specify a stakeholder name.');

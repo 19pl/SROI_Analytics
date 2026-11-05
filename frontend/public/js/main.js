@@ -20,11 +20,8 @@ const navItemHtml = ({ path, labelKey, label, icon }, index) => {
 
 function findRoute(hash) {
   const basePath = hash.split('?')[0];
-  if (basePath.startsWith('#/wizard/')) {
-    return routes.find((r) => r.path === '#/wizard/step-1') || routes[0];
-  }
-  if (basePath === '#/calculator') {
-    return routes.find((r) => r.path === '#/wizard/step-1') || routes[0];
+  if (basePath === '#/wizard' || basePath.startsWith('#/wizard/') || basePath === '#/calculator') {
+    return routes.find((r) => r.path === '#/wizard/step-0') || routes[0];
   }
   if (basePath === '#/faculty-report') {
     return routes.find((r) => r.path === '#/faculty-report') || routes[0];
@@ -63,7 +60,7 @@ function moveNavIndicator() {
 function highlightActiveNav(route) {
   document.querySelectorAll('.nav-item').forEach((link) => {
     const href = link.getAttribute('href');
-    const isWizard = location.hash.startsWith('#/wizard/') && href === '#/wizard/step-1';
+    const isWizard = /^#\/wizard(\/|$)/.test(location.hash) && href === '#/wizard/step-0';
     link.classList.toggle('is-active', href === route.path || isWizard);
   });
   moveNavIndicator();
