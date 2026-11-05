@@ -856,6 +856,18 @@ export async function renderProjects(root) {
         if (!p) return;
         const items = [
           { label: t('action_rename', 'Rename'), onSelect: () => openRenameModal(p) },
+          // Calculating a plan does not change its status; it is set here (draft <-> ready)
+          p.status === 'draft'
+            ? {
+                label: t('action_mark_ready', 'Mark as ready'),
+                onSelect: () => patchProject(p, { status: 'ready' }, 'toast_marked_ready', 'Plan marked as ready'),
+              }
+            : p.status === 'ready'
+              ? {
+                  label: t('action_unarchive', 'Move back to draft'),
+                  onSelect: () => patchProject(p, { status: 'draft' }, 'toast_unarchived', 'Plan moved back to draft'),
+                }
+              : null,
           p.status === 'archived'
             ? {
                 label: t('action_unarchive', 'Move back to draft'),
@@ -872,7 +884,7 @@ export async function renderProjects(root) {
             onSelect: () => deleteWithUndo(p),
           },
         ];
-        openRowMenu(btn, items);
+        openRowMenu(btn, items.filter(Boolean));
       });
     });
   }
