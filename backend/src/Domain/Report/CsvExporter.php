@@ -8,6 +8,13 @@ final class CsvExporter
 {
     public const DATASETS = ['outcomes', 'investment', 'results', 'annual', 'stakeholders'];
 
+    private ReportStrings $s;
+
+    public function __construct(?ReportStrings $strings = null)
+    {
+        $this->s = $strings ?? new ReportStrings();
+    }
+
     /** @param array<string,mixed> $doc */
     public function export(array $doc, string $dataset): string
     {
@@ -57,6 +64,7 @@ final class CsvExporter
             default:
                 throw new \InvalidArgumentException('Unknown dataset');
         }
+        $rows = $this->localize($rows, $dataset, $currency);
         $fh = fopen('php://temp', 'w+');
         fwrite($fh, "\xEF\xBB\xBF"); // BOM so Excel reads UTF-8 (Thai etc.) correctly
         foreach ($rows as $r) {
@@ -64,6 +72,51 @@ final class CsvExporter
         }
         rewind($fh);
         return (string)stream_get_contents($fh);
+    }
+
+    /**
+     * Thai mode: translate the header row, the metric names of the "results" table and the fixed vocabulary cells
+     * (polarity, evidence quality, cost category, yes/no). Numbers, ids and user text are left exactly as stored.
+     *
+     * @param list<list<mixed>> $rows
+     * @return list<list<mixed>>
+     */
+    private function localize(array $rows, string $dataset, string $currency): array
+    {
+        if (!$this->s->isTh()) {
+            return $rows;
+        }
+        foreach ($rows[0] as $i => $h) {
+            $h = (string)$h;
+            $rows[0][$i] = str_starts_with($h, 'amount_in_') ? $this->s->t('amount') . ' (' . $currency . ')' : $this->s->t($h);
+        }
+        $enumCols = [
+            'outcomes' => [3, 4],
+            'investment' => [1],
+            'results' => [],
+            'annual' => [],
+            'stakeholders' => [],
+        ][$dataset] ?? [];
+        for ($r = 1; $r < count($rows); $r++) {
+            if ($dataset === 'results') {
+                $rows[$r][0] = $this->s->t((string)$rows[$r][0]);
+                if ($rows[$r][0] === $this->s->t('investment_basis')) {
+                    $rows[$r][1] = $this->s->enum((string)$rows[$r][1]);
+                }
+                continue;
+            }
+            foreach ($enumCols as $c) {
+                if (isset($rows[$r][$c]) && is_string($rows[$r][$c])) {
+                    $rows[$r][$c] = $this->s->enum($rows[$r][$c]);
+                }
+            }
+            foreach ($rows[$r] as $c => $v) {
+                if ($v === 'yes' || $v === 'no') {
+                    $rows[$r][$c] = $this->s->t($v);
+                }
+            }
+        }
+        return $rows;
     }
 
     private function cell(mixed $v): string|int|float

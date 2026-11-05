@@ -14,6 +14,7 @@ use App\Domain\Report\CsvExporter;
 use App\Domain\Report\HtmlExporter;
 use App\Domain\Report\PdfExporter;
 use App\Domain\Report\ReportBuilder;
+use App\Domain\Report\ReportStrings;
 use App\Services\CalculationService;
 
 final class ReportController
@@ -148,6 +149,8 @@ final class ReportController
     {
         $doc = json_decode($r['payload'], true);
         $format = $req->queryString('format', 'json');
+        // Labels and standard sentences follow the language the person chose in the website (?lang=th|en); stored data is unchanged.
+        $strings = new ReportStrings(ReportStrings::normalize($req->queryString('lang')));
         $slug = trim((string)preg_replace('/[^a-z0-9]+/', '-', strtolower($this->ascii((string)$doc['project']['name']))), '-') ?: 'report';
         $name = $slug . '-' . $r['type'] . '-' . substr((string)$doc['meta']['input_hash'], 0, 8);
         $dl = fn(string $ext) => ['Content-Disposition' => "attachment; filename=\"$name.$ext\"", 'X-Content-Type-Options' => 'nosniff', 'Cache-Control' => 'private, no-store'];
@@ -159,9 +162,9 @@ final class ReportController
                 if (!in_array($set, CsvExporter::DATASETS, true)) {
                     throw HttpException::unprocessable('Validation failed', ['dataset' => 'must be one of: ' . implode(', ', CsvExporter::DATASETS)]);
                 }
-                return Response::raw((new CsvExporter())->export($doc, $set), 'text/csv; charset=utf-8', $dl("$set.csv"));
+                return Response::raw((new CsvExporter($strings))->export($doc, $set), 'text/csv; charset=utf-8', $dl("$set.csv"));
             case 'html':
-                return Response::raw((new HtmlExporter())->export($doc), 'text/html; charset=utf-8', [
+                return Response::raw((new HtmlExporter($strings))->export($doc), 'text/html; charset=utf-8', [
                     'Content-Security-Policy' => "default-src 'none'; style-src 'unsafe-inline'", 'X-Content-Type-Options' => 'nosniff', 'Cache-Control' => 'private, no-store']);
             case 'pdf':
                 return Response::raw((new PdfExporter())->export($doc), 'application/pdf', $dl('pdf'));

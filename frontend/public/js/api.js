@@ -353,9 +353,10 @@ export const api = {
       body: { calculation_run_id: runId, type, title, ...(scenarioId ? { scenario_id: scenarioId } : {}) },
     }),
   getReport: (reportId) => request(`/reports/${reportId}`),
-  exportReport: async (reportId, format = 'pdf', dataset = null) => {
+  exportReport: async (reportId, format = 'pdf', dataset = null, lang = null) => {
     let q = `?format=${format}`;
     if (dataset) q += `&dataset=${dataset}`;
+    if (lang) q += `&lang=${lang === 'th' ? 'th' : 'en'}`;
     return request(`/reports/${reportId}/export${q}`, { responseType: 'blob' });
   },
   shareReport: (reportId) => request(`/reports/${reportId}/share`, { method: 'POST' }),

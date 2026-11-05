@@ -558,7 +558,7 @@ function openExportReportModal({ project, activeScenarioId }) {
         <form id="reportGenForm" class="form-stack">
           <div class="field">
             <label class="field-label" for="expTitle">${t('col_report_title', 'ชื่อรายงาน')} <span class="field-hint field-hint--primary">${L('จำเป็น', 'Required')}</span></label>
-            <input type="text" id="expTitle" name="title" class="input" value="${escapeHtml(project.name)} — รายงานผลการประเมินความคุ้มค่าทางสังคม (SROI)" required />
+            <input type="text" id="expTitle" name="title" class="input" value="${escapeHtml(project.name)} — ${L('รายงานผลการประเมินความคุ้มค่าทางสังคม (SROI)', 'SROI Social Impact Assessment Report')}" required />
           </div>
           <div class="field">
             <label class="field-label" for="expType">${t('col_eval_type', 'ประเภทรายงาน')}</label>
@@ -724,7 +724,7 @@ function openExportReportModal({ project, activeScenarioId }) {
   const download = async (format) => {
     try {
       const dataset = format === 'csv' ? document.getElementById('csvDataset')?.value || 'outcomes' : null;
-      const blob = await api.exportReport(activeReportId, format, dataset);
+      const blob = await api.exportReport(activeReportId, format, dataset, lang);
       saveBlob(blob, `SROI_Report_${project.id}_${activeReportId}${dataset ? `_${dataset}` : ''}.${format}`);
       showToast(L('เริ่มดาวน์โหลดไฟล์แล้ว', 'Download started'), 'info');
     } catch (err) {
@@ -735,7 +735,7 @@ function openExportReportModal({ project, activeScenarioId }) {
   // Full-Unicode PDF: render the HTML report in a hidden frame and let the browser print it ("Save as PDF").
   const printAsPdf = async () => {
     try {
-      const html = await (await api.exportReport(activeReportId, 'html')).text();
+      const html = await (await api.exportReport(activeReportId, 'html', null, lang)).text();
       const frame = document.createElement('iframe');
       frame.setAttribute('aria-hidden', 'true');
       frame.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;';
@@ -774,7 +774,7 @@ function openExportReportModal({ project, activeScenarioId }) {
       const res = await api.shareReport(activeReportId);
       // The API lives on its own origin (not the frontend's). ?format=html makes the link open as a readable page.
       const apiOrigin = API_BASE.replace(/\/api\/v1\/?$/, '');
-      const shareUrl = res?.data?.url || `${apiOrigin}${res?.data?.path || `/api/v1/shared/${res?.data?.token}`}?format=html`;
+      const shareUrl = res?.data?.url || `${apiOrigin}${res?.data?.path || `/api/v1/shared/${res?.data?.token}`}?format=html&lang=${lang === 'th' ? 'th' : 'en'}`;
       const box = document.getElementById('shareLinkContainer');
       if (!box) return;
       box.innerHTML = `
