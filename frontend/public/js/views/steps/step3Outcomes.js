@@ -235,8 +235,8 @@ export function renderStep3(container) {
       const id = btn.dataset.toggleOc;
       const detailRow = document.getElementById(`ocDetail-${id}`);
       if (!detailRow) return;
-      const isOpen = detailRow.style.display !== 'none';
-      detailRow.style.display = isOpen ? 'none' : 'table-row';
+      const isOpen = !detailRow.hidden;
+      detailRow.hidden = isOpen;
       btn.setAttribute('aria-expanded', String(!isOpen));
       btn.style.transform = isOpen ? 'none' : 'rotate(180deg)';
     });
@@ -515,7 +515,7 @@ function openOutcomeModal({ initialData = null, onSaved }) {
 
   const showErr = (msg) => {
     errBox.textContent = msg;
-    errBox.style.display = 'block';
+    errBox.hidden = false;
   };
 
   const getEffectiveOutcomeName = () => {
@@ -528,7 +528,7 @@ function openOutcomeModal({ initialData = null, onSaved }) {
 
   const syncOutcomePresetUI = () => {
     const isOther = ocPresetSelect.value === '__other__';
-    customOutcomeRow.style.display = isOther ? 'grid' : 'none';
+    customOutcomeRow.hidden = !(isOther);
     if (isOther) {
       customOutcomeInput.focus();
     } else {
@@ -539,10 +539,10 @@ function openOutcomeModal({ initialData = null, onSaved }) {
         if (found.unit) {
           if (PROXY_UNIT_SUGGESTIONS.includes(found.unit)) {
             ocProxyUnitSelect.value = found.unit;
-            customProxyUnitRow.style.display = 'none';
+            customProxyUnitRow.hidden = true;
           } else {
             ocProxyUnitSelect.value = '__other__';
-            customProxyUnitRow.style.display = 'block';
+            customProxyUnitRow.hidden = false;
             customProxyUnitInput.value = found.unit;
           }
         }
@@ -553,13 +553,13 @@ function openOutcomeModal({ initialData = null, onSaved }) {
 
   const checkVisibilityAndValidity = () => {
     const hasStk = !!ocStakeholderSelect.value;
-    ocPart2.style.display = hasStk ? 'grid' : 'none';
+    ocPart2.hidden = !(hasStk);
 
     const outcomeName = getEffectiveOutcomeName();
-    ocPart3.style.display = (hasStk && outcomeName) ? 'grid' : 'none';
+    ocPart3.hidden = !((hasStk && outcomeName));
 
     const hasIndicator = !!ocIndicator.value.trim();
-    ocPart4.style.display = (hasStk && outcomeName && hasIndicator) ? 'grid' : 'none';
+    ocPart4.hidden = !((hasStk && outcomeName && hasIndicator));
 
     const qty = parseFloat(ocQuantity.value);
     const proxyVal = parseFloat(ocProxyValue.value);
@@ -596,10 +596,10 @@ function openOutcomeModal({ initialData = null, onSaved }) {
 
   ocProxyUnitSelect.addEventListener('change', () => {
     if (ocProxyUnitSelect.value === '__other__') {
-      customProxyUnitRow.style.display = 'block';
+      customProxyUnitRow.hidden = false;
       customProxyUnitInput.focus();
     } else {
-      customProxyUnitRow.style.display = 'none';
+      customProxyUnitRow.hidden = true;
       customProxyUnitInput.value = ocProxyUnitSelect.value;
     }
   });
@@ -611,10 +611,10 @@ function openOutcomeModal({ initialData = null, onSaved }) {
         if (selectedProxy.unit) {
           if (PROXY_UNIT_SUGGESTIONS.includes(selectedProxy.unit)) {
             ocProxyUnitSelect.value = selectedProxy.unit;
-            customProxyUnitRow.style.display = 'none';
+            customProxyUnitRow.hidden = true;
           } else {
             ocProxyUnitSelect.value = '__other__';
-            customProxyUnitRow.style.display = 'block';
+            customProxyUnitRow.hidden = false;
             customProxyUnitInput.value = selectedProxy.unit;
           }
         }
@@ -628,7 +628,7 @@ function openOutcomeModal({ initialData = null, onSaved }) {
 
   // Save handler
   const save = async () => {
-    errBox.style.display = 'none';
+    errBox.hidden = true;
     const name = getEffectiveOutcomeName();
     if (!name) {
       showErr(isTh ? 'กรุณาระบุชื่อผลลัพธ์' : 'Please enter an outcome name.');
@@ -784,7 +784,7 @@ function openEvidenceModal({ project, outcome }) {
   addForm?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const errBox = document.getElementById('evidenceError');
-    if (errBox) errBox.style.display = 'none';
+    if (errBox) errBox.hidden = true;
 
     const payload = {
       title: addForm.title.value.trim(),
@@ -795,7 +795,7 @@ function openEvidenceModal({ project, outcome }) {
     if (!payload.title) {
       if (errBox) {
         errBox.textContent = isTh ? 'กรุณาระบุชื่อหลักฐาน' : 'Please enter title.';
-        errBox.style.display = 'block';
+        errBox.hidden = false;
       }
       return;
     }
@@ -806,7 +806,7 @@ function openEvidenceModal({ project, outcome }) {
     } catch (err) {
       if (errBox) {
         errBox.textContent = err.message;
-        errBox.style.display = 'block';
+        errBox.hidden = false;
       }
     }
   });

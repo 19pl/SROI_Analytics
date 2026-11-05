@@ -326,7 +326,7 @@ export function renderStep4(container) {
       const isTarget = itemOutcomeId === id;
       const body = item.querySelector('.adj-body');
       const chevronBtn = item.querySelector('[aria-label="Toggle details"]');
-      if (body) body.style.display = isTarget ? 'grid' : 'none';
+      if (body) body.hidden = !isTarget;
       if (chevronBtn) {
         chevronBtn.setAttribute('aria-expanded', String(isTarget));
         chevronBtn.style.transform = isTarget ? 'rotate(180deg)' : 'none';
@@ -509,7 +509,7 @@ function openYearProjectionsModal({ project, outcome, onSaved }) {
     } catch (err) {
       if (errBox) {
         errBox.textContent = err.message;
-        errBox.style.display = 'block';
+        errBox.hidden = false;
       }
     }
   });
