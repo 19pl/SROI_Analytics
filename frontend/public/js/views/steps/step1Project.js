@@ -162,7 +162,7 @@ export function renderStep1(container) {
 
           <div class="field">
             <label class="field-label" for="s1Desc">${L('โครงการนี้ทำเพื่ออะไร (โดยสังเขป)', 'What is the project for? (in brief)')} ${req}</label>
-            <textarea id="s1Desc" name="description" class="input" rows="2" placeholder="${L('เช่น ตรวจสายตาผู้สูงอายุในตำบลเพื่อค้นหาและส่งต่อผู้ที่มีปัญหาการมองเห็น', 'e.g. Screen older adults for vision problems and refer those who need care')}">${escapeHtml(project.description || '')}</textarea>
+            <textarea id="s1Desc" name="description" class="input s1-autogrow" rows="1" placeholder="${L('เช่น ตรวจสายตาผู้สูงอายุในตำบลเพื่อค้นหาและส่งต่อผู้ที่มีปัญหาการมองเห็น', 'e.g. Screen older adults for vision problems and refer those who need care')}">${escapeHtml(project.description || '')}</textarea>
             <span class="s1-err" id="s1DescErr" hidden>${L('กรุณากรอกวัตถุประสงค์ของโครงการ', 'Please describe what the project is for')}</span>
           </div>
 
@@ -369,6 +369,19 @@ export function renderStep1(container) {
   const savedEl = document.getElementById('s1Saved');
   const nameErr = document.getElementById('s1NameErr');
   const descErr = document.getElementById('s1DescErr');
+
+  // Description box grows with its text (no manual resize handle).
+  const descBox = document.getElementById('s1Desc');
+  const autoGrow = () => {
+    if (!descBox) return;
+    descBox.style.height = 'auto';
+    // scrollHeight excludes the border; add it back because the box is border-box.
+    descBox.style.height = `${descBox.scrollHeight + (descBox.offsetHeight - descBox.clientHeight)}px`;
+  };
+  descBox?.addEventListener('input', autoGrow);
+  window.addEventListener('resize', autoGrow);
+  autoGrow();
+  requestAnimationFrame(autoGrow);
   const footerStatus = container.querySelector('.wizard-footer .save-status');
   const footerSavedHtml = footerStatus ? footerStatus.innerHTML : '';
   let dirty = false;

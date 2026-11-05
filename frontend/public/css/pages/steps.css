@@ -257,6 +257,16 @@
 .s1-narrow {
   max-width: 420px;
 }
+.s1-autogrow {
+  display: block;
+  box-sizing: border-box;
+  height: auto;
+  min-height: 40px;
+  padding: 8px 12px; /* 22px line + 16px padding + 2px border = 40px, text centred in one-line state */
+  line-height: 22px;
+  resize: none;
+  overflow: hidden;
+}
 .s1-err[hidden] {
   display: none;
 }
