@@ -166,82 +166,79 @@ export function renderLogin(root) {
   });
 }
 
+/** Initials for the avatar: first letter of the first two words (Latin) or first character (Thai). */
+function initialsOf(name = '') {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return '?';
+  const first = [...parts[0]][0] || '?';
+  const second = parts[1] && /[A-Za-z]/.test(first) ? [...parts[1]][0] : '';
+  return (first + second).toUpperCase();
+}
+
+const accountRow = (label, valueHtml) => `
+  <div class="account-row">
+    <dt>${label}</dt>
+    <dd>${valueHtml}</dd>
+  </div>`;
+
 export function renderAuth(root) {
   const user = getCurrentUser();
   if (!user) {
     window.location.hash = '#/login';
     return;
   }
-  const lang = getLanguage();
-  const isTh = lang !== 'en';
+
+  const roleLabel = escapeHtml(t('role_short_' + (user.role || 'editor'), user.role || 'Editor'));
+  const orgName = escapeHtml(
+    user.organization_name || t('institution_nu', 'มหาวิทยาลัยนเรศวร (Naresuan University)'),
+  );
 
   root.innerHTML = `
-    <div class="account-container">
-      <div class="card has-stripe">
-        <div class="card-head">
-          <div>
-            ${brandHtml()}
-            <h1 class="card-title">${t('auth_title', 'User Account & Organization')}</h1>
-            <p class="muted-sm">
-              ${t('auth_subtitle', 'Role-based access control and institutional workspace administration for Naresuan University')}
-            </p>
+    <div class="account-page">
+      <header class="account-head">
+        <h1 class="account-title">${t('auth_title', 'User Account & Organization')}</h1>
+        <p class="account-sub">${t('auth_subtitle', 'Role-based access control and institutional workspace administration for Naresuan University')}</p>
+      </header>
+
+      <!-- Profile -->
+      <section class="account-profile" aria-label="${escapeHtml(t('acct_profile', 'Profile'))}">
+        <div class="account-avatar" aria-hidden="true">${escapeHtml(initialsOf(user.name))}</div>
+        <div class="account-identity">
+          <h2 class="account-name">${escapeHtml(user.name || '-')}</h2>
+          <div class="account-email">${escapeHtml(user.email || '-')}</div>
+          <div class="account-meta">
+            <span class="account-role">${roleLabel}</span>
+            <span class="account-org-inline">${orgName}</span>
           </div>
         </div>
-
-        <div class="form-stack stack-lg">
-          <!-- 2-Column User Details List -->
-          <div class="auth-detail-grid">
-            <div class="auth-detail-item">
-              <span class="muted-sm uppercase strong">${t('col_member_name', 'Name')}</span>
-              <div class="strong auth-detail-val">${escapeHtml(user.name || '-')}</div>
-            </div>
-
-            <div class="auth-detail-item">
-              <span class="muted-sm uppercase strong">${t('col_member_email', 'Email')}</span>
-              <div class="strong auth-detail-val">${escapeHtml(user.email || '-')}</div>
-            </div>
-
-            <div class="auth-detail-item">
-              <span class="muted-sm uppercase strong">${t('col_member_role', 'Role')}</span>
-              <div class="auth-detail-val">
-                <span class="status status--ok">
-                  ${escapeHtml(t('role_short_' + (user.role || 'editor'), user.role || 'Editor'))}
-                </span>
-              </div>
-            </div>
-
-            <div class="auth-detail-item">
-              <span class="muted-sm uppercase strong">${t('institution_label', 'Academic Institution')}</span>
-              <div class="strong auth-detail-val" id="authOrgName">
-                ${escapeHtml(user.organization_name || t('institution_nu', 'มหาวิทยาลัยนเรศวร (Naresuan University)'))}
-              </div>
-            </div>
-          </div>
-
-          <!-- Actions: Sign out as secondary button -->
-          <div class="toolbar">
-            <button class="btn btn-secondary" id="btnLogout">
-              ${t('btn_sign_out', 'Sign Out')}
-            </button>
-            <a class="btn btn-primary" href="#/projects">
-              ${t('btn_go_projects', 'Go to Projects Workspace')}
-            </a>
-          </div>
-
-          <!-- Organization Hierarchy / Membership -->
-          <div class="panel panel--soft form-stack stack-sm">
-            <div class="cluster cluster--space-between">
-              <h3 class="panel__title">${t('institution_label', 'Academic Institution')}</h3>
-              <span class="status status--neutral">${t('institution_unit', 'Governed Institution Unit')}</span>
-            </div>
-            <div id="orgListContainer" class="form-stack stack-xs">
-              <div class="empty-state">
-                <p class="empty-state__text">${t('loading', 'Loading organizations...')}</p>
-              </div>
-            </div>
-          </div>
+        <div class="account-actions">
+          <a class="btn btn-primary" href="#/projects">${t('btn_go_projects', 'Go to Projects Workspace')}</a>
+          <button type="button" class="btn btn-secondary" id="btnLogout">${t('btn_sign_out', 'Sign Out')}</button>
         </div>
+      </section>
+
+      <div class="account-grid">
+        <!-- Account information -->
+        <section class="account-card">
+          <h3 class="account-card-title">${t('acct_info', 'Account information')}</h3>
+          <dl class="account-list">
+            ${accountRow(t('col_member_name', 'Name'), escapeHtml(user.name || '-'))}
+            ${accountRow(t('col_member_email', 'Email'), escapeHtml(user.email || '-'))}
+            ${accountRow(t('col_member_role', 'Role'), `<span class="account-role">${roleLabel}</span>`)}
+            ${accountRow(t('institution_label', 'Academic Institution'), `<span id="authOrgName">${orgName}</span>`)}
+          </dl>
+        </section>
+
+        <!-- Organization membership -->
+        <section class="account-card">
+          <h3 class="account-card-title">${t('acct_memberships', 'Organization membership')}</h3>
+          <div id="orgListContainer" class="account-orgs" aria-live="polite">
+            <div class="account-orgs-empty">${t('loading', 'Loading organizations...')}</div>
+          </div>
+        </section>
       </div>
+
+      <p class="account-foot">${t('auth_guest_help', 'Accounts are issued by the SROI administrator. If you do not have one, please contact them.')}</p>
     </div>
   `;
 
@@ -250,25 +247,37 @@ export function renderAuth(root) {
     await api.logout();
   });
 
-  api.getOrganizations().then((res) => {
-    const orgs = res?.data || [];
+  const renderOrgs = (html) => {
     const box = document.getElementById('orgListContainer');
-    if (!box) return;
+    if (box) box.innerHTML = html;
+  };
 
-    if (orgs.length === 0) {
-      box.innerHTML = `<div class="empty-state"><p class="empty-state__text">${t('no_data', 'No organizations joined yet.')}</p></div>`;
-      return;
-    }
-
-    box.innerHTML = orgs
-      .map(
-        (o) => `
-      <div class="cluster cluster--space-between panel panel--soft">
-        <strong class="strong">${escapeHtml(o.name)}</strong>
-        <span class="status status--neutral">${escapeHtml(t('role_short_' + o.role, o.role || 'Member'))}</span>
-      </div>
-    `,
-      )
-      .join('');
-  });
+  api
+    .getOrganizations()
+    .then((res) => {
+      const orgs = res?.data || [];
+      if (orgs.length === 0) {
+        renderOrgs(
+          `<div class="account-orgs-empty">${t('no_data', 'No organizations joined yet.')}</div>`,
+        );
+        return;
+      }
+      renderOrgs(
+        orgs
+          .map(
+            (o) => `
+        <div class="account-org">
+          <span class="account-org-icon" aria-hidden="true">${icons.institution || icons.folder}</span>
+          <span class="account-org-name">${escapeHtml(o.name)}</span>
+          <span class="account-role account-role--quiet">${escapeHtml(t('role_short_' + o.role, o.role || 'Member'))}</span>
+        </div>`,
+          )
+          .join(''),
+      );
+    })
+    .catch(() => {
+      renderOrgs(
+        `<div class="account-orgs-empty">${t('acct_orgs_error', 'Could not load organizations.')}</div>`,
+      );
+    });
 }
