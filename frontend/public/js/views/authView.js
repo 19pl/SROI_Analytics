@@ -21,6 +21,9 @@ function nextHash() {
   return allowed ? next : '#/projects';
 }
 
+const eyeIcon = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>`;
+const eyeOffIcon = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.94 17.94A10.5 10.5 0 0 1 12 19c-6.5 0-10-7-10-7a18.5 18.5 0 0 1 4.06-5.06M9.9 5.24A9.7 9.7 0 0 1 12 5c6.5 0 10 7 10 7a18.6 18.6 0 0 1-2.16 3.19M14.12 14.12a3 3 0 1 1-4.24-4.24"/><path d="M2 2l20 20"/></svg>`;
+
 const brandHtml = () => `
   <div class="auth-brand">
     <div class="org-banner-icon">
@@ -78,22 +81,27 @@ export function renderLogin(root) {
           </div>
 
           <div class="field">
-            <div class="cluster cluster--space-between">
-              <label class="field-label" for="authPassword">
-                ${t('field_password', 'Password')} <span class="field-hint field-hint--primary">${isTh ? 'จำเป็น' : 'Required'}</span>
-              </label>
-              <button type="button" class="btn btn-ghost btn-compact-subtle" id="btnTogglePassword">
-                ${isTh ? 'แสดงรหัสผ่าน' : 'Show'}
-              </button>
+            <label class="field-label" for="authPassword">
+              ${t('field_password', 'Password')} <span class="field-hint field-hint--primary">${isTh ? 'จำเป็น' : 'Required'}</span>
+            </label>
+            <div class="password-field">
+              <input
+                id="authPassword"
+                type="password"
+                name="password"
+                class="input"
+                required
+                autocomplete="current-password"
+              />
+              <button
+                type="button"
+                class="password-toggle"
+                id="btnTogglePassword"
+                aria-label="${isTh ? 'แสดงรหัสผ่าน' : 'Show password'}"
+                aria-pressed="false"
+                title="${isTh ? 'แสดงรหัสผ่าน' : 'Show password'}"
+              >${eyeIcon}</button>
             </div>
-            <input
-              id="authPassword"
-              type="password"
-              name="password"
-              class="input"
-              required
-              autocomplete="current-password"
-            />
           </div>
 
           <div id="authErrorMsg" class="field-error" hidden></div>
@@ -122,15 +130,20 @@ export function renderLogin(root) {
 
   toggleBtn?.addEventListener('click', () => {
     if (!pwdInput) return;
-    const isPassword = pwdInput.type === 'password';
-    pwdInput.type = isPassword ? 'text' : 'password';
-    toggleBtn.textContent = isPassword
+    const reveal = pwdInput.type === 'password';
+    pwdInput.type = reveal ? 'text' : 'password';
+    const label = reveal
       ? isTh
         ? 'ซ่อนรหัสผ่าน'
-        : 'Hide'
+        : 'Hide password'
       : isTh
         ? 'แสดงรหัสผ่าน'
-        : 'Show';
+        : 'Show password';
+    toggleBtn.innerHTML = reveal ? eyeOffIcon : eyeIcon;
+    toggleBtn.setAttribute('aria-label', label);
+    toggleBtn.setAttribute('aria-pressed', String(reveal));
+    toggleBtn.title = label;
+    pwdInput.focus();
   });
 
   const showError = (msg) => {
