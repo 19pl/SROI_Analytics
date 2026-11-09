@@ -937,3 +937,61 @@
   color: var(--primary);
   font-weight: 500;
 }
+
+/* Step 2: Dynamic Stakeholder Modal & Details */
+.stk-group-banner {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-md);
+  padding: 12px 16px;
+  background: var(--surface-soft);
+  border: 1px solid var(--outline);
+  border-radius: var(--radius-md);
+  margin-top: var(--sp-xs);
+  margin-bottom: var(--sp-xs);
+}
+
+.stk-group-banner__badge {
+  font-size: 0.875rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--primary-soft);
+  color: var(--primary);
+  border: 1px solid var(--primary);
+  white-space: nowrap;
+}
+
+.stk-group-banner__text {
+  flex: 1;
+  min-width: 0;
+}
+
+.stk-group-banner__desc {
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.stk-form-section[hidden] {
+  display: none !important;
+}
+
+.stk-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--sp-sm) var(--sp-lg);
+  margin-top: var(--sp-xs);
+}
+
+.stk-detail-item {
+  font-size: 0.8125rem;
+  line-height: 1.4;
+}
+
+.stk-detail-item .muted-sm {
+  font-weight: 600;
+  color: var(--muted);
+  display: inline-block;
+  margin-right: 4px;
+}
