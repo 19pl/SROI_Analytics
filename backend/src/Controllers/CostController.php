@@ -88,7 +88,7 @@ final class CostController extends ProjectResource
             throw HttpException::unprocessable('Validation failed', ['year' => "must not exceed the analysis period ($T years)"]);
         }
 
-        // Line items: amount is always the sum of unit_price x quantity over the lines.
+        // Line items: amount is the sum of unit_price x quantity (x optional quantity2) over the lines.
         if (array_key_exists('line_items', $data)) {
             $raw = $data['line_items'];
             if ($raw === null || $raw === []) {
@@ -112,8 +112,24 @@ final class CostController extends ProjectResource
                     if ($unit === '' || mb_strlen($unit) > 100) {
                         throw HttpException::unprocessable('Validation failed', ["line_items.$i.unit" => 'must be 1-100 characters']);
                     }
-                    $lines[] = ['unit_price' => (float)$price, 'quantity' => (float)$qty, 'unit' => $unit];
-                    $sum += (float)$qty * (float)$price;
+                    $line = ['unit_price' => (float)$price, 'quantity' => (float)$qty, 'unit' => $unit];
+                    $factor = (float)$qty * (float)$price;
+                    // Optional second multiplier, e.g. 2 people x 3 days. Both parts or neither.
+                    $qty2 = $l['quantity2'] ?? null;
+                    $unit2 = trim((string)($l['unit2'] ?? ''));
+                    if ($qty2 !== null && $qty2 !== '' || $unit2 !== '') {
+                        if (!is_numeric($qty2) || (float)$qty2 <= 0) {
+                            throw HttpException::unprocessable('Validation failed', ["line_items.$i.quantity2" => 'must be greater than 0']);
+                        }
+                        if ($unit2 === '' || mb_strlen($unit2) > 100) {
+                            throw HttpException::unprocessable('Validation failed', ["line_items.$i.unit2" => 'must be 1-100 characters']);
+                        }
+                        $line['quantity2'] = (float)$qty2;
+                        $line['unit2'] = $unit2;
+                        $factor *= (float)$qty2;
+                    }
+                    $lines[] = $line;
+                    $sum += $factor;
                 }
                 $expected = round($sum, 2);
                 if (isset($data['amount']) && is_numeric($data['amount']) && abs((float)$data['amount'] - $expected) > 0.02) {
@@ -122,8 +138,9 @@ final class CostController extends ProjectResource
                 $data['line_items'] = $lines;
                 $data['amount'] = $expected;
                 $data['calculation_mode'] = 'quantity';
-                // Keep the legacy single-line columns in sync when there is exactly one line.
-                $one = count($lines) === 1 ? $lines[0] : null;
+                // Keep the legacy single-line columns in sync when there is exactly one plain line
+                // (lines with a second multiplier cannot be described by quantity x unit_price alone).
+                $one = count($lines) === 1 && !isset($lines[0]['quantity2']) ? $lines[0] : null;
                 $data['quantity'] = $one['quantity'] ?? null;
                 $data['unit'] = $one['unit'] ?? null;
                 $data['unit_price'] = $one['unit_price'] ?? null;

@@ -37,6 +37,8 @@ import { wizardFooterHtml, attachWizardFooterEvents } from '../../components/wiz
 
 // Shown once after a successful save, then cleared (the page re-renders after saving).
 let justSaved = false;
+// Project id whose missing defaults were already saved once (prevents a re-render loop).
+let healedProjectId = null;
 
 export function renderStep1(container) {
   const { project, costs, stakeholders, investmentSummary } = getState();
@@ -148,7 +150,7 @@ export function renderStep1(container) {
           <div class="s1-savebox">
             <span class="s1-dirty" id="s1Dirty" hidden>● ${L('มีการแก้ไขที่ยังไม่บันทึก', 'Unsaved changes')}</span>
             <span class="s1-saved" id="s1Saved" ${justSaved ? '' : 'hidden'}>✓ ${L('บันทึกแล้ว', 'Saved')}</span>
-            <button class="btn btn-primary" id="btnSaveProjectDetails" type="button">${L('บันทึก', 'Save')}</button>
+            <button class="btn btn-primary" id="btnSaveProjectDetails" type="button" hidden style="display: none;">${L('บันทึก', 'Save')}</button>
           </div>
         </div>
 
@@ -310,7 +312,7 @@ export function renderStep1(container) {
                       ${c.period_label ? `<span class="badge badge-integrated s1-mini">${escapeHtml(c.period_label)}</span>` : ''}
                       ${dupIds.has(c.id) ? `<span class="badge s1-mini s1-warn" title="${L('มีรายการเหมือนกันอีก — ตรวจว่านับซ้ำหรือไม่', 'Another identical item exists — check for double counting')}">${L('อาจซ้ำ', 'Possible duplicate')}</span>` : ''}
                     </div>
-                    <div class="muted s1-mini-line">${escapeHtml(costCategoryLabel(c.category, isTh))}${Array.isArray(c.line_items) && c.line_items.length ? ` · <span class="s1-qty-detail">${c.line_items.map((l) => `${l.quantity} ${escapeHtml(l.unit)} × ${money(l.unit_price)}`).join(' + ')}</span>` : c.calculation_mode === 'quantity' && c.quantity !== null && c.quantity !== undefined && c.unit ? ` · <span class="s1-qty-detail">${c.quantity} ${escapeHtml(c.unit)} × ${money(c.unit_price)}</span>` : ''}</div>
+                    <div class="muted s1-mini-line">${escapeHtml(costCategoryLabel(c.category, isTh))}${c.notes ? ` · <span class="s1-qty-detail">${escapeHtml(c.notes)}</span>` : Array.isArray(c.line_items) && c.line_items.length ? ` · <span class="s1-qty-detail">${escapeHtml(describeLinesForList(c.line_items))}</span>` : ''}</div>
                   </td>
                   <td>${stk ? `<span class="badge badge-integrated">${escapeHtml(stk.group_code || '')}</span> ${escapeHtml(stk.name)}` : '<span class="muted">–</span>'}</td>
                   <td>${c.is_cash ? L('เงินสด', 'Cash') : `<span class="muted">${L('ไม่ใช่เงินสด', 'Non-cash')}</span>`}
@@ -387,8 +389,14 @@ export function renderStep1(container) {
   const footerSavedHtml = footerStatus ? footerStatus.innerHTML : '';
   let dirty = false;
 
+  const saveBtn = document.getElementById('btnSaveProjectDetails');
   const setDirty = (v) => {
     dirty = v;
+    // The Save button only appears once something has changed.
+    if (saveBtn) {
+      saveBtn.hidden = !v;
+      saveBtn.style.display = v ? '' : 'none';
+    }
     if (dirtyEl) dirtyEl.hidden = !v;
     if (savedEl && v) savedEl.hidden = true;
     if (footerStatus) {
@@ -401,6 +409,20 @@ export function renderStep1(container) {
   form?.addEventListener('input', () => setDirty(true));
   form?.addEventListener('change', () => setDirty(true));
   form?.addEventListener('submit', (e) => e.preventDefault());
+
+  // Plans created before the fix (or by any other route) may lack values the form already shows as
+  // defaults. Save them once, quietly, so the Continue button is not blocked by something the user cannot see.
+  if ((project.investment_basis == null || project.analysis_period_years == null) && healedProjectId !== project.id) {
+    healedProjectId = project.id;
+    updateProject({
+      investment_basis: project.investment_basis ?? 'nominal',
+      analysis_period_years: project.analysis_period_years ?? 1,
+    })
+      .then(() => {
+        if (container.isConnected && !dirty && container.querySelector('#projectScopeForm')) renderStep1(container);
+      })
+      .catch(() => {});
+  }
 
   const toggleBtn = document.getElementById('btnToggleAdvancedScope');
   const horizonSelect = document.getElementById('s1HorizonSelect');
@@ -528,7 +550,11 @@ export function renderStep1(container) {
   // "Continue" must save first, and only moves on when everything required in this step is filled in.
   container.querySelector('.wizard-btn-next')?.addEventListener('click', async (e) => {
     e.preventDefault();
-    if (dirty || !form?.description?.value.trim()) {
+    const p = getState().project || {};
+    // A plan created without an investment basis / period looks complete on screen (the form shows
+    // defaults) but is not saved yet, so Continue saves it instead of staying blocked.
+    const missingSaved = p.investment_basis == null || p.analysis_period_years == null;
+    if (dirty || missingSaved || !form?.description?.value.trim()) {
       if (!(await saveProfile())) return;
     }
     const gate = nextGate(getState(), 1, isTh);
@@ -593,6 +619,14 @@ function costPreset(key, isTh) {
   return P[key] || null;
 }
 
+function describeLinesForList(lines) {
+  return lines
+    .map((l) => [`${l.quantity} ${l.unit || ''}`.trim(), l.quantity2 ? `${l.quantity2} ${l.unit2 || ''}`.trim() : '', l.unit_price]
+      .filter((x) => x !== '' && x !== undefined && x !== null)
+      .join(' × '))
+    .join(' + ');
+}
+
 function costCategoryLabel(cat, isTh) {
   const mapTh = {
     capex: 'ครุภัณฑ์ / อุปกรณ์ / สถานที่',
@@ -624,27 +658,24 @@ function openAddCostModal({ project, initialData = null, prefill = null, onAdded
   const isCash = isEdit ? !!initialData.is_cash : v('is_cash', 1) === 1 || v('is_cash', 1) === true;
   const curr = escapeHtml(project.currency || 'THB');
 
-  // One item = one row of unit price x quantity (+ unit). To record more, add another item.
-  const defaultUnit = L('รายการ', 'item');
-  const toLine = (l) => ({ unit_price: l.unit_price ?? '', quantity: l.quantity ?? '', unit: l.unit ?? '' });
-  let initialLine;
-  if (Array.isArray(src.line_items) && src.line_items.length === 1) {
-    initialLine = toLine(src.line_items[0]);
-  } else if (Array.isArray(src.line_items) && src.line_items.length > 1) {
-    // Saved earlier with several rows: show it as 1 x total so the amount is not lost.
-    initialLine = { unit_price: src.amount ?? '', quantity: 1, unit: defaultUnit };
-  } else if (Number(src.quantity) > 0 && src.unit_price !== null && src.unit_price !== undefined) {
-    initialLine = toLine(src);
-  } else if (src.amount !== null && src.amount !== undefined && String(src.amount) !== '' && Number(src.amount) > 0) {
-    // Older item saved as a single total: show it as 1 x total so nothing is lost.
-    initialLine = { unit_price: src.amount, quantity: 1, unit: defaultUnit };
-  } else {
-    initialLine = { unit_price: '', quantity: '', unit: '' };
+  // Two plain boxes: the total amount, and a free-text note explaining it (stored in `notes`).
+  const describeLines = (lines) =>
+    lines
+      .map((l) =>
+        [l.quantity !== undefined ? `${l.quantity} ${l.unit || ''}`.trim() : '', l.quantity2 ? `${l.quantity2} ${l.unit2 || ''}`.trim() : '', l.unit_price !== undefined ? `${l.unit_price}` : '']
+          .filter(Boolean)
+          .join(' × '),
+      )
+      .join(' + ');
+  const hasAmount = src.amount !== null && src.amount !== undefined && String(src.amount) !== '';
+  const initialAmount = hasAmount ? String(src.amount) : '';
+  let initialDetail = src.notes || '';
+  if (!initialDetail && Array.isArray(src.line_items) && src.line_items.length) {
+    // Saved earlier with the old quantity form: keep its breakdown as plain text.
+    initialDetail = describeLines(src.line_items);
+  } else if (!initialDetail && Number(src.quantity) > 0 && src.unit_price !== null && src.unit_price !== undefined) {
+    initialDetail = describeLines([src]);
   }
-
-  const standardUnits = isTh
-    ? ['คน', 'รายการ', 'ครั้ง', 'วัน', 'เดือน', 'ชั่วโมง', 'ชิ้น', 'อัน', 'กล่อง', 'ชุด', 'เครื่อง', 'แผ่น', 'ถุง', 'กิโลกรัม', 'เมตร', 'ตารางเมตร']
-    : ['person', 'item', 'time', 'day', 'month', 'hour', 'piece', 'box', 'set', 'unit', 'sheet', 'bag', 'kg', 'meter', 'sq.m'];
 
   // Open "more details" by default only when editing an item that already uses them.
   const hasExtra =
@@ -684,22 +715,14 @@ function openAddCostModal({ project, initialData = null, prefill = null, onAdded
         </div>
       </div>
 
-      <!-- Amount: a single row of unit price x quantity; the total is calculated. -->
       <div class="field">
-        <span class="field-label"><span id="cAmtLabel">${isCash ? L('จำนวนเงิน', 'Amount') : L('มูลค่าโดยประมาณ', 'Estimated value')}</span> (${curr}) <span class="s1-tag s1-tag-req">${L('จำเป็น', 'Required')}</span></span>
-        <div class="s1-lines">
-          <div class="s1-line s1-line-head" aria-hidden="true">
-            <span id="cUnitPriceLabel">${isCash ? L('ราคา/หน่วย', 'Price / unit') : L('มูลค่า/หน่วย', 'Value / unit')}</span>
-            <span>${L('จำนวน', 'Qty')}</span>
-            <span>${L('หน่วย', 'Unit')}</span>
-            <span class="num">${L('รวม', 'Total')}</span>
-          </div>
-          <div id="costLineRows"></div>
-          <datalist id="costUnitSuggestions">
-            ${standardUnits.map((u) => `<option value="${escapeHtml(u)}"></option>`).join('')}
-          </datalist>
-          <div class="s1-hint muted">${L('ต้องการเพิ่มอีกรายการ ให้กด “บันทึกและเพิ่มต่อ” ด้านล่าง', 'Need another item? Use “Save & add another” below.')}</div>
-        </div>
+        <label class="field-label" for="cAmt"><span id="cAmtLabel">${isCash ? L('จำนวนเงิน', 'Amount') : L('มูลค่าโดยประมาณ', 'Estimated value')}</span> (${curr}) <span class="s1-tag s1-tag-req">${L('จำเป็น', 'Required')}</span></label>
+        <input id="cAmt" type="text" inputmode="decimal" name="amount" class="input" value="${escapeHtml(initialAmount)}" placeholder="${L('เช่น 15000', 'e.g. 15000')}" />
+      </div>
+
+      <div class="field">
+        <label class="field-label" for="cDetail">${L('รายละเอียด', 'Details')} <span class="s1-tag">${L('ไม่บังคับ', 'Optional')}</span></label>
+        <textarea id="cDetail" name="detail" class="input" rows="3" maxlength="2000" placeholder="${L('เช่น วิทยากร 2 คน × 3 วัน × 2,500 บาท', 'e.g. 2 speakers × 3 days × 2,500 baht')}">${escapeHtml(initialDetail)}</textarea>
       </div>
 
       <details class="s1-more" ${hasExtra ? 'open' : ''}>
@@ -765,9 +788,6 @@ function openAddCostModal({ project, initialData = null, prefill = null, onAdded
   const errBox = document.getElementById('costModalError');
   const box = document.getElementById('newFunderBox');
   const amtLabel = document.getElementById('cAmtLabel');
-  const unitPriceLabel = document.getElementById('cUnitPriceLabel');
-  const rowsEl = document.getElementById('costLineRows');
-  const rowEl = () => rowsEl.querySelector('.s1-line');
 
   const showErr = (m, field) => {
     errBox.textContent = m;
@@ -787,49 +807,10 @@ function openAddCostModal({ project, initialData = null, prefill = null, onAdded
       .forEach((o) => o.classList.toggle('is-on', o.querySelector('input').checked));
     const isNowCash = kindVal() === '1';
     amtLabel.textContent = isNowCash ? L('จำนวนเงิน', 'Amount') : L('มูลค่าโดยประมาณ', 'Estimated value');
-    unitPriceLabel.textContent = isNowCash ? L('ราคา/หน่วย', 'Price / unit') : L('มูลค่า/หน่วย', 'Value / unit');
   };
 
   const fmt = (n) => n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const parseNum = (str) => parseFloat(String(str ?? '').replace(/[,\s]/g, ''));
-
-  const lineRowHtml = (l) => `
-    <div class="s1-line">
-      <input class="input" type="text" inputmode="decimal" data-f="price" placeholder="${L('เช่น 100', 'e.g. 100')}" aria-label="${L('ราคาต่อหน่วย', 'Price per unit')}" value="${escapeHtml(String(l.unit_price))}" />
-      <input class="input" type="text" inputmode="decimal" data-f="qty" placeholder="${L('เช่น 10', 'e.g. 10')}" aria-label="${L('จำนวน', 'Quantity')}" value="${escapeHtml(String(l.quantity))}" />
-      <input class="input" list="costUnitSuggestions" data-f="unit" placeholder="${L('เช่น คน', 'e.g. person')}" aria-label="${L('หน่วย', 'Unit')}" value="${escapeHtml(String(l.unit))}" />
-      <div class="num s1-line-sub" data-f="sub">–</div>
-    </div>`;
-
-  const rowValues = (row) => ({
-    price: row.querySelector('[data-f="price"]'),
-    qty: row.querySelector('[data-f="qty"]'),
-    unit: row.querySelector('[data-f="unit"]'),
-  });
-  const rowSubtotal = (row) => {
-    const { price, qty } = rowValues(row);
-    const p = parseNum(price.value);
-    const q = parseNum(qty.value);
-    return !Number.isNaN(p) && p >= 0 && !Number.isNaN(q) && q > 0 ? Math.round(p * q * 100) / 100 : null;
-  };
-
-  const updateCalculation = () => {
-    const row = rowEl();
-    const sub = rowSubtotal(row);
-    row.querySelector('[data-f="sub"]').textContent = sub === null ? '–' : fmt(sub);
-  };
-
-  rowsEl.insertAdjacentHTML('beforeend', lineRowHtml(initialLine));
-  updateCalculation();
-  rowsEl.addEventListener('input', updateCalculation);
-  // Enter jumps to the next box (and to the next row after the unit), so everything can be typed from the keyboard.
-  rowsEl.addEventListener('keydown', (e) => {
-    if (e.key !== 'Enter') return;
-    e.preventDefault();
-    const inputs = [...rowsEl.querySelectorAll('input')];
-    const next = inputs[inputs.indexOf(e.target) + 1];
-    if (next) next.focus();
-  });
 
   form.querySelectorAll('input[name="kind"]').forEach((r) =>
     r.addEventListener('change', () => {
@@ -855,22 +836,11 @@ function openAddCostModal({ project, initialData = null, prefill = null, onAdded
     const desc = form.description.value.trim();
     if (!desc) return showErr(L('กรุณาบอกว่าใช้ไปกับอะไร', 'Please say what it was for'), form.description);
 
-    const r = { row: rowEl(), ...rowValues(rowEl()) };
-    const p = parseNum(r.price.value);
-    const q = parseNum(r.qty.value);
-    const u = r.unit.value.trim();
-    if (r.price.value.trim() === '' || Number.isNaN(p) || p < 0) {
-      return showErr(L('กรุณากรอกราคาต่อหน่วยเป็นตัวเลข (ไม่ติดลบ)', 'Enter the unit price as a number (not negative)'), r.price);
+    const amount = parseNum(form.amount.value);
+    if (form.amount.value.trim() === '' || Number.isNaN(amount) || amount < 0) {
+      return showErr(L('กรุณากรอกจำนวนเงินเป็นตัวเลข (ไม่ติดลบ)', 'Enter the amount as a number (not negative)'), form.amount);
     }
-    if (r.qty.value.trim() === '' || Number.isNaN(q) || q <= 0) {
-      return showErr(L('กรุณากรอกจำนวนที่มากกว่า 0', 'Enter a quantity greater than 0'), r.qty);
-    }
-    if (!u) {
-      return showErr(L('กรุณากรอกหรือเลือกหน่วย (เช่น คน, ชิ้น)', 'Enter or pick a unit (e.g. person, pcs)'), r.unit);
-    }
-    const lineItems = [{ unit_price: p, quantity: q, unit: u }];
-    const amount = Math.round(lineItems.reduce((a, l) => a + l.quantity * l.unit_price, 0) * 100) / 100;
-    const single = lineItems.length === 1 ? lineItems[0] : null;
+    const detail = form.detail.value.trim();
 
     const btns = document.querySelectorAll('#btnSaveCost, #btnSaveCostNext');
     btns.forEach((b) => (b.disabled = true));
@@ -896,12 +866,13 @@ function openAddCostModal({ project, initialData = null, prefill = null, onAdded
       const data = {
         description: desc,
         category: form.category.value,
-        amount,
-        calculation_mode: 'quantity',
-        line_items: lineItems,
-        quantity: single ? single.quantity : null,
-        unit: single ? single.unit : null,
-        unit_price: single ? single.unit_price : null,
+        amount: Math.round(amount * 100) / 100,
+        calculation_mode: 'manual',
+        line_items: null,
+        quantity: null,
+        unit: null,
+        unit_price: null,
+        notes: detail || null,
         currency: project.currency,
         year: Number.isNaN(yearRaw) ? 0 : yearRaw,
         is_cash: kindVal() === '1',

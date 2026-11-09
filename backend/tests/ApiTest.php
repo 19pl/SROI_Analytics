@@ -597,6 +597,21 @@ T::test('api: funding lines link to a stakeholder (migration 006) and survive it
     T::eq(2, count($ed['data']['line_items']));
     [$s, $ed2] = $call('PATCH', "/projects/$pid/costs/{$li['data']['id']}", ['amount' => 3000], $tok);
     T::eq(2, count($ed2['data']['line_items']));
+    // one row with a second multiplier: 2,500 x 2 persons x 3 days = 15,000
+    $two = [['unit_price' => 2500, 'quantity' => 2, 'unit' => 'คน', 'quantity2' => 3, 'unit2' => 'วัน']];
+    [$s, $sp] = $call('POST', "/projects/$pid/costs",
+        ['category' => 'administration', 'description' => 'ค่าตอบแทนวิทยากร', 'amount' => 15000, 'year' => 0, 'line_items' => $two], $tok);
+    T::eq(201, $s);
+    T::eq(15000.0, (float)$sp['data']['amount']);
+    T::eq(3.0, (float)$sp['data']['line_items'][0]['quantity2']);
+    T::eq(null, $sp['data']['quantity'], 'second multiplier leaves legacy columns empty');
+    [$s] = $call('POST', "/projects/$pid/costs",
+        ['category' => 'administration', 'description' => 'wrong', 'amount' => 5000, 'year' => 0, 'line_items' => $two], $tok);
+    T::eq(422, $s, 'amount must equal price x qty x qty2');
+    [$s] = $call('POST', "/projects/$pid/costs",
+        ['category' => 'administration', 'description' => 'no unit2', 'amount' => 15000, 'year' => 0,
+         'line_items' => [['unit_price' => 2500, 'quantity' => 2, 'unit' => 'คน', 'quantity2' => 3]]], $tok);
+    T::eq(422, $s, 'second quantity needs a second unit');
 });
 
 

@@ -1126,3 +1126,43 @@
     max-width: 220px;
   }
 }
+/* Step 1 cost: price x quantity (x optional second quantity) */
+.s1-calc {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.s1-cf {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr) minmax(0, 1fr);
+  gap: 6px;
+  align-items: center;
+}
+
+.s1-cf:has(.s1-line-x) {
+  grid-template-columns: 20px minmax(0, 1fr) minmax(0, 1fr) 28px;
+}
+
+.s1-cf-price {
+  grid-template-columns: 20px minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.s1-cf[hidden],
+.s1-add-factor[hidden] {
+  display: none;
+}
+
+.s1-times {
+  text-align: center;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.s1-cf-note {
+  font-size: 0.75rem;
+}
+
+.s1-add-factor {
+  align-self: flex-start;
+}

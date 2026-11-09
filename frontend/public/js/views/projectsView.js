@@ -1400,6 +1400,8 @@ function openCreateProjectModal({ currentOrgId, faculties, onCreated }) {
       department_id,
       assessment_months: form.assessment_months.value ? parseInt(form.assessment_months.value, 10) : null,
       calc_method: form.calc_method.value,
+      // Without this the plan starts with no investment basis, and Step 1 stays "incomplete" until Save is pressed.
+      investment_basis: 'nominal',
     };
     if (currentOrgId) data.organization_id = currentOrgId;
 
