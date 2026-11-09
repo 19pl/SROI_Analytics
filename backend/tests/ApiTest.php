@@ -573,3 +573,133 @@ T::test('api: funding lines link to a stakeholder (migration 006) and survive it
     T::eq(1, count($kept));
     T::eq(null, $kept[0]['stakeholder_id']);
 });
+
+
+T::test('Cost quantity, unit, and calculation modes', function () use ($call, $register) {
+    [, $reg] = $register(['email' => 'costqty@x.org', 'name' => 'Cost Qty', 'password' => 'correct-horse-9']);
+    $tok = $reg['token'];
+    $oid = $reg['organizations'][0]['id'];
+    [, $p] = $call('POST', '/projects', ['organization_id' => $oid, 'name' => 'Cost Qty Project', 'currency' => 'THB', 'analysis_period_years' => 3, 'evaluation_type' => 'forecast'], $tok);
+    $pid = $p['data']['id'];
+
+    // Case 1: 10 ถุง * 50 = 500
+    [$s, $c1] = $call('POST', "/projects/$pid/costs", [
+        'category' => 'opex', 'description' => 'ปุ๋ยอินทรีย์',
+        'calculation_mode' => 'quantity', 'quantity' => 10, 'unit' => 'ถุง', 'unit_price' => 50, 'amount' => 500, 'year' => 0
+    ], $tok);
+    T::eq(201, $s, 'case 1 status 201');
+    T::eq(500.0, $c1['data']['amount'], 'case 1 amount 500');
+    T::eq(10.0, $c1['data']['quantity'], 'case 1 quantity 10');
+    T::eq('ถุง', $c1['data']['unit'], 'case 1 unit ถุง');
+    T::eq(50.0, $c1['data']['unit_price'], 'case 1 unit price 50');
+    T::eq('quantity', $c1['data']['calculation_mode']);
+
+    // Case 2: 2.5 กก. * 100 = 250
+    [$s, $c2] = $call('POST', "/projects/$pid/costs", [
+        'category' => 'delivery', 'description' => 'เมล็ดพันธุ์',
+        'calculation_mode' => 'quantity', 'quantity' => 2.5, 'unit' => 'กก.', 'unit_price' => 100, 'amount' => 250, 'year' => 0
+    ], $tok);
+    T::eq(201, $s);
+    T::eq(250.0, $c2['data']['amount']);
+    T::eq(2.5, $c2['data']['quantity']);
+
+    // Case 3: 100 ชิ้น * 12.50 = 1,250
+    [$s, $c3] = $call('POST', "/projects/$pid/costs", [
+        'category' => 'capex', 'description' => 'แก้วน้ำแจกผู้ร่วมงาน',
+        'calculation_mode' => 'quantity', 'quantity' => 100, 'unit' => 'ชิ้น', 'unit_price' => 12.5, 'amount' => 1250, 'year' => 1
+    ], $tok);
+    T::eq(201, $s);
+    T::eq(1250.0, $c3['data']['amount']);
+
+    // Case 4: Manual 5,000 = 5,000
+    [$s, $c4] = $call('POST', "/projects/$pid/costs", [
+        'category' => 'administration', 'description' => 'ค่าธรรมเนียมจัดการ',
+        'calculation_mode' => 'manual', 'amount' => 5000, 'year' => 0
+    ], $tok);
+    T::eq(201, $s);
+    T::eq(5000.0, $c4['data']['amount']);
+    T::eq('manual', $c4['data']['calculation_mode']);
+    T::eq(null, $c4['data']['quantity']);
+    T::eq(null, $c4['data']['unit']);
+    T::eq(null, $c4['data']['unit_price']);
+
+    // Case 5: Quantity = 0 -> rejected (422)
+    [$s] = $call('POST', "/projects/$pid/costs", [
+        'category' => 'opex', 'description' => 'Zero qty',
+        'calculation_mode' => 'quantity', 'quantity' => 0, 'unit' => 'ชิ้น', 'unit_price' => 50, 'amount' => 0, 'year' => 0
+    ], $tok);
+    T::eq(422, $s, 'quantity = 0 rejected');
+
+    // Quantity < 0 -> rejected (422)
+    [$s] = $call('POST', "/projects/$pid/costs", [
+        'category' => 'opex', 'description' => 'Neg qty',
+        'calculation_mode' => 'quantity', 'quantity' => -2, 'unit' => 'ชิ้น', 'unit_price' => 50, 'amount' => -100, 'year' => 0
+    ], $tok);
+    T::eq(422, $s, 'quantity < 0 rejected');
+
+    // Case 6: Unit empty -> rejected (422)
+    [$s] = $call('POST', "/projects/$pid/costs", [
+        'category' => 'opex', 'description' => 'Empty unit',
+        'calculation_mode' => 'quantity', 'quantity' => 10, 'unit' => '  ', 'unit_price' => 50, 'amount' => 500, 'year' => 0
+    ], $tok);
+    T::eq(422, $s, 'unit empty rejected');
+
+    // Case 7: Unit Price negative -> rejected (422)
+    [$s] = $call('POST', "/projects/$pid/costs", [
+        'category' => 'opex', 'description' => 'Neg price',
+        'calculation_mode' => 'quantity', 'quantity' => 10, 'unit' => 'ชิ้น', 'unit_price' => -50, 'amount' => -500, 'year' => 0
+    ], $tok);
+    T::eq(422, $s, 'unit_price < 0 rejected');
+
+    // Case 8: Edit existing item -> fields updated correctly
+    $cid = $c1['data']['id'];
+    [$s, $c1Up] = $call('PATCH', "/projects/$pid/costs/$cid", [
+        'quantity' => 20, 'unit' => 'กระสอบ', 'unit_price' => 60, 'amount' => 1200
+    ], $tok);
+    T::eq(200, $s);
+    T::eq(1200.0, $c1Up['data']['amount']);
+    T::eq(20.0, $c1Up['data']['quantity']);
+    T::eq('กระสอบ', $c1Up['data']['unit']);
+    T::eq(60.0, $c1Up['data']['unit_price']);
+
+    // Case 9: Switch mode
+    // Switch quantity -> manual: quantity, unit, unit_price are cleared
+    [$s, $c1Manual] = $call('PATCH', "/projects/$pid/costs/$cid", [
+        'calculation_mode' => 'manual', 'amount' => 1500
+    ], $tok);
+    T::eq(200, $s);
+    T::eq(1500.0, $c1Manual['data']['amount']);
+    T::eq('manual', $c1Manual['data']['calculation_mode']);
+    T::eq(null, $c1Manual['data']['quantity']);
+    T::eq(null, $c1Manual['data']['unit']);
+    T::eq(null, $c1Manual['data']['unit_price']);
+
+    // Switch manual -> quantity
+    [$s, $c1Qty] = $call('PATCH', "/projects/$pid/costs/$cid", [
+        'calculation_mode' => 'quantity', 'quantity' => 5, 'unit' => 'ชุด', 'unit_price' => 300, 'amount' => 1500
+    ], $tok);
+    T::eq(200, $s);
+    T::eq(1500.0, $c1Qty['data']['amount']);
+    T::eq('quantity', $c1Qty['data']['calculation_mode']);
+    T::eq(5.0, $c1Qty['data']['quantity']);
+    T::eq('ชุด', $c1Qty['data']['unit']);
+    T::eq(300.0, $c1Qty['data']['unit_price']);
+
+    // Case 10: Legacy item (default manual without quantity) works as normal
+    [$s, $legacy] = $call('POST', "/projects/$pid/costs", [
+        'category' => 'other', 'description' => 'Legacy format', 'amount' => 800, 'year' => 0
+    ], $tok);
+    T::eq(201, $s);
+    T::eq(800.0, $legacy['data']['amount']);
+    T::eq('manual', $legacy['data']['calculation_mode']);
+
+    // Case 11: Non-cash item calculates value accurately
+    [$s, $nonCash] = $call('POST', "/projects/$pid/costs", [
+        'category' => 'in_kind', 'description' => 'อาหารว่างสนับสนุน',
+        'calculation_mode' => 'quantity', 'quantity' => 50, 'unit' => 'กล่อง', 'unit_price' => 35, 'amount' => 1750, 'year' => 0, 'is_cash' => false
+    ], $tok);
+    T::eq(201, $s);
+    T::eq(1750.0, $nonCash['data']['amount']);
+    T::eq(false, $nonCash['data']['is_cash']);
+    T::eq('in_kind', $nonCash['data']['category']);
+});

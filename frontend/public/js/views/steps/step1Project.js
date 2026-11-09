@@ -309,7 +309,7 @@ export function renderStep1(container) {
                       ${c.period_label ? `<span class="badge badge-integrated s1-mini">${escapeHtml(c.period_label)}</span>` : ''}
                       ${dupIds.has(c.id) ? `<span class="badge s1-mini s1-warn" title="${L('มีรายการเหมือนกันอีก — ตรวจว่านับซ้ำหรือไม่', 'Another identical item exists — check for double counting')}">${L('อาจซ้ำ', 'Possible duplicate')}</span>` : ''}
                     </div>
-                    <div class="muted s1-mini-line">${escapeHtml(costCategoryLabel(c.category, isTh))}</div>
+                    <div class="muted s1-mini-line">${escapeHtml(costCategoryLabel(c.category, isTh))}${c.calculation_mode === 'quantity' && c.quantity !== null && c.quantity !== undefined && c.unit ? ` · <span class="s1-qty-detail">${c.quantity} ${escapeHtml(c.unit)} × ${money(c.unit_price)}</span>` : ''}</div>
                   </td>
                   <td>${stk ? `<span class="badge badge-integrated">${escapeHtml(stk.group_code || '')}</span> ${escapeHtml(stk.name)}` : '<span class="muted">–</span>'}</td>
                   <td>${c.is_cash ? L('เงินสด', 'Cash') : `<span class="muted">${L('ไม่ใช่เงินสด', 'Non-cash')}</span>`}
@@ -613,6 +613,22 @@ function openAddCostModal({ project, initialData = null, prefill = null, onAdded
   const isCash = isEdit ? !!initialData.is_cash : v('is_cash', 1) === 1 || v('is_cash', 1) === true;
   const curr = escapeHtml(project.currency || 'THB');
 
+  // Determine initial calculation mode:
+  // Mode A: quantity * unit_price (default for new items or items with quantity)
+  // Mode B: manual total amount (if calculation_mode === 'manual' or existing item without quantity)
+  const initialMode =
+    src.calculation_mode === 'quantity' ||
+    (src.quantity !== null && src.quantity !== undefined && Number(src.quantity) > 0)
+      ? 'quantity'
+      : src.calculation_mode === 'manual' ||
+          (src.amount !== null && src.amount !== undefined && String(src.amount) !== '')
+        ? src.calculation_mode || 'manual'
+        : 'quantity';
+
+  const standardUnits = isTh
+    ? ['ชิ้น', 'อัน', 'กล่อง', 'ชุด', 'เครื่อง', 'แผ่น', 'ถุง', 'กิโลกรัม', 'เมตร', 'ตารางเมตร', 'ชั่วโมง', 'วัน', 'ครั้ง']
+    : ['piece', 'item', 'box', 'set', 'unit', 'sheet', 'bag', 'kg', 'meter', 'sq.m', 'hour', 'day', 'time'];
+
   // Open "more details" by default only when editing an item that already uses them.
   const hasExtra =
     isEdit &&
@@ -642,18 +658,70 @@ function openAddCostModal({ project, initialData = null, prefill = null, onAdded
         <div class="s1-kind">
           <label class="s1-kind-opt ${isCash ? 'is-on' : ''}">
             <input type="radio" name="kind" value="1" ${isCash ? 'checked' : ''} />
-            
             <span><b>${L('เงินสด', 'Cash')}</b><small>${L('จ่ายจริงหรือได้รับเป็นเงิน', 'Actually paid or received as money')}</small></span>
           </label>
           <label class="s1-kind-opt ${!isCash ? 'is-on' : ''}">
             <input type="radio" name="kind" value="0" ${!isCash ? 'checked' : ''} />
-            
             <span><b>${L('ไม่ใช่เงินสด', 'Not cash')}</b><small>${L('แรงอาสา ของบริจาค ใช้ห้อง/อุปกรณ์ฟรี', 'Volunteer time, donations, free use of space')}</small></span>
           </label>
         </div>
       </div>
 
+      <!-- Calculation Mode Segmented Control -->
       <div class="field">
+        <span class="field-label">${L('วิธีกรอกจำนวนเงิน', 'How to enter amount')}</span>
+        <div class="s1-calc-mode">
+          <button type="button" class="s1-mode-btn ${initialMode === 'quantity' ? 'is-active' : ''}" data-mode="quantity">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px;"><rect x="4" y="2" width="16" height="20" rx="2"></rect><line x1="8" y1="6" x2="16" y2="6"></line><line x1="16" y1="14" x2="16" y2="14"></line><line x1="8" y1="14" x2="8" y2="14"></line><line x1="12" y1="14" x2="12" y2="14"></line><line x1="8" y1="18" x2="8" y2="18"></line><line x1="12" y1="18" x2="12" y2="18"></line><line x1="16" y1="18" x2="16" y2="18"></line><line x1="8" y1="10" x2="8" y2="10"></line><line x1="12" y1="10" x2="12" y2="10"></line><line x1="16" y1="10" x2="16" y2="10"></line></svg>
+            ${L('คำนวณจากจำนวนและราคาต่อหน่วย', 'Calculate from quantity & unit price')}
+          </button>
+          <button type="button" class="s1-mode-btn ${initialMode === 'manual' ? 'is-active' : ''}" data-mode="manual">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+            ${L('กรอกยอดเงินรวมเอง', 'Enter total manually')}
+          </button>
+        </div>
+      </div>
+
+      <!-- Mode A: Quantity & Unit Price -->
+      <div id="costModeQuantity" class="stack" style="gap: var(--sp-md); ${initialMode === 'quantity' ? '' : 'display: none;'}">
+        <div class="form-grid">
+          <div class="field">
+            <label class="field-label" for="cQuantity">${L('จำนวน', 'Quantity')} <span class="s1-tag s1-tag-req">${L('จำเป็น', 'Required')}</span></label>
+            <input id="cQuantity" type="number" step="any" min="0.0001" name="quantity" class="input" placeholder="${L('เช่น 10 หรือ 2.5', 'e.g. 10 or 2.5')}" value="${v('quantity')}" />
+          </div>
+          <div class="field">
+            <label class="field-label" for="cUnit">${L('หน่วย', 'Unit')} <span class="s1-tag s1-tag-req">${L('จำเป็น', 'Required')}</span></label>
+            <input id="cUnit" list="costUnitSuggestions" name="unit" class="input" placeholder="${L('เช่น ถุง, ชิ้น, กิโลกรัม', 'e.g. bags, pcs, kg')}" value="${escapeHtml(v('unit'))}" />
+            <datalist id="costUnitSuggestions">
+              ${standardUnits.map((u) => `<option value="${escapeHtml(u)}"></option>`).join('')}
+            </datalist>
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="field-label" for="cUnitPrice"><span id="cUnitPriceLabel">${isCash ? L('ราคาต่อหน่วย', 'Unit price') : L('มูลค่าต่อหน่วยโดยประมาณ', 'Estimated unit value')}</span> (${curr}) <span class="s1-tag s1-tag-req">${L('จำเป็น', 'Required')}</span></label>
+          <input id="cUnitPrice" type="number" step="0.01" min="0" name="unit_price" class="input" placeholder="${L('เช่น 50.00', 'e.g. 50.00')}" value="${v('unit_price')}" />
+        </div>
+
+        <div class="field">
+          <div class="s1-total-highlight">
+            <div class="s1-total-highlight__header">
+              <span class="s1-total-highlight__label"><span id="cTotalAmtLabel">${isCash ? L('จำนวนเงินรวม', 'Total amount') : L('มูลค่ารวมโดยประมาณ', 'Total estimated value')}</span> (${curr})</span>
+              <span class="badge s1-badge-auto">${L('คำนวณอัตโนมัติ', 'Auto-calculated')}</span>
+            </div>
+            <div class="s1-total-highlight__body">
+              <div class="s1-total-num-wrap">
+                <span class="s1-total-num" id="cCalcTotalDisplay">0.00</span>
+                <span class="s1-total-curr">${curr}</span>
+              </div>
+              <div class="s1-total-formula" id="cCalcFormula">—</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mode B: Manual total -->
+      <div id="costModeManual" class="field" style="${initialMode === 'manual' ? '' : 'display: none;'}">
         <label class="field-label" for="cAmt"><span id="cAmtLabel">${isCash ? L('จำนวนเงิน', 'Amount') : L('มูลค่าโดยประมาณ', 'Estimated value')}</span> (${curr}) <span class="s1-tag s1-tag-req">${L('จำเป็น', 'Required')}</span></label>
         <input id="cAmt" type="text" inputmode="decimal" name="amount" class="input" value="${v('amount')}" placeholder="50000" />
       </div>
@@ -721,6 +789,21 @@ function openAddCostModal({ project, initialData = null, prefill = null, onAdded
   const errBox = document.getElementById('costModalError');
   const box = document.getElementById('newFunderBox');
   const amtLabel = document.getElementById('cAmtLabel');
+  const unitPriceLabel = document.getElementById('cUnitPriceLabel');
+  const totalAmtLabel = document.getElementById('cTotalAmtLabel');
+  const qtyBox = document.getElementById('costModeQuantity');
+  const manualBox = document.getElementById('costModeManual');
+  const modeBtns = form.querySelectorAll('.s1-mode-btn');
+
+  const qtyInput = form.querySelector('input[name="quantity"]');
+  const unitInput = form.querySelector('input[name="unit"]');
+  const priceInput = form.querySelector('input[name="unit_price"]');
+  const manualAmtInput = document.getElementById('cAmt');
+  const calcTotalDisplay = document.getElementById('cCalcTotalDisplay');
+  const calcFormula = document.getElementById('cCalcFormula');
+
+  let currentMode = initialMode;
+
   const showErr = (m) => {
     errBox.textContent = m;
     errBox.style.display = 'block';
@@ -731,9 +814,87 @@ function openAddCostModal({ project, initialData = null, prefill = null, onAdded
     form
       .querySelectorAll('.s1-kind-opt')
       .forEach((o) => o.classList.toggle('is-on', o.querySelector('input').checked));
+    const isNowCash = kindVal() === '1';
     amtLabel.textContent =
-      kindVal() === '1' ? L('จำนวนเงิน', 'Amount') : L('มูลค่าโดยประมาณ', 'Estimated value');
+      isNowCash ? L('จำนวนเงิน', 'Amount') : L('มูลค่าโดยประมาณ', 'Estimated value');
+    if (unitPriceLabel) {
+      unitPriceLabel.textContent =
+        isNowCash ? L('ราคาต่อหน่วย', 'Unit price') : L('มูลค่าต่อหน่วยโดยประมาณ', 'Estimated unit value');
+    }
+    if (totalAmtLabel) {
+      totalAmtLabel.textContent =
+        isNowCash ? L('จำนวนเงินรวม', 'Total amount') : L('มูลค่ารวมโดยประมาณ', 'Total estimated value');
+    }
   };
+
+  const calcTotalAmount = () => {
+    const qStr = String(qtyInput?.value || '').trim();
+    const pStr = String(priceInput?.value || '').trim();
+    const q = parseFloat(qStr);
+    const p = parseFloat(pStr.replace(/[,\s]/g, ''));
+    if (!Number.isNaN(q) && q > 0 && !Number.isNaN(p) && p >= 0) {
+      return Math.round(q * p * 100) / 100;
+    }
+    return null;
+  };
+
+  const updateCalculation = () => {
+    const qStr = String(qtyInput?.value || '').trim();
+    const pStr = String(priceInput?.value || '').trim();
+    const uStr = String(unitInput?.value || '').trim();
+    const q = parseFloat(qStr);
+    const p = parseFloat(pStr.replace(/[,\s]/g, ''));
+
+    if (!Number.isNaN(q) && q > 0 && !Number.isNaN(p) && p >= 0) {
+      const total = Math.round(q * p * 100) / 100;
+      if (calcTotalDisplay) {
+        calcTotalDisplay.textContent = total.toLocaleString(undefined, {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        });
+      }
+      if (calcFormula) {
+        const uLabel = uStr || L('หน่วย', 'unit');
+        calcFormula.textContent = `${q} ${uLabel} × ${p.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} = ${total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${curr}`;
+      }
+    } else {
+      if (calcTotalDisplay) calcTotalDisplay.textContent = '0.00';
+      if (calcFormula) calcFormula.textContent = '—';
+    }
+  };
+
+  modeBtns.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const nextMode = btn.dataset.mode;
+      if (nextMode === currentMode) return;
+      currentMode = nextMode;
+      modeBtns.forEach((b) => b.classList.toggle('is-active', b.dataset.mode === currentMode));
+
+      if (currentMode === 'quantity') {
+        manualBox.style.display = 'none';
+        qtyBox.style.display = 'flex';
+        qtyBox.style.flexDirection = 'column';
+        updateCalculation();
+        qtyInput?.focus();
+      } else {
+        qtyBox.style.display = 'none';
+        manualBox.style.display = 'block';
+        const calculated = calcTotalAmount();
+        if (calculated !== null && !manualAmtInput.value) {
+          manualAmtInput.value = calculated;
+        }
+        manualAmtInput?.focus();
+      }
+    });
+  });
+
+  qtyInput?.addEventListener('input', updateCalculation);
+  unitInput?.addEventListener('input', updateCalculation);
+  priceInput?.addEventListener('input', updateCalculation);
+
+  // Initial calculation preview if in quantity mode or prefilled
+  updateCalculation();
+
   form.querySelectorAll('input[name="kind"]').forEach((r) =>
     r.addEventListener('change', () => {
       syncKind();
@@ -755,16 +916,48 @@ function openAddCostModal({ project, initialData = null, prefill = null, onAdded
 
   const save = async (andNext) => {
     errBox.style.display = 'none';
-    const amount = parseFloat(String(form.amount.value).replace(/[,\s]/g, ''));
     const desc = form.description.value.trim();
     if (!desc) return showErr(L('กรุณาบอกว่าใช้ไปกับอะไร', 'Please say what it was for'));
-    if (Number.isNaN(amount) || amount < 0)
-      return showErr(
-        L(
-          'กรุณากรอกจำนวนเงินเป็นตัวเลข (ใส่ 0 ได้หากไม่มีค่าใช้จ่าย)',
-          'Please enter the amount as a number',
-        ),
-      );
+
+    let amount = 0;
+    let quantity = null;
+    let unit = null;
+    let unitPrice = null;
+
+    if (currentMode === 'quantity') {
+      const qStr = String(qtyInput?.value || '').trim();
+      const uStr = String(unitInput?.value || '').trim();
+      const pStr = String(priceInput?.value || '').trim();
+
+      quantity = parseFloat(qStr);
+      unit = uStr;
+      unitPrice = parseFloat(pStr.replace(/[,\s]/g, ''));
+
+      if (qStr === '' || Number.isNaN(quantity) || quantity <= 0) {
+        return showErr(L('กรุณากรอกจำนวนที่มากกว่า 0', 'Please enter a quantity greater than 0'));
+      }
+      if (!unit) {
+        return showErr(L('กรุณากรอกหรือเลือกหน่วย', 'Please enter or select a unit'));
+      }
+      if (pStr === '' || Number.isNaN(unitPrice) || unitPrice < 0) {
+        return showErr(L('กรุณากรอกราคาต่อหน่วยเป็นตัวเลข (ไม่ติดลบ)', 'Please enter a valid non-negative unit price'));
+      }
+
+      amount = Math.round(quantity * unitPrice * 100) / 100;
+      if (amount < 0) {
+        return showErr(L('ยอดเงินรวมต้องไม่ติดลบ', 'Total amount must not be negative'));
+      }
+    } else {
+      amount = parseFloat(String(manualAmtInput.value).replace(/[,\s]/g, ''));
+      if (Number.isNaN(amount) || amount < 0) {
+        return showErr(
+          L(
+            'กรุณากรอกจำนวนเงินเป็นตัวเลข (ใส่ 0 ได้หากไม่มีค่าใช้จ่าย)',
+            'Please enter the amount as a number',
+          ),
+        );
+      }
+    }
 
     const btns = document.querySelectorAll('#btnSaveCost, #btnSaveCostNext');
     btns.forEach((b) => (b.disabled = true));
@@ -791,6 +984,10 @@ function openAddCostModal({ project, initialData = null, prefill = null, onAdded
         description: desc,
         category: form.category.value,
         amount,
+        calculation_mode: currentMode,
+        quantity: currentMode === 'quantity' ? quantity : null,
+        unit: currentMode === 'quantity' ? unit : null,
+        unit_price: currentMode === 'quantity' ? unitPrice : null,
         currency: project.currency,
         year: Number.isNaN(yearRaw) ? 0 : yearRaw,
         is_cash: kindVal() === '1',

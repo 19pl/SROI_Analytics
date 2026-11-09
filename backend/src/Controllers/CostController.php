@@ -39,7 +39,26 @@ final class CostController extends ProjectResource
             'notes' => ['type' => 'string', 'max' => 2000, 'nullable' => true],
             'period_label' => ['type' => 'string', 'max' => 100, 'nullable' => true],
             'stakeholder_id' => ['type' => 'int', 'min' => 1, 'nullable' => true],
+            'calculation_mode' => ['type' => 'enum', 'in' => ['manual', 'quantity'], 'default' => 'manual'],
+            'quantity' => ['type' => 'number', 'nullable' => true, 'min' => 0],
+            'unit' => ['type' => 'string', 'max' => 100, 'nullable' => true],
+            'unit_price' => ['type' => 'number', 'nullable' => true, 'min' => 0],
         ];
+    }
+
+    protected function cast(array $row): array
+    {
+        $row = parent::cast($row);
+        if (isset($row['amount'])) {
+            $row['amount'] = (float)$row['amount'];
+        }
+        if (isset($row['quantity']) && $row['quantity'] !== null) {
+            $row['quantity'] = (float)$row['quantity'];
+        }
+        if (isset($row['unit_price']) && $row['unit_price'] !== null) {
+            $row['unit_price'] = (float)$row['unit_price'];
+        }
+        return $row;
     }
 
     protected function prepare(array $data, array $project, ?array $existing): array
@@ -67,6 +86,46 @@ final class CostController extends ProjectResource
         if (isset($data['year']) && $T !== null && $data['year'] > $T) {
             throw HttpException::unprocessable('Validation failed', ['year' => "must not exceed the analysis period ($T years)"]);
         }
+
+        $mode = $m['calculation_mode'] ?? 'manual';
+        if ($mode === 'quantity') {
+            if (!array_key_exists('quantity', $m) || $m['quantity'] === null || !is_numeric($m['quantity']) || (float)$m['quantity'] <= 0) {
+                throw HttpException::unprocessable('Validation failed', ['quantity' => 'must be greater than 0 in quantity mode']);
+            }
+            $unit = trim((string)($m['unit'] ?? ''));
+            if ($unit === '') {
+                throw HttpException::unprocessable('Validation failed', ['unit' => 'must not be empty in quantity mode']);
+            }
+            if (!array_key_exists('unit_price', $m) || $m['unit_price'] === null || !is_numeric($m['unit_price']) || (float)$m['unit_price'] < 0) {
+                throw HttpException::unprocessable('Validation failed', ['unit_price' => 'must not be negative in quantity mode']);
+            }
+            $qty = (float)$m['quantity'];
+            $price = (float)$m['unit_price'];
+            $expectedAmount = round($qty * $price, 2);
+
+            if (isset($m['amount']) && is_numeric($m['amount'])) {
+                if (abs((float)$m['amount'] - $expectedAmount) > 0.02) {
+                    throw HttpException::unprocessable('Validation failed', ['amount' => "must match quantity × unit_price ($expectedAmount)"]);
+                }
+            }
+            $data['calculation_mode'] = 'quantity';
+            $data['quantity'] = $qty;
+            $data['unit'] = $unit;
+            $data['unit_price'] = $price;
+            $data['amount'] = $expectedAmount;
+        } else {
+            // manual mode
+            if (array_key_exists('calculation_mode', $data) || array_key_exists('quantity', $data) || array_key_exists('unit', $data) || array_key_exists('unit_price', $data)) {
+                $data['calculation_mode'] = 'manual';
+                $data['quantity'] = null;
+                $data['unit'] = null;
+                $data['unit_price'] = null;
+            }
+            if (isset($data['amount'])) {
+                $data['amount'] = round((float)$data['amount'], 2);
+            }
+        }
+
         return $data;
     }
 }
