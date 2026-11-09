@@ -24,6 +24,7 @@ import {
 } from '../../utils/stakeholderGroups.js';
 import { t, getLanguage } from '../../i18n.js';
 import { wizardFooterHtml, attachWizardFooterEvents } from '../../components/wizardFooter.js';
+import { s2SectionHtml, s3SectionHtml, s4SectionHtml, bindS2, bindS3, bindS4 } from './stakeholderAssistForms.js';
 
 export const BENEFICIARY_PRESETS = [
   { id: 'students', th: 'นิสิต / นักศึกษา', en: 'Students & Learners', group: 'primary_beneficiary', unit: 'คน' },
@@ -493,122 +494,14 @@ function openStakeholderModal({ initialData = null, defaultGroup = null, onSaved
         </div>
       </div>
 
-      <!-- S2 Form Section: Project Implementers -->
+      <!-- S2 Form Section: Project Implementers (Smart Input Assistance, see stakeholderAssistForms.js) -->
       <div id="stkSection-project_operator" class="form-stack stk-form-section" ${initialGroupKey === 'project_operator' ? '' : 'hidden'}>
-        <div class="field">
-          <label class="field-label" for="s2NameInput">
-            ${isTh ? 'ชื่อบุคคลหรือหน่วยงานผู้ดำเนินโครงการ' : 'Implementer / Operator Name'}
-            <span class="field-hint field-hint--primary">*</span>
-          </label>
-          <input type="text" id="s2NameInput" name="name_s2" class="input" value="${escapeHtml(initialGroupKey === 'project_operator' ? (initialData?.name || '') : '')}" placeholder="${isTh ? 'เช่น คณะพยาบาลศาสตร์, ศูนย์บริการวิชาการ, ทีมวิจัย...' : 'e.g. Faculty of Nursing, Project Team'}" />
-        </div>
-
-        <div class="form-row">
-          <div class="field">
-            <label class="field-label" for="s2Category">${isTh ? 'ประเภทผู้ดำเนินโครงการ' : 'Implementer Type'}</label>
-            <select id="s2Category" name="category_s2" class="input">
-              ${[
-                ['Faculty / Department', isTh ? 'คณะ / สำนัก / ภาควิชาภายในมหาวิทยาลัย' : 'Faculty / Department'],
-                ['Research Center / Institute', isTh ? 'ศูนย์วิจัย / สถาบันบริการวิชาการ' : 'Research Center / Institute'],
-                ['Project Team / Researchers', isTh ? 'คณะทำงาน / ทีมวิจัยโครงการ' : 'Project Team / Researchers'],
-                ['Civil Society / NGO', isTh ? 'องค์กรภาคประชาสังคม / มูลนิธิ' : 'Civil Society / NGO'],
-                ['Other', isTh ? 'อื่นๆ' : 'Other'],
-              ].map(([val, label]) => `<option value="${val}" ${initialData?.category === val ? 'selected' : ''}>${label}</option>`).join('')}
-            </select>
-          </div>
-          <div class="field">
-            <label class="field-label" for="s2OperationPeriod">${isTh ? 'ระยะเวลาในการดำเนินงาน' : 'Operating Timeline'}</label>
-            <input type="text" id="s2OperationPeriod" name="operation_period" class="input" value="${escapeHtml(initialData?.operation_period || '')}" placeholder="${isTh ? 'เช่น ตลอดโครงการ 12 เดือน, ไตรมาสที่ 1-2' : 'e.g. Entire 12 months, Months 1-6'}" />
-          </div>
-        </div>
-
-        <div class="form-row">
-          <div class="field">
-            <label class="field-label" for="s2PersonnelCount">${isTh ? 'จำนวนบุคลากรที่เข้าร่วม' : 'Personnel Count'}</label>
-            <input class="input" id="s2PersonnelCount" name="estimated_count_s2" type="number" min="0" step="1" value="${initialGroupKey === 'project_operator' ? (initialData?.estimated_count ?? '') : ''}" placeholder="${isTh ? 'เช่น 15' : 'e.g. 15'}" />
-          </div>
-          <div class="field">
-            <label class="field-label" for="s2CountUnit">${isTh ? 'หน่วยนับ' : 'Unit'}</label>
-            <input type="text" class="input" id="s2CountUnit" name="count_unit_s2" value="${escapeHtml(initialGroupKey === 'project_operator' ? (initialData?.count_unit || 'คน') : 'คน')}" placeholder="${isTh ? 'เช่น คน, ทีม, หน่วย' : 'e.g. people, staff, team'}" />
-          </div>
-        </div>
-
-        <div class="field">
-          <label class="field-label" for="s2Role">
-            ${isTh ? 'บทบาทและหน้าที่ในโครงการ' : 'Role & Responsibility in Project'}
-            <span class="field-hint field-hint--primary">*</span>
-          </label>
-          <input class="input" id="s2Role" name="role_in_project_s2" value="${escapeHtml(initialGroupKey === 'project_operator' ? (initialData?.role_in_project || '') : '')}" placeholder="${isTh ? 'เช่น วางแผนหลักสูตร จัดอบรม และให้บริการตรวจคัดกรองสายตา' : 'e.g. Planning curriculum, conducting eye-screenings'}" />
-        </div>
-
-        <div class="field">
-          <label class="field-label" for="s2ResourcesUsed">${isTh ? 'ทรัพยากรหรือแรงงานที่ใช้ในการดำเนินโครงการ' : 'Resources & Labor Contributed'}</label>
-          <textarea class="input" id="s2ResourcesUsed" name="resources_used" rows="2" placeholder="${isTh ? 'เช่น อาจารย์ 4 คน, นักศึกษาจิตอาสา 8 คน, รถตู้ 1 คัน, อุปกรณ์ตรวจสายตา' : 'e.g. 4 faculty members, 8 volunteer students, mobile van'}">${escapeHtml(initialData?.resources_used || '')}</textarea>
-        </div>
-
-        <div class="field">
-          <label class="field-label" for="s2Description">${isTh ? 'รายละเอียดเพิ่มเติม' : 'Additional Details'}</label>
-          <textarea class="input" id="s2Description" name="description_s2" rows="2" placeholder="${isTh ? 'ข้อมูลเพิ่มเติมเกี่ยวกับคณะทำงาน...' : 'Further notes about the implementers...'}">${escapeHtml(initialGroupKey === 'project_operator' ? (initialData?.description || '') : '')}</textarea>
-        </div>
+        ${s2SectionHtml({ initialData: initialGroupKey === 'project_operator' ? initialData : null, isTh })}
       </div>
 
-      <!-- S3 Form Section: Project Supporters -->
+      <!-- S3 Form Section: Project Supporters (Smart Input Assistance, see stakeholderAssistForms.js) -->
       <div id="stkSection-project_supporter" class="form-stack stk-form-section" ${initialGroupKey === 'project_supporter' ? '' : 'hidden'}>
-        <div class="field">
-          <label class="field-label" for="s3NameInput">
-            ${isTh ? 'ชื่อบุคคลหรือหน่วยงานผู้สนับสนุน' : 'Supporter Name'}
-            <span class="field-hint field-hint--primary">*</span>
-          </label>
-          <input type="text" id="s3NameInput" name="name_s3" class="input" value="${escapeHtml(initialGroupKey === 'project_supporter' ? (initialData?.name || '') : '')}" placeholder="${isTh ? 'เช่น สำนักงานกองทุน สสส., เทศบาลตำบล, บริษัท ปตท. จำกัด' : 'e.g. Thai Health Promotion Foundation, Municipality, Donor'}" />
-        </div>
-
-        <div class="form-row">
-          <div class="field">
-            <label class="field-label" for="s3Category">${isTh ? 'ประเภทผู้สนับสนุน' : 'Supporter Type'}</label>
-            <select id="s3Category" name="category_s3" class="input">
-              ${[
-                ['Government Agency / Fund', isTh ? 'แหล่งทุนภาครัฐ / กองทุนวิจัย' : 'Government Agency / Fund'],
-                ['Local Administration', isTh ? 'องค์กรปกครองส่วนท้องถิ่น (อปท.)' : 'Local Administration'],
-                ['Private Sector / CSR', isTh ? 'ภาคเอกชน / บริษัทธุรกิจ (CSR)' : 'Private Sector / CSR'],
-                ['University Division', isTh ? 'คณะ / ส่วนงานภายในมหาวิทยาลัย' : 'University Division'],
-                ['Foundation / Donor', isTh ? 'มูลนิธิ / บุคคล / ผู้บริจาค' : 'Foundation / Donor'],
-                ['Other', isTh ? 'อื่นๆ' : 'Other'],
-              ].map(([val, label]) => `<option value="${val}" ${initialData?.category === val ? 'selected' : ''}>${label}</option>`).join('')}
-            </select>
-          </div>
-          <div class="field">
-            <label class="field-label" for="s3SupportType">
-              ${isTh ? 'รูปแบบการสนับสนุน' : 'Support Type'}
-              <span class="field-hint field-hint--primary">*</span>
-            </label>
-            <select id="s3SupportType" name="support_type" class="input">
-              ${[
-                ['เงินทุน', isTh ? 'เงินทุน (Financial / Grants)' : 'Financial / Grants'],
-                ['สิ่งของ / อุปกรณ์', isTh ? 'สิ่งของ / อุปกรณ์ (Equipment & Goods)' : 'Equipment & Goods'],
-                ['บุคลากร / ผู้เชี่ยวชาญ', isTh ? 'บุคลากร / ผู้เชี่ยวชาญ (Personnel / Experts)' : 'Personnel / Experts'],
-                ['สถานที่ / ยานพาหนะ', isTh ? 'สถานที่ / ยานพาหนะ (Venue & Logistics)' : 'Venue & Logistics'],
-                ['บริการ / สื่อประชาสัมพันธ์', isTh ? 'บริการ / สื่อประชาสัมพันธ์ (Services & Media)' : 'Services & Media'],
-                ['ผสมผสานหลายรูปแบบ', isTh ? 'ผสมผสานหลายรูปแบบ (Multi-type support)' : 'Multi-type support'],
-              ].map(([val, label]) => `<option value="${val}" ${(initialData?.support_type || 'เงินทุน') === val ? 'selected' : ''}>${label}</option>`).join('')}
-            </select>
-          </div>
-        </div>
-
-        <div class="form-row">
-          <div class="field">
-            <label class="field-label" for="s3SupportValue">${isTh ? 'มูลค่าการสนับสนุน (บาท)' : 'Support Value (Baht)'}</label>
-            <input class="input" id="s3SupportValue" name="support_value" type="number" min="0" step="0.01" value="${initialData?.support_value ?? ''}" placeholder="${isTh ? 'เช่น 250000' : 'e.g. 250000'}" />
-          </div>
-          <div class="field">
-            <label class="field-label" for="s3SupportAmountOrQty">${isTh ? 'จำนวนเงินหรือปริมาณทรัพยากรที่สนับสนุน' : 'Amount / Resource Quantity'}</label>
-            <input class="input" id="s3SupportAmountOrQty" name="support_amount_or_quantity" value="${escapeHtml(initialData?.support_amount_or_quantity || '')}" placeholder="${isTh ? 'เช่น งบประมาณ 250,000 บาท, แว่นตา 300 อัน' : 'e.g. Budget 250,000 THB, 300 eyeglass kits'}" />
-          </div>
-        </div>
-
-        <div class="field">
-          <label class="field-label" for="s3Description">${isTh ? 'รายละเอียดเพิ่มเติม' : 'Additional Details'}</label>
-          <textarea class="input" id="s3Description" name="description_s3" rows="2" placeholder="${isTh ? 'เงื่อนไขการสนับสนุน, รายละเอียดงวดเงิน หรือข้อตกลง...' : 'Funding conditions, milestones, or notes...'}">${escapeHtml(initialGroupKey === 'project_supporter' ? (initialData?.description || '') : '')}</textarea>
-        </div>
+        ${s3SectionHtml({ initialData: initialGroupKey === 'project_supporter' ? initialData : null, isTh })}
 
         <!-- Funding lines disclosure (Step 1 Integration) -->
         <details class="disclosure" id="stkFundingDetails">
@@ -632,70 +525,9 @@ function openStakeholderModal({ initialData = null, defaultGroup = null, onSaved
         </details>
       </div>
 
-      <!-- S4 Form Section: Other Stakeholders -->
+      <!-- S4 Form Section: Other Stakeholders (Smart Input Assistance, see stakeholderAssistForms.js) -->
       <div id="stkSection-other_agency" class="form-stack stk-form-section" ${initialGroupKey === 'other_agency' ? '' : 'hidden'}>
-        <div class="field">
-          <label class="field-label" for="s4NameInput">
-            ${isTh ? 'ชื่อหน่วยงานหรือกลุ่มบุคคล' : 'Agency / Partner Name'}
-            <span class="field-hint field-hint--primary">*</span>
-          </label>
-          <input type="text" id="s4NameInput" name="name_s4" class="input" value="${escapeHtml(initialGroupKey === 'other_agency' ? (initialData?.name || '') : '')}" placeholder="${isTh ? 'เช่น รพ.สต. บ้านดู่, ชมรมผู้สูงอายุตำบล, สหกรณ์การเกษตร' : 'e.g. Sub-district Health Center, Community Club'}" />
-        </div>
-
-        <div class="form-row">
-          <div class="field">
-            <label class="field-label" for="s4Category">${isTh ? 'ประเภทหน่วยงาน' : 'Agency Type'}</label>
-            <select id="s4Category" name="category_s4" class="input">
-              ${[
-                ['Local Administration', isTh ? 'องค์กรปกครองส่วนท้องถิ่น (อปท. / เทศบาล / อบต.)' : 'Local Government / Municipality'],
-                ['Health Center / Clinic', isTh ? 'สถานบริการสาธารณสุข / รพ.สต. / โรงพยาบาล' : 'Health Center / Clinic'],
-                ['Local School / Education', isTh ? 'โรงเรียน / สถานศึกษาในพื้นที่' : 'Local School / Education'],
-                ['Community Enterprise / Cooperative', isTh ? 'วิสาหกิจชุมชน / สหกรณ์ / ธุรกิจท้องถิ่น' : 'Community Enterprise / Cooperative'],
-                ['Community Leaders / Volunteers', isTh ? 'ผู้นำชุมชน / กลุ่มอาสาสมัคร (อสม.)' : 'Community Leaders / Volunteers'],
-                ['Other', isTh ? 'อื่นๆ' : 'Other'],
-              ].map(([val, label]) => `<option value="${val}" ${initialData?.category === val ? 'selected' : ''}>${label}</option>`).join('')}
-            </select>
-          </div>
-          <div class="field">
-            <label class="field-label" for="s4CooperationType">${isTh ? 'รูปแบบความร่วมมือ' : 'Collaboration Model'}</label>
-            <select id="s4CooperationType" name="cooperation_type" class="input">
-              ${[
-                ['บันทึกข้อตกลงความร่วมมือ (MOU)', isTh ? 'บันทึกข้อตกลงความร่วมมือ (MOU)' : 'Memorandum of Understanding (MOU)'],
-                ['ภาคีเครือข่ายร่วมดำเนินงาน', isTh ? 'ภาคีเครือข่ายร่วมดำเนินงาน (Joint Working Network)' : 'Joint Working Network'],
-                ['การประสานงานและส่งต่อกลุ่มเป้าหมาย', isTh ? 'การประสานงานและส่งต่อกลุ่มเป้าหมาย (Referral & Coordination)' : 'Referral & Coordination'],
-                ['การอำนวยความสะดวกในพื้นที่', isTh ? 'การอำนวยความสะดวกในพื้นที่ (Local Facilitation)' : 'Local Facilitation'],
-                ['คณะกรรมการร่วม / ที่ปรึกษา', isTh ? 'คณะกรรมการร่วม / ที่ปรึกษา (Advisory / Steering)' : 'Advisory / Steering Committee'],
-                ['อื่นๆ', isTh ? 'อื่นๆ' : 'Other'],
-              ].map(([val, label]) => `<option value="${val}" ${(initialData?.cooperation_type || 'บันทึกข้อตกลงความร่วมมือ (MOU)') === val ? 'selected' : ''}>${label}</option>`).join('')}
-            </select>
-          </div>
-        </div>
-
-        <div class="form-row">
-          <div class="field">
-            <label class="field-label" for="s4PersonnelCount">${isTh ? 'จำนวนผู้เกี่ยวข้อง (ถ้ามี)' : 'Related People / Units (Optional)'}</label>
-            <input class="input" id="s4PersonnelCount" name="estimated_count_s4" type="number" min="0" step="1" value="${initialGroupKey === 'other_agency' ? (initialData?.estimated_count ?? '') : ''}" placeholder="${isTh ? 'เช่น 5' : 'e.g. 5'}" />
-          </div>
-          <div class="field">
-            <label class="field-label" for="s4CountUnit">${isTh ? 'หน่วยนับ' : 'Unit'}</label>
-            <input type="text" class="input" id="s4CountUnit" name="count_unit_s4" value="${escapeHtml(initialGroupKey === 'other_agency' ? (initialData?.count_unit || 'แห่ง') : 'แห่ง')}" placeholder="${isTh ? 'เช่น แห่ง, คน, กลุ่ม' : 'e.g. agency, people, group'}" />
-          </div>
-        </div>
-
-        <div class="field">
-          <label class="field-label" for="s4Role">${isTh ? 'บทบาทในการมีส่วนร่วมกับโครงการ' : 'Role in Project Engagement'}</label>
-          <input class="input" id="s4Role" name="role_in_project_s4" value="${escapeHtml(initialGroupKey === 'other_agency' ? (initialData?.role_in_project || '') : '')}" placeholder="${isTh ? 'เช่น ช่วยประชาสัมพันธ์ คัดกรองเบื้องต้น และส่งต่อกลุ่มเป้าหมาย' : 'e.g. Coordinating with villagers and screening'}" />
-        </div>
-
-        <div class="field">
-          <label class="field-label" for="s4ResourcesProvided">${isTh ? 'ทรัพยากรที่นำมาสนับสนุน' : 'Resources Provided'}</label>
-          <textarea class="input" id="s4ResourcesProvided" name="resources_provided" rows="2" placeholder="${isTh ? 'เช่น สถานที่จัดกิจกรรมใน รพ.สต., เจ้าหน้าที่ อสม. 10 ท่าน' : 'e.g. Health center venue, 10 local health volunteers'}">${escapeHtml(initialData?.resources_provided || '')}</textarea>
-        </div>
-
-        <div class="field">
-          <label class="field-label" for="s4Description">${isTh ? 'รายละเอียดเพิ่มเติม' : 'Additional Details'}</label>
-          <textarea class="input" id="s4Description" name="description_s4" rows="2" placeholder="${isTh ? 'ข้อมูลเพิ่มเติมเกี่ยวกับหน่วยงานหรือข้อตกลง...' : 'Further notes about the agency...'}">${escapeHtml(initialGroupKey === 'other_agency' ? (initialData?.description || '') : '')}</textarea>
-        </div>
+        ${s4SectionHtml({ initialData: initialGroupKey === 'other_agency' ? initialData : null, isTh })}
       </div>
 
       <input type="hidden" name="group_code" value="${escapeHtml(initialData?.group_code || '')}" />
@@ -770,18 +602,16 @@ function openStakeholderModal({ initialData = null, defaultGroup = null, onSaved
     validateForm();
   };
 
+  // Smart Input Assistance for S2–S4 (S1 keeps its original preset logic above)
+  const assists = {};
   const validateForm = () => {
     let isValid = true;
     if (!group) {
       isValid = false;
     } else if (group.key === 'primary_beneficiary') {
       isValid = !!form.name_s1?.value.trim() && form.estimated_count_s1?.value.trim() !== '' && !!form.count_unit_s1?.value.trim();
-    } else if (group.key === 'project_operator') {
-      isValid = !!form.name_s2?.value.trim() && !!form.role_in_project_s2?.value.trim();
-    } else if (group.key === 'project_supporter') {
-      isValid = !!form.name_s3?.value.trim() && !!form.support_type?.value.trim();
-    } else if (group.key === 'other_agency') {
-      isValid = !!form.name_s4?.value.trim();
+    } else {
+      isValid = assists[group.key] ? assists[group.key].isValid() : false;
     }
     if (btnSaveStk) btnSaveStk.disabled = !isValid;
   };
@@ -802,6 +632,15 @@ function openStakeholderModal({ initialData = null, defaultGroup = null, onSaved
       sec?.querySelector('input[type=text]')?.focus();
     });
   });
+
+  const assistCtx = (key) => ({
+    initialData: (initialData?.stakeholder_group || 'primary_beneficiary') === key ? initialData : null,
+    isTh,
+    onChange: validateForm,
+  });
+  assists.project_operator = bindS2(form, assistCtx('project_operator'));
+  assists.project_supporter = bindS3(form, assistCtx('project_supporter'));
+  assists.other_agency = bindS4(form, assistCtx('other_agency'));
 
   // Funding lines (for S3 or existing funding records)
   const rowsBox = document.getElementById('fundRows');
@@ -903,65 +742,28 @@ function openStakeholderModal({ initialData = null, defaultGroup = null, onSaved
       target_characteristics = form.target_characteristics?.value.trim() || null;
       needs_or_problems = form.needs_or_problems?.value.trim() || null;
       description = form.description_s1?.value.trim() || null;
-    } else if (grpKey === 'project_operator') {
-      name = (form.name_s2?.value || '').trim();
-      if (!name) {
-        showErr(isTh ? 'กรุณาระบุชื่อบุคคลหรือหน่วยงานผู้ดำเนินโครงการ' : 'Please enter the implementer name.');
-        form.name_s2?.focus();
+    } else {
+      // S2 / S3 / S4 — values come from the Smart Input Assistance sections
+      const res = assists[grpKey].collect();
+      if (res.error) {
+        showErr(res.error.msg);
+        res.error.el?.focus();
         return;
       }
-      role_in_project = (form.role_in_project_s2?.value || '').trim();
-      if (!role_in_project) {
-        showErr(isTh ? 'กรุณาระบุบทบาทและหน้าที่ในโครงการ' : 'Please specify the role in the project.');
-        form.role_in_project_s2?.focus();
-        return;
-      }
-      category = form.category_s2?.value || 'Faculty / Department';
-      const cntStr = (form.estimated_count_s2?.value || '').trim();
-      estimated_count = cntStr !== '' ? Number(cntStr) : null;
-      count_unit = (form.count_unit_s2?.value || '').trim() || 'คน';
-      operation_period = form.operation_period?.value.trim() || null;
-      resources_used = form.resources_used?.value.trim() || null;
-      description = form.description_s2?.value.trim() || null;
-    } else if (grpKey === 'project_supporter') {
-      name = (form.name_s3?.value || '').trim();
-      if (!name) {
-        showErr(isTh ? 'กรุณาระบุชื่อบุคคลหรือหน่วยงานผู้สนับสนุน' : 'Please enter the supporter name.');
-        form.name_s3?.focus();
-        return;
-      }
-      support_type = (form.support_type?.value || '').trim();
-      if (!support_type) {
-        showErr(isTh ? 'กรุณาเลือกรูปแบบการสนับสนุน' : 'Please select a support type.');
-        form.support_type?.focus();
-        return;
-      }
-      category = form.category_s3?.value || 'Government Agency / Fund';
-      const valStr = (form.support_value?.value || '').trim();
-      support_value = valStr !== '' ? Number(valStr) : null;
-      if (support_value !== null && (Number.isNaN(support_value) || support_value < 0)) {
-        showErr(isTh ? 'มูลค่าการสนับสนุนต้องเป็นตัวเลข 0 ขึ้นไป' : 'Support value must be 0 or greater.');
-        form.support_value?.focus();
-        return;
-      }
-      support_amount_or_quantity = form.support_amount_or_quantity?.value.trim() || null;
-      description = form.description_s3?.value.trim() || null;
-      count_unit = 'คณะ';
-    } else if (grpKey === 'other_agency') {
-      name = (form.name_s4?.value || '').trim();
-      if (!name) {
-        showErr(isTh ? 'กรุณาระบุชื่อหน่วยงานหรือกลุ่มบุคคล' : 'Please enter the agency name.');
-        form.name_s4?.focus();
-        return;
-      }
-      category = form.category_s4?.value || 'Local Administration';
-      cooperation_type = form.cooperation_type?.value || null;
-      const cntStr = (form.estimated_count_s4?.value || '').trim();
-      estimated_count = cntStr !== '' ? Number(cntStr) : null;
-      count_unit = (form.count_unit_s4?.value || '').trim() || 'แห่ง';
-      role_in_project = form.role_in_project_s4?.value.trim() || null;
-      resources_provided = form.resources_provided?.value.trim() || null;
-      description = form.description_s4?.value.trim() || null;
+      const d = res.data;
+      name = d.name;
+      category = d.category ?? null;
+      estimated_count = d.estimated_count ?? null;
+      count_unit = d.count_unit ?? null;
+      role_in_project = d.role_in_project ?? null;
+      description = d.description ?? null;
+      operation_period = d.operation_period ?? null;
+      resources_used = d.resources_used ?? null;
+      support_type = d.support_type ?? null;
+      support_value = d.support_value ?? null;
+      support_amount_or_quantity = d.support_amount_or_quantity ?? null;
+      cooperation_type = d.cooperation_type ?? null;
+      resources_provided = d.resources_provided ?? null;
     }
 
     const badRow = rows.find((r) => r.description?.trim() && Number.isNaN(r.amount));

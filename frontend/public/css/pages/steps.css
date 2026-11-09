@@ -995,3 +995,105 @@
   display: inline-block;
   margin-right: 4px;
 }
+
+/* ---------- Smart Input Assistance (Step 2 modal: S2 / S3 / S4) ---------- */
+.smart-opt {
+  margin-left: 6px;
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--muted);
+}
+.smart-hint {
+  margin: 0 0 6px;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: var(--muted);
+}
+.smart-other {
+  margin-top: var(--sp-sm);
+}
+.smart-other[hidden],
+.smart-tip[hidden],
+.smart-chips[hidden],
+.smart-undo[hidden] {
+  display: none !important;
+}
+.smart-tip {
+  margin-top: var(--sp-sm);
+  padding: 8px 12px;
+  border-left: 3px solid var(--primary);
+  border-radius: var(--radius-sm);
+  background: var(--primary-soft);
+  font-size: 0.75rem;
+  line-height: 1.5;
+  color: var(--on-background);
+}
+.smart-tip b {
+  margin-right: 6px;
+  font-weight: 600;
+  color: var(--primary);
+}
+.smart-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: var(--sp-sm);
+}
+.smart-chips__label {
+  flex-basis: 100%;
+  font-size: 0.6875rem;
+  color: var(--muted);
+}
+.smart-chip {
+  padding: 4px 10px;
+  border: 1px solid var(--outline-strong);
+  border-radius: var(--radius-pill);
+  background: var(--surface-card);
+  color: var(--on-background);
+  font: inherit;
+  font-size: 0.75rem;
+  line-height: 1.3;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 0.15s var(--ease),
+    background 0.15s var(--ease);
+}
+.smart-chip:hover {
+  border-color: var(--primary);
+}
+.smart-chip.is-used {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+.smart-chip.is-used::before {
+  content: '\2713\00a0';
+}
+.smart-chip:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+.smart-undo {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-sm);
+  margin-top: 6px;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+.smart-undo button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--primary);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.smart-example {
+  margin-top: 4px;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
