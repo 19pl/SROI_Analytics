@@ -130,6 +130,21 @@
   transition: border-color 150ms var(--ease);
 }
 
+/* Multi-line boxes: height follows the text (see js/utils/autogrow.js); never a fixed 40px strip. */
+textarea.input {
+  display: block;
+  box-sizing: border-box;
+  max-width: 100%;
+  height: auto;
+  min-height: 40px;
+  max-height: min(60vh, 360px);
+  padding: 8px 12px;
+  line-height: 22px;
+  resize: none;
+  overflow-y: hidden;
+  overflow-wrap: anywhere;
+}
+
 .input:focus {
   outline: none;
   border-color: var(--primary-focus);

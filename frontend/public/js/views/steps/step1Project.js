@@ -373,18 +373,7 @@ export function renderStep1(container) {
   const nameErr = document.getElementById('s1NameErr');
   const descErr = document.getElementById('s1DescErr');
 
-  // Description box grows with its text (no manual resize handle).
-  const descBox = document.getElementById('s1Desc');
-  const autoGrow = () => {
-    if (!descBox) return;
-    descBox.style.height = 'auto';
-    // scrollHeight excludes the border; add it back because the box is border-box.
-    descBox.style.height = `${descBox.scrollHeight + (descBox.offsetHeight - descBox.clientHeight)}px`;
-  };
-  descBox?.addEventListener('input', autoGrow);
-  window.addEventListener('resize', autoGrow);
-  autoGrow();
-  requestAnimationFrame(autoGrow);
+  // Text boxes grow with their text automatically (js/utils/autogrow.js).
   const footerStatus = container.querySelector('.wizard-footer .save-status');
   const footerSavedHtml = footerStatus ? footerStatus.innerHTML : '';
   let dirty = false;
