@@ -43,6 +43,7 @@ final class CostController extends ProjectResource
             'quantity' => ['type' => 'number', 'nullable' => true, 'min' => 0],
             'unit' => ['type' => 'string', 'max' => 100, 'nullable' => true],
             'unit_price' => ['type' => 'number', 'nullable' => true, 'min' => 0],
+            'line_items' => ['type' => 'array', 'nullable' => true],
         ];
     }
 
@@ -85,6 +86,67 @@ final class CostController extends ProjectResource
         $T = $this->periodYears($project);
         if (isset($data['year']) && $T !== null && $data['year'] > $T) {
             throw HttpException::unprocessable('Validation failed', ['year' => "must not exceed the analysis period ($T years)"]);
+        }
+
+        // Line items: amount is always the sum of unit_price x quantity over the lines.
+        if (array_key_exists('line_items', $data)) {
+            $raw = $data['line_items'];
+            if ($raw === null || $raw === []) {
+                $data['line_items'] = null;
+            } else {
+                if (!array_is_list($raw) || count($raw) > 100) {
+                    throw HttpException::unprocessable('Validation failed', ['line_items' => 'must be a list of at most 100 lines']);
+                }
+                $lines = [];
+                $sum = 0.0;
+                foreach ($raw as $i => $l) {
+                    $qty = is_array($l) ? ($l['quantity'] ?? null) : null;
+                    $price = is_array($l) ? ($l['unit_price'] ?? null) : null;
+                    $unit = is_array($l) ? trim((string)($l['unit'] ?? '')) : '';
+                    if (!is_numeric($qty) || (float)$qty <= 0) {
+                        throw HttpException::unprocessable('Validation failed', ["line_items.$i.quantity" => 'must be greater than 0']);
+                    }
+                    if (!is_numeric($price) || (float)$price < 0) {
+                        throw HttpException::unprocessable('Validation failed', ["line_items.$i.unit_price" => 'must not be negative']);
+                    }
+                    if ($unit === '' || mb_strlen($unit) > 100) {
+                        throw HttpException::unprocessable('Validation failed', ["line_items.$i.unit" => 'must be 1-100 characters']);
+                    }
+                    $lines[] = ['unit_price' => (float)$price, 'quantity' => (float)$qty, 'unit' => $unit];
+                    $sum += (float)$qty * (float)$price;
+                }
+                $expected = round($sum, 2);
+                if (isset($data['amount']) && is_numeric($data['amount']) && abs((float)$data['amount'] - $expected) > 0.02) {
+                    throw HttpException::unprocessable('Validation failed', ['amount' => "must equal the sum of the line items ($expected)"]);
+                }
+                $data['line_items'] = $lines;
+                $data['amount'] = $expected;
+                $data['calculation_mode'] = 'quantity';
+                // Keep the legacy single-line columns in sync when there is exactly one line.
+                $one = count($lines) === 1 ? $lines[0] : null;
+                $data['quantity'] = $one['quantity'] ?? null;
+                $data['unit'] = $one['unit'] ?? null;
+                $data['unit_price'] = $one['unit_price'] ?? null;
+                return $data;
+            }
+        }
+
+        // Existing multi-line item updated without sending lines (e.g. a bulk edit that only sends amount).
+        if (is_array($existing['line_items'] ?? null) && $existing['line_items'] !== []
+            && !array_key_exists('line_items', $data)
+            && array_intersect_key($data, array_flip(['quantity', 'unit', 'unit_price', 'calculation_mode'])) === []) {
+            if (!isset($data['amount']) || abs((float)$data['amount'] - (float)$existing['amount']) <= 0.02) {
+                unset($data['amount']); // unchanged: keep the lines
+                return $data;
+            }
+            // A different total was typed explicitly: the lines no longer explain it, so fall back to a plain total.
+            $data['amount'] = round((float)$data['amount'], 2);
+            $data['line_items'] = null;
+            $data['calculation_mode'] = 'manual';
+            $data['quantity'] = null;
+            $data['unit'] = null;
+            $data['unit_price'] = null;
+            return $data;
         }
 
         $mode = $m['calculation_mode'] ?? 'manual';

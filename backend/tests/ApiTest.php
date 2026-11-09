@@ -572,6 +572,31 @@ T::test('api: funding lines link to a stakeholder (migration 006) and survive it
     $kept = array_values(array_filter($list['data'], fn($x) => $x['description'] === 'Budget'));
     T::eq(1, count($kept));
     T::eq(null, $kept[0]['stakeholder_id']);
+
+    // cost line items: amount is the sum of unit_price x quantity over the lines
+    $lines = [['unit_price' => 100, 'quantity' => 10, 'unit' => 'แผ่น'], ['unit_price' => 200, 'quantity' => 10, 'unit' => 'ชิ้น']];
+    [$s, $li] = $call('POST', "/projects/$pid/costs",
+        ['category' => 'opex', 'description' => 'ค่าเอกสารและอุปกรณ์การเรียน', 'amount' => 3000, 'year' => 0, 'line_items' => $lines], $tok);
+    T::eq(201, $s, 'cost with line items');
+    T::eq(3000.0, (float)$li['data']['amount']);
+    T::eq(2, count($li['data']['line_items']));
+    T::eq(null, $li['data']['quantity'], 'multi-line leaves legacy columns empty');
+    [$s] = $call('POST', "/projects/$pid/costs",
+        ['category' => 'opex', 'description' => 'wrong total', 'amount' => 999, 'year' => 0, 'line_items' => $lines], $tok);
+    T::eq(422, $s, 'amount must equal the sum of lines');
+    [$s] = $call('POST', "/projects/$pid/costs",
+        ['category' => 'opex', 'description' => 'bad line', 'amount' => 0, 'year' => 0, 'line_items' => [['unit_price' => 5, 'quantity' => 0, 'unit' => 'x']]], $tok);
+    T::eq(422, $s, 'line quantity must be > 0');
+    [$s, $one] = $call('POST', "/projects/$pid/costs",
+        ['category' => 'opex', 'description' => 'one line', 'amount' => 500, 'year' => 0, 'line_items' => [['unit_price' => 500, 'quantity' => 1, 'unit' => 'คน']]], $tok);
+    T::eq(201, $s);
+    T::eq(1.0, (float)$one['data']['quantity'], 'single line mirrors legacy columns');
+    // editing another field keeps the lines; an amount-only bulk edit with the same total keeps them too
+    [$s, $ed] = $call('PATCH', "/projects/$pid/costs/{$li['data']['id']}", ['description' => 'renamed'], $tok);
+    T::eq(200, $s);
+    T::eq(2, count($ed['data']['line_items']));
+    [$s, $ed2] = $call('PATCH', "/projects/$pid/costs/{$li['data']['id']}", ['amount' => 3000], $tok);
+    T::eq(2, count($ed2['data']['line_items']));
 });
 
 
