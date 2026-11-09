@@ -64,7 +64,7 @@ export const STEPS = [
   },
 ];
 
-export function stepperHtml(currentStep = 1, completedSteps = []) {
+export function stepperHtml(currentStep = 1, completedSteps = [], maxStep = 6) {
   const currentObj = STEPS.find((s) => s.step === currentStep) || STEPS[1];
   const currentLabel = currentObj.labelKey ? t(currentObj.labelKey, currentObj.label) : currentObj.label;
   const mobileLabel = currentStep === 0
@@ -81,7 +81,11 @@ export function stepperHtml(currentStep = 1, completedSteps = []) {
     const iconContent = isDone && !isActive ? '✓' : step;
     const stateText = isDone ? t('step_state_done', 'complete') : isPartial ? t('step_state_partial', 'incomplete') : '';
 
-    const itemHtml = `
+    const isLocked = step > maxStep && !isActive;
+    const lockedTitle = t('step_locked_hint', `Finish step ${Math.min(maxStep, 5)} first`);
+    const itemHtml = isLocked
+      ? `<span class="step-item is-locked" role="link" aria-disabled="true" aria-label="${displayLabel} (${lockedTitle})" title="${lockedTitle}"><span class="step-num">${step}</span></span>`
+      : `
       <a class="step-item ${isActive ? 'is-active' : ''} ${isDone ? 'is-done' : ''} ${isPartial ? 'is-partial' : ''} ${step === 0 ? 'step-welcome' : ''}" href="${hash}" aria-label="${displayLabel}: ${displayDesc}${stateText ? ` (${stateText})` : ''}" title="${displayLabel}: ${displayDesc}">
         <span class="step-num">${iconContent}</span>
         ${isActive ? `<span class="step-label">${displayLabel}</span><span class="step-mobile-label">${mobileLabel}</span>` : ''}

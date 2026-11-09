@@ -32,6 +32,7 @@ import {
   stakeholderOptionsHtml,
 } from '../../utils/stakeholderGroups.js';
 import { t, getLanguage } from '../../i18n.js';
+import { nextGate } from '../../utils/readiness.js';
 import { wizardFooterHtml, attachWizardFooterEvents } from '../../components/wizardFooter.js';
 
 // Shown once after a successful save, then cleared (the page re-renders after saving).
@@ -446,21 +447,26 @@ export function renderStep1(container) {
     });
   });
 
+  /** Shows why saving/continuing was blocked: scrolls the field into view (the Continue button is far from it) and toasts the reason. */
+  const blockAt = (field, message) => {
+    field.setAttribute('aria-invalid', 'true');
+    field.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    field.focus({ preventScroll: true });
+    showToast(message, 'error');
+    return false;
+  };
+
   /** Validates and saves the profile form. Resolves true when saved (or nothing to save). */
   async function saveProfile() {
     if (!form) return true;
     const name = form.name.value.trim();
     if (!name) {
       if (nameErr) nameErr.hidden = false;
-      form.name.focus();
-      form.name.setAttribute('aria-invalid', 'true');
-      return false;
+      return blockAt(form.name, L('กรุณากรอกชื่อโครงการก่อนไปต่อ', 'Please enter the project name before continuing'));
     }
     if (!form.description.value.trim()) {
       if (descErr) descErr.hidden = false;
-      form.description.focus();
-      form.description.setAttribute('aria-invalid', 'true');
-      return false;
+      return blockAt(form.description, L('กรุณากรอกวัตถุประสงค์ของโครงการก่อนไปต่อ', 'Please describe what the project is for before continuing'));
     }
     let years = 1;
     if (horizonSelect && horizonSelect.value !== 'Other') {
@@ -475,8 +481,7 @@ export function renderStep1(container) {
     }
     if (Number.isNaN(years) || years < 1) {
       if (advContent.hidden) toggleBtn?.click();
-      form.analysis_period_years.focus();
-      return false;
+      return blockAt(form.analysis_period_years, L('กรุณากรอกระยะเวลาวิเคราะห์ (ปี) เป็นตัวเลขตั้งแต่ 1 ขึ้นไป', 'Enter the analysis period in years (1 or more)'));
     }
     const rate = form.discount_rate.value;
     const changes = {
@@ -520,12 +525,18 @@ export function renderStep1(container) {
     form.description.removeAttribute('aria-invalid');
   });
 
-  // "Continue" must save first — it used to be a plain link that silently dropped edits.
+  // "Continue" must save first, and only moves on when everything required in this step is filled in.
   container.querySelector('.wizard-btn-next')?.addEventListener('click', async (e) => {
-    if (!dirty && form?.description?.value.trim()) return;
     e.preventDefault();
-    const href = e.currentTarget.getAttribute('href');
-    if (await saveProfile()) window.location.hash = href;
+    if (dirty || !form?.description?.value.trim()) {
+      if (!(await saveProfile())) return;
+    }
+    const gate = nextGate(getState(), 1, isTh);
+    if (gate.blocked) {
+      showToast(gate.message, 'error');
+      return;
+    }
+    window.location.hash = '#/wizard/step-2';
   });
 
   // Money
@@ -613,19 +624,22 @@ function openAddCostModal({ project, initialData = null, prefill = null, onAdded
   const isCash = isEdit ? !!initialData.is_cash : v('is_cash', 1) === 1 || v('is_cash', 1) === true;
   const curr = escapeHtml(project.currency || 'THB');
 
-  // The amount is always built from one or more lines of unit price x quantity (+ unit).
+  // One item = one row of unit price x quantity (+ unit). To record more, add another item.
   const defaultUnit = L('รายการ', 'item');
   const toLine = (l) => ({ unit_price: l.unit_price ?? '', quantity: l.quantity ?? '', unit: l.unit ?? '' });
-  let initialLines;
-  if (Array.isArray(src.line_items) && src.line_items.length) {
-    initialLines = src.line_items.map(toLine);
+  let initialLine;
+  if (Array.isArray(src.line_items) && src.line_items.length === 1) {
+    initialLine = toLine(src.line_items[0]);
+  } else if (Array.isArray(src.line_items) && src.line_items.length > 1) {
+    // Saved earlier with several rows: show it as 1 x total so the amount is not lost.
+    initialLine = { unit_price: src.amount ?? '', quantity: 1, unit: defaultUnit };
   } else if (Number(src.quantity) > 0 && src.unit_price !== null && src.unit_price !== undefined) {
-    initialLines = [toLine(src)];
+    initialLine = toLine(src);
   } else if (src.amount !== null && src.amount !== undefined && String(src.amount) !== '' && Number(src.amount) > 0) {
     // Older item saved as a single total: show it as 1 x total so nothing is lost.
-    initialLines = [{ unit_price: src.amount, quantity: 1, unit: defaultUnit }];
+    initialLine = { unit_price: src.amount, quantity: 1, unit: defaultUnit };
   } else {
-    initialLines = [{ unit_price: '', quantity: '', unit: '' }];
+    initialLine = { unit_price: '', quantity: '', unit: '' };
   }
 
   const standardUnits = isTh
@@ -670,7 +684,7 @@ function openAddCostModal({ project, initialData = null, prefill = null, onAdded
         </div>
       </div>
 
-      <!-- Amount: one method only. Rows of unit price x quantity; the total is calculated. -->
+      <!-- Amount: a single row of unit price x quantity; the total is calculated. -->
       <div class="field">
         <span class="field-label"><span id="cAmtLabel">${isCash ? L('จำนวนเงิน', 'Amount') : L('มูลค่าโดยประมาณ', 'Estimated value')}</span> (${curr}) <span class="s1-tag s1-tag-req">${L('จำเป็น', 'Required')}</span></span>
         <div class="s1-lines">
@@ -678,18 +692,13 @@ function openAddCostModal({ project, initialData = null, prefill = null, onAdded
             <span id="cUnitPriceLabel">${isCash ? L('ราคา/หน่วย', 'Price / unit') : L('มูลค่า/หน่วย', 'Value / unit')}</span>
             <span>${L('จำนวน', 'Qty')}</span>
             <span>${L('หน่วย', 'Unit')}</span>
-            <span class="num">${L('รวม', 'Subtotal')}</span>
-            <span></span>
+            <span class="num">${L('รวม', 'Total')}</span>
           </div>
           <div id="costLineRows"></div>
           <datalist id="costUnitSuggestions">
             ${standardUnits.map((u) => `<option value="${escapeHtml(u)}"></option>`).join('')}
           </datalist>
-          <div class="s1-lines-sum">
-            <span><span id="cTotalAmtLabel">${isCash ? L('จำนวนเงินรวม', 'Total amount') : L('มูลค่ารวมโดยประมาณ', 'Total estimated value')}</span></span>
-            <output id="cCalcTotal" class="s1-lines-total">0.00</output>
-          </div>
-          <div class="s1-hint muted">${L('กรอกได้หลายแถว แถวใหม่จะขึ้นให้เองเมื่อกรอกแถวสุดท้าย เช่น 100 × 10 แผ่น แล้วต่อด้วย 200 × 10 ชิ้น = 3,000', 'Add as many rows as you need: a new row appears as soon as you fill the last one. e.g. 100 × 10 sheets, then 200 × 10 pcs = 3,000')}</div>
+          <div class="s1-hint muted">${L('ต้องการเพิ่มอีกรายการ ให้กด “บันทึกและเพิ่มต่อ” ด้านล่าง', 'Need another item? Use “Save & add another” below.')}</div>
         </div>
       </div>
 
@@ -757,9 +766,8 @@ function openAddCostModal({ project, initialData = null, prefill = null, onAdded
   const box = document.getElementById('newFunderBox');
   const amtLabel = document.getElementById('cAmtLabel');
   const unitPriceLabel = document.getElementById('cUnitPriceLabel');
-  const totalAmtLabel = document.getElementById('cTotalAmtLabel');
   const rowsEl = document.getElementById('costLineRows');
-  const totalEl = document.getElementById('cCalcTotal');
+  const rowEl = () => rowsEl.querySelector('.s1-line');
 
   const showErr = (m, field) => {
     errBox.textContent = m;
@@ -780,7 +788,6 @@ function openAddCostModal({ project, initialData = null, prefill = null, onAdded
     const isNowCash = kindVal() === '1';
     amtLabel.textContent = isNowCash ? L('จำนวนเงิน', 'Amount') : L('มูลค่าโดยประมาณ', 'Estimated value');
     unitPriceLabel.textContent = isNowCash ? L('ราคา/หน่วย', 'Price / unit') : L('มูลค่า/หน่วย', 'Value / unit');
-    totalAmtLabel.textContent = isNowCash ? L('จำนวนเงินรวม', 'Total amount') : L('มูลค่ารวมโดยประมาณ', 'Total estimated value');
   };
 
   const fmt = (n) => n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -792,7 +799,6 @@ function openAddCostModal({ project, initialData = null, prefill = null, onAdded
       <input class="input" type="text" inputmode="decimal" data-f="qty" placeholder="${L('เช่น 10', 'e.g. 10')}" aria-label="${L('จำนวน', 'Quantity')}" value="${escapeHtml(String(l.quantity))}" />
       <input class="input" list="costUnitSuggestions" data-f="unit" placeholder="${L('เช่น คน', 'e.g. person')}" aria-label="${L('หน่วย', 'Unit')}" value="${escapeHtml(String(l.unit))}" />
       <div class="num s1-line-sub" data-f="sub">–</div>
-      <button type="button" class="s1-line-x" data-f="del" aria-label="${L('ลบแถว', 'Remove row')}" title="${L('ลบแถว', 'Remove row')}">✕</button>
     </div>`;
 
   const rowValues = (row) => ({
@@ -807,49 +813,15 @@ function openAddCostModal({ project, initialData = null, prefill = null, onAdded
     return !Number.isNaN(p) && p >= 0 && !Number.isNaN(q) && q > 0 ? Math.round(p * q * 100) / 100 : null;
   };
 
-  const isBlank = (row) => {
-    const { price, qty } = rowValues(row);
-    return price.value.trim() === '' && qty.value.trim() === '';
-  };
-
   const updateCalculation = () => {
-    let sum = 0;
-    rowsEl.querySelectorAll('.s1-line').forEach((row) => {
-      const sub = rowSubtotal(row);
-      row.querySelector('[data-f="sub"]').textContent = sub === null ? '–' : fmt(sub);
-      row.classList.toggle('is-blank', isBlank(row));
-      if (sub !== null) sum += sub;
-    });
-    totalEl.textContent = fmt(Math.round(sum * 100) / 100);
+    const row = rowEl();
+    const sub = rowSubtotal(row);
+    row.querySelector('[data-f="sub"]').textContent = sub === null ? '–' : fmt(sub);
   };
 
-  const lastUnit = () => rowsEl.lastElementChild?.querySelector('[data-f="unit"]')?.value || '';
-
-  // Spreadsheet-style: there is always exactly one empty row at the end, and it appears by itself.
-  const syncTrailingRow = () => {
-    const rows = [...rowsEl.querySelectorAll('.s1-line')];
-    while (rows.length > 1 && isBlank(rows[rows.length - 1]) && isBlank(rows[rows.length - 2])) {
-      rows.pop().remove();
-    }
-    const last = rowsEl.lastElementChild;
-    if (!last || !isBlank(last)) {
-      rowsEl.insertAdjacentHTML('beforeend', lineRowHtml({ unit_price: '', quantity: '', unit: lastUnit() }));
-    }
-    updateCalculation();
-  };
-
-  initialLines.forEach((l) => rowsEl.insertAdjacentHTML('beforeend', lineRowHtml(l)));
-  syncTrailingRow();
-
-  rowsEl.addEventListener('input', syncTrailingRow);
-  rowsEl.addEventListener('click', (e) => {
-    const del = e.target.closest('[data-f="del"]');
-    if (!del) return;
-    const row = del.closest('.s1-line');
-    if (rowsEl.children.length > 1) row.remove();
-    else row.querySelectorAll('input').forEach((i) => (i.value = ''));
-    syncTrailingRow();
-  });
+  rowsEl.insertAdjacentHTML('beforeend', lineRowHtml(initialLine));
+  updateCalculation();
+  rowsEl.addEventListener('input', updateCalculation);
   // Enter jumps to the next box (and to the next row after the unit), so everything can be typed from the keyboard.
   rowsEl.addEventListener('keydown', (e) => {
     if (e.key !== 'Enter') return;
@@ -883,28 +855,20 @@ function openAddCostModal({ project, initialData = null, prefill = null, onAdded
     const desc = form.description.value.trim();
     if (!desc) return showErr(L('กรุณาบอกว่าใช้ไปกับอะไร', 'Please say what it was for'), form.description);
 
-    // Collect rows; fully empty rows are ignored as long as one row is filled in.
-    const rows = [...rowsEl.querySelectorAll('.s1-line')].map((row) => ({ row, ...rowValues(row) }));
-    const used = rows.filter((r) => [r.price, r.qty].some((el) => el.value.trim() !== ''));
-    if (!used.length) {
-      return showErr(L('กรุณากรอกราคาต่อหน่วย จำนวน และหน่วยอย่างน้อย 1 แถว', 'Fill in unit price, quantity and unit for at least one row'), rows[0].price);
+    const r = { row: rowEl(), ...rowValues(rowEl()) };
+    const p = parseNum(r.price.value);
+    const q = parseNum(r.qty.value);
+    const u = r.unit.value.trim();
+    if (r.price.value.trim() === '' || Number.isNaN(p) || p < 0) {
+      return showErr(L('กรุณากรอกราคาต่อหน่วยเป็นตัวเลข (ไม่ติดลบ)', 'Enter the unit price as a number (not negative)'), r.price);
     }
-    const lineItems = [];
-    for (const r of used) {
-      const p = parseNum(r.price.value);
-      const q = parseNum(r.qty.value);
-      const u = r.unit.value.trim();
-      if (r.price.value.trim() === '' || Number.isNaN(p) || p < 0) {
-        return showErr(L('กรุณากรอกราคาต่อหน่วยเป็นตัวเลข (ไม่ติดลบ)', 'Enter the unit price as a number (not negative)'), r.price);
-      }
-      if (r.qty.value.trim() === '' || Number.isNaN(q) || q <= 0) {
-        return showErr(L('กรุณากรอกจำนวนที่มากกว่า 0', 'Enter a quantity greater than 0'), r.qty);
-      }
-      if (!u) {
-        return showErr(L('กรุณากรอกหรือเลือกหน่วย (เช่น คน, ชิ้น)', 'Enter or pick a unit (e.g. person, pcs)'), r.unit);
-      }
-      lineItems.push({ unit_price: p, quantity: q, unit: u });
+    if (r.qty.value.trim() === '' || Number.isNaN(q) || q <= 0) {
+      return showErr(L('กรุณากรอกจำนวนที่มากกว่า 0', 'Enter a quantity greater than 0'), r.qty);
     }
+    if (!u) {
+      return showErr(L('กรุณากรอกหรือเลือกหน่วย (เช่น คน, ชิ้น)', 'Enter or pick a unit (e.g. person, pcs)'), r.unit);
+    }
+    const lineItems = [{ unit_price: p, quantity: q, unit: u }];
     const amount = Math.round(lineItems.reduce((a, l) => a + l.quantity * l.unit_price, 0) * 100) / 100;
     const single = lineItems.length === 1 ? lineItems[0] : null;
 

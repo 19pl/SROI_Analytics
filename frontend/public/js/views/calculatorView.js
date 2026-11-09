@@ -6,7 +6,8 @@
 import { getState } from '../store.js';
 import { icons } from '../components/icons.js';
 import { stepperHtml } from '../components/stepper.js';
-import { completedSteps } from '../utils/readiness.js';
+import { completedSteps, maxOpenStep, nextGate } from '../utils/readiness.js';
+import { showToast } from '../components/toast.js';
 import { renderHelpPanel } from '../components/helpPanel.js';
 import { isGuest, guestStepHtml } from '../components/guestNotice.js';
 import { renderStep0 } from './steps/step0Welcome.js';
@@ -17,7 +18,7 @@ import { renderStep4 } from './steps/step4Adjustments.js';
 import { renderStep5 } from './steps/step5Review.js';
 import { renderStep6 } from './steps/step6Dashboard.js';
 import { renderSheet } from './sheetView.js';
-import { t } from '../i18n.js';
+import { t, getLanguage } from '../i18n.js';
 
 let isHelpOpen = false;
 
@@ -39,14 +40,26 @@ export function renderCalculator(root) {
     return;
   }
 
+  // A step opens only when every step before it is complete — also when it is typed into the URL.
+  if (project && !isGuest() && stepNum > 1) {
+    const maxStep = maxOpenStep(getState());
+    if (stepNum > maxStep) {
+      const gate = nextGate(getState(), maxStep, getLanguage() !== 'en');
+      showToast(gate.message, 'error');
+      window.location.hash = `#/wizard/step-${maxStep}`;
+      return;
+    }
+  }
+
   // Completion comes from the shared readiness helper (never from entity counts)
   const done = completedSteps(review);
+  const maxStep = project && !isGuest() ? maxOpenStep(getState()) : 6;
 
   root.innerHTML = `
     <div class="wizard-container">
       <div style="display: flex; justify-content: space-between; align-items: center; gap: var(--sp-md);">
         <div style="flex: 1; min-width: 0;">
-          ${stepperHtml(stepNum, done)}
+          ${stepperHtml(stepNum, done, maxStep)}
         </div>
         <button type="button" class="btn btn-secondary" id="btnToggleHelp" style="align-self: flex-start; margin-top: 2px; white-space: nowrap;">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

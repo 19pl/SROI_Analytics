@@ -7,6 +7,9 @@
 import { t, getLanguage } from '../i18n.js';
 import { STEPS } from './stepper.js';
 import { openGlossaryModal } from './glossaryModal.js';
+import { getState } from '../store.js';
+import { nextGate } from '../utils/readiness.js';
+import { showToast } from './toast.js';
 
 /**
  * Generates the HTML for the wizard sticky bottom navigation bar
@@ -27,7 +30,11 @@ const shortLabel = (n) => SHORT[n]?.[getLanguage() === 'en' ? 'en' : 'th'] ?? ''
 
 export function wizardFooterHtml(currentStep = 1, options = {}) {
   // Labels are intentionally short and derived from the step; per-step overrides are ignored for consistency.
-  const { canProceed = true } = options;
+  const isTh = getLanguage() !== 'en';
+  // The next step stays locked until this step is complete (the rule lives in utils/readiness.js).
+  const gate = currentStep >= 1 && currentStep <= 5 ? nextGate(getState(), currentStep, isTh) : { blocked: false, message: '' };
+  const canProceed = options.canProceed !== false && !gate.blocked;
+  const gateMsg = gate.message || (isTh ? 'กรอกข้อมูลที่จำเป็นของขั้นนี้ให้ครบก่อนไปต่อ' : 'Complete the required inputs of this step first');
 
   let prevStep = null;
   let nextStep = null;
@@ -69,10 +76,16 @@ export function wizardFooterHtml(currentStep = 1, options = {}) {
       <div class="wizard-footer-right">
         ${
           nextStep
-            ? `<a href="${nextStep.hash}" class="btn btn-primary wizard-btn-next ${canProceed ? '' : 'is-disabled'}" ${canProceed ? '' : 'aria-disabled="true"'}>
+            ? canProceed
+              ? `<a href="${nextStep.hash}" class="btn btn-primary wizard-btn-next">
                 <span>${nextText}</span>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
               </a>`
+              : `<span class="wizard-gate-hint" role="status">${gateMsg}</span>
+              <button type="button" class="btn btn-primary wizard-btn-next is-disabled" aria-disabled="true" data-step="${currentStep}" data-gate-msg="${gateMsg.replace(/"/g, '&quot;')}">
+                <span>${nextText}</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+              </button>`
             : currentStep === 6
               ? `<a href="#/projects" class="btn btn-primary wizard-btn-finish">
                   <span>${t('btn_finish_assessment', 'เสร็จสิ้นการประเมิน')}</span>
@@ -90,6 +103,15 @@ export function wizardFooterHtml(currentStep = 1, options = {}) {
  * @param {HTMLElement} container
  */
 export function attachWizardFooterEvents(container) {
+  // Locked "Next": explain why instead of doing nothing. Step 1 has its own handler (it saves the form first).
+  container.querySelectorAll('.wizard-btn-next.is-disabled').forEach((btn) => {
+    if (btn.dataset.step === '1') return;
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      showToast(btn.dataset.gateMsg, 'error');
+    });
+  });
+
   container.querySelectorAll('.btn-open-glossary').forEach((btn) => {
     btn.addEventListener('click', (e) => {
       e.preventDefault();
