@@ -24,7 +24,6 @@ import {
 } from '../../utils/stakeholderGroups.js';
 import { t, getLanguage } from '../../i18n.js';
 import { wizardFooterHtml, attachWizardFooterEvents } from '../../components/wizardFooter.js';
-import { s2SectionHtml, s3SectionHtml, s4SectionHtml, bindS2, bindS3, bindS4 } from './stakeholderAssistForms.js';
 
 export const BENEFICIARY_PRESETS = [
   { id: 'students', th: 'นิสิต / นักศึกษา', en: 'Students & Learners', group: 'primary_beneficiary', unit: 'คน' },
@@ -50,38 +49,6 @@ const CATEGORIES = [
   'Government agencies',
   'Ecosystems and environmental resources',
 ];
-
-
-export const GROUP_DESCRIPTIONS = {
-  primary_beneficiary: {
-    code: 'S1',
-    th_title: 'S1: ผู้รับผลประโยชน์หลัก (Primary Beneficiaries)',
-    en_title: 'S1: Primary Beneficiaries',
-    th_desc: 'ผู้ที่ได้รับผลกระทบหรือผลประโยชน์จากโครงการโดยตรง (เช่น ประชาชน, ผู้ป่วย, ผู้สูงอายุ, นักเรียน)',
-    en_desc: 'Direct recipients and communities who experience impact.',
-  },
-  project_operator: {
-    code: 'S2',
-    th_title: 'S2: ผู้ดำเนินโครงการ (Project Implementers)',
-    en_title: 'S2: Project Implementers & Staff',
-    th_desc: 'คณะทำงาน อาจารย์ นักวิจัย หรือทีมงานที่มีบทบาทหลักในการดำเนินงานโครงการ',
-    en_desc: 'Staff and teams who organize, deliver, and manage project activities.',
-  },
-  project_supporter: {
-    code: 'S3',
-    th_title: 'S3: ผู้สนับสนุนโครงการ (Project Supporters)',
-    en_title: 'S3: Project Supporters & Funders',
-    th_desc: 'หน่วยงาน แหล่งทุน คณะ หรือองค์กรที่สนับสนุนงบประมาณ ทรัพยากร หรือบริการ',
-    en_desc: 'Faculties, funds, and organizations providing financial and in-kind resources.',
-  },
-  other_agency: {
-    code: 'S4',
-    th_title: 'S4: หน่วยงานอื่น ๆ (Other Stakeholders)',
-    en_title: 'S4: External Partners & Other Agencies',
-    th_desc: 'หน่วยงานภายนอก ภาคีเครือข่าย หรือชุมชนที่มีส่วนร่วมในการประสานงานหรือส่งเสริมโครงการ',
-    en_desc: 'Local government authorities, health clinics, and network partners.',
-  },
-};
 
 export function renderStep2(container) {
   const { project, stakeholders, costs } = getState();
@@ -132,24 +99,38 @@ export function renderStep2(container) {
               <span class="muted-sm">${t('in_col_outcomes', 'ผลลัพธ์ที่เชื่อมโยง')}:</span>
               <strong>${s.outcome_count || 0} ${isTh ? 'ผลลัพธ์' : 'outcomes'}</strong>
             </div>
-            ${s.category ? `<div><span class="muted-sm">${isTh ? 'ประเภท:' : 'Type:'}</span> <strong>${escapeHtml(s.category)}</strong></div>` : ''}
           </div>
-          <div class="stk-detail-grid">
-            ${s.target_characteristics ? `<div class="stk-detail-item"><span class="muted-sm">${isTh ? 'ลักษณะกลุ่มเป้าหมาย:' : 'Characteristics:'}</span> ${escapeHtml(s.target_characteristics)}</div>` : ''}
-            ${s.needs_or_problems ? `<div class="stk-detail-item"><span class="muted-sm">${isTh ? 'ปัญหา/ความต้องการ:' : 'Needs & Problems:'}</span> ${escapeHtml(s.needs_or_problems)}</div>` : ''}
-            ${s.operation_period ? `<div class="stk-detail-item"><span class="muted-sm">${isTh ? 'ระยะเวลาดำเนินงาน:' : 'Timeline:'}</span> ${escapeHtml(s.operation_period)}</div>` : ''}
-            ${s.resources_used ? `<div class="stk-detail-item"><span class="muted-sm">${isTh ? 'ทรัพยากร/แรงงาน:' : 'Resources used:'}</span> ${escapeHtml(s.resources_used)}</div>` : ''}
-            ${s.support_type ? `<div class="stk-detail-item"><span class="muted-sm">${isTh ? 'รูปแบบการสนับสนุน:' : 'Support Type:'}</span> <span class="badge">${escapeHtml(s.support_type)}</span> ${s.support_value ? `(${escapeHtml(project.currency)} ${formatBaht(s.support_value)})` : ''}</div>` : ''}
-            ${s.support_amount_or_quantity ? `<div class="stk-detail-item"><span class="muted-sm">${isTh ? 'ปริมาณทรัพยากร:' : 'Amount/Qty:'}</span> ${escapeHtml(s.support_amount_or_quantity)}</div>` : ''}
-            ${s.cooperation_type ? `<div class="stk-detail-item"><span class="muted-sm">${isTh ? 'รูปแบบความร่วมมือ:' : 'Cooperation:'}</span> <span class="badge">${escapeHtml(s.cooperation_type)}</span></div>` : ''}
-            ${s.resources_provided ? `<div class="stk-detail-item"><span class="muted-sm">${isTh ? 'ทรัพยากรที่สนับสนุน:' : 'Provided:'}</span> ${escapeHtml(s.resources_provided)}</div>` : ''}
-          </div>
-          ${s.description ? `<div class="muted-sm" style="margin-top: 4px;">${escapeHtml(s.description)}</div>` : ''}
+          ${s.description ? `<div class="muted-sm">${escapeHtml(s.description)}</div>` : ''}
         </div>
       </td>
     </tr>`;
 
-  const groupDescriptions = GROUP_DESCRIPTIONS;
+  const groupDescriptions = {
+    primary_beneficiary: {
+      th_title: 'S1: กลุ่มเป้าหมาย / ผู้ได้รับผลประโยชน์หลัก',
+      en_title: 'S1: Primary Beneficiaries',
+      th_desc: 'ผู้รับประโยชน์โดยตรง (นิสิต, ประชาชน, ผู้สูงอายุ, ผู้ป่วย)',
+      en_desc: 'Direct recipients of project services.',
+    },
+    project_operator: {
+      th_title: 'S2: คณะทำงานและผู้ดำเนินงานโครงการ',
+      en_title: 'S2: Project Operators & Staff',
+      th_desc: 'อาจารย์ นักวิจัย และทีมงานผู้จัดกิจกรรม',
+      en_desc: 'Staff and team members who deliver project activities.',
+    },
+    project_supporter: {
+      th_title: 'S3: หน่วยงานสนับสนุนภายในมหาวิทยาลัย',
+      en_title: 'S3: Institutional Supporters',
+      th_desc: 'คณะ ภาควิชา หรือกองทุนภายในมหาวิทยาลัย',
+      en_desc: 'Faculties or university divisions providing support.',
+    },
+    other_agency: {
+      th_title: 'S4: หน่วยงานภายนอกและภาคีเครือข่าย',
+      en_title: 'S4: External Partners & Agencies',
+      th_desc: 'อปท., รพ.สต., ชุมชน, หรือแหล่งทุนภายนอก',
+      en_desc: 'Local government authorities, health clinics, or partners.',
+    },
+  };
 
   const groupSection = (g) => {
     const list = stakeholders.filter((s) => s.stakeholder_group === g.key);
@@ -382,6 +363,7 @@ function openStakeholderModal({ initialData = null, defaultGroup = null, onSaved
 
   let group = groupByKey(initialData?.stakeholder_group) || groupByKey(defaultGroup) || groupByKey('primary_beneficiary');
   let codeTouched = !!initialData?.group_code;
+  let unitTouched = !!initialData?.count_unit;
 
   const matchedPreset = initialData
     ? BENEFICIARY_PRESETS.find((p) => p.th === initialData.name || p.en === initialData.name)
@@ -403,18 +385,39 @@ function openStakeholderModal({ initialData = null, defaultGroup = null, onSaved
         }))
     : [];
 
-  const initialGroupKey = group?.key || 'primary_beneficiary';
-
   const body = `
     <form id="stakeholderForm" class="form-stack" autocomplete="off" novalidate>
-      <!-- SROI Group Code Selection (Segmented Chips) -->
+      <!-- Section 1: Choose Stakeholder -->
       <div class="field">
-        <div class="cluster cluster--space-between" style="margin-bottom: var(--sp-xs);">
-          <span class="field-label" style="font-weight: 600;">
-            ${isTh ? 'เลือกประเภทกลุ่มผู้มีส่วนได้ส่วนเสีย (SROI Classification)' : 'Select SROI Classification'}
-            <span class="field-hint field-hint--primary">*</span>
+        <label class="field-label" for="presetSelect">
+          ${isTh ? '1. ใครคือผู้ได้รับผลประโยชน์หรือผู้เกี่ยวข้อง?' : '1. Who is the stakeholder?'}
+          <span class="field-hint field-hint--primary">${isTh ? 'จำเป็น' : 'Required'}</span>
+        </label>
+        <select id="presetSelect" class="input">
+          <option value="">${isTh ? '— เลือกผู้มีส่วนได้ส่วนเสีย —' : '— Select a stakeholder —'}</option>
+          ${BENEFICIARY_PRESETS.map((p) => `
+            <option value="${p.id}" ${initialPresetVal === p.id ? 'selected' : ''}>
+              ${escapeHtml(isTh ? p.th : p.en)}
+            </option>
+          `).join('')}
+        </select>
+      </div>
+
+      <div id="customNameRow" class="field" ${initialPresetVal === '__other__' ? '' : 'hidden'}>
+        <label class="field-label" for="customNameInput">
+          ${isTh ? 'ระบุชื่อผู้มีส่วนได้ส่วนเสีย' : 'Specify Stakeholder Name'}
+          <span class="field-hint field-hint--primary">${isTh ? 'จำเป็น' : 'Required'}</span>
+        </label>
+        <input type="text" id="customNameInput" name="name" class="input" value="${escapeHtml(initialData?.name || '')}" placeholder="${isTh ? 'เช่น ผู้ดูแลผู้ป่วยติดเตียง, ชมรมจิตอาสา...' : 'e.g. Caregivers, Volunteer club...'}" />
+      </div>
+
+      <!-- SROI Group Code Selection (Compact) -->
+      <div class="field">
+        <div class="cluster cluster--space-between">
+          <span class="field-label">
+            ${isTh ? 'ประเภทกลุ่มตามมาตรฐาน SROI' : 'SROI Group Classification'}
           </span>
-          <span id="groupHintBadge" class="badge badge-planned" style="font-weight: 700;">${group ? group.code : 'S1'}</span>
+          <span id="groupHintBadge" class="badge badge-planned">${group ? group.code : 'S1'}</span>
         </div>
         <div class="in-chips" id="groupChips" role="radiogroup">
           ${GROUPS.map(
@@ -424,91 +427,42 @@ function openStakeholderModal({ initialData = null, defaultGroup = null, onSaved
         </div>
       </div>
 
-      <!-- Dynamic Group Info Banner -->
-      <div class="stk-group-banner" id="stkGroupBanner">
-        <span class="stk-group-banner__badge" id="stkBannerBadge">${group ? group.code : 'S1'}</span>
-        <div class="stk-group-banner__text">
-          <div id="stkBannerTitle" style="font-weight: 600;">${escapeHtml(GROUP_DESCRIPTIONS[initialGroupKey]?.th_title || '')}</div>
-          <div id="stkBannerDesc" class="stk-group-banner__desc">${escapeHtml(GROUP_DESCRIPTIONS[initialGroupKey]?.th_desc || '')}</div>
-        </div>
-      </div>
-
-      <!-- S1 Form Section: Primary Beneficiaries -->
-      <div id="stkSection-primary_beneficiary" class="form-stack stk-form-section" ${initialGroupKey === 'primary_beneficiary' ? '' : 'hidden'}>
+      <!-- Section 2: Population and Unit (Revealed only after stakeholder is chosen) -->
+      <div id="stkSection2" class="form-stack" ${initialPresetVal ? '' : 'hidden'}>
         <div class="form-row">
           <div class="field">
-            <label class="field-label" for="s1PresetSelect">
-              ${isTh ? 'ประเภทผู้ได้รับผลประโยชน์' : 'Beneficiary Type'}
+            <label class="field-label" for="stkEstimatedCount">
+              ${isTh ? '2. จำนวนประชากรที่ได้รับผลกระทบ' : '2. Population Size'}
             </label>
-            <select id="s1PresetSelect" class="input">
-              <option value="">${isTh ? '— เลือกประเภทหรือกลุ่มตัวอย่าง —' : '— Select a type or preset —'}</option>
-              ${BENEFICIARY_PRESETS.map((p) => `<option value="${p.id}" ${initialPresetVal === p.id ? 'selected' : ''}>${escapeHtml(isTh ? p.th : p.en)}</option>`).join('')}
+            <input class="input" id="stkEstimatedCount" name="estimated_count" type="number" min="0" step="1" value="${initialData?.estimated_count ?? ''}" placeholder="${isTh ? 'เช่น 120' : 'e.g. 120'}" />
+          </div>
+
+          <div class="field">
+            <label class="field-label" for="unitPresetSelect">${isTh ? 'หน่วยนับ' : 'Unit'}</label>
+            <select id="unitPresetSelect" class="input">
+              ${[...UNIT_SUGGESTIONS, '__other__'].map((u) => `
+                <option value="${u}" ${(initialData?.count_unit === u || (!initialData?.count_unit && u === 'คน')) ? 'selected' : ''}>
+                  ${u === '__other__' ? (isTh ? 'อื่นๆ (ระบุ)' : 'Other (specify)') : u}
+                </option>
+              `).join('')}
             </select>
-          </div>
-          <div class="field">
-            <label class="field-label" for="s1NameInput">
-              ${isTh ? 'ชื่อกลุ่มหรือผู้ได้รับผลประโยชน์' : 'Beneficiary Name'}
-              <span class="field-hint field-hint--primary">*</span>
-            </label>
-            <input type="text" id="s1NameInput" name="name_s1" class="input" value="${escapeHtml(initialGroupKey === 'primary_beneficiary' ? (initialData?.name || '') : '')}" placeholder="${isTh ? 'เช่น ผู้สูงอายุในชุมชน, นิสิตนักศึกษา' : 'e.g. Elderly Community Residents'}" />
-          </div>
-        </div>
-
-        <div class="form-row">
-          <div class="field">
-            <label class="field-label" for="s1EstimatedCount">
-              ${isTh ? 'จำนวนประชากรที่ได้รับผลกระทบ' : 'Affected Population Size'}
-              <span class="field-hint field-hint--primary">*</span>
-            </label>
-            <input class="input" id="s1EstimatedCount" name="estimated_count_s1" type="number" min="0" step="1" value="${initialGroupKey === 'primary_beneficiary' ? (initialData?.estimated_count ?? '') : ''}" placeholder="${isTh ? 'เช่น 120' : 'e.g. 120'}" />
-          </div>
-          <div class="field">
-            <label class="field-label" for="s1UnitInput">
-              ${isTh ? 'หน่วยนับ' : 'Unit'}
-              <span class="field-hint field-hint--primary">*</span>
-            </label>
-            <input list="s1UnitSuggestions" class="input" id="s1UnitInput" name="count_unit_s1" value="${escapeHtml(initialGroupKey === 'primary_beneficiary' ? (initialData?.count_unit || 'คน') : 'คน')}" placeholder="${isTh ? 'เช่น คน, ครัวเรือน, กลุ่ม' : 'e.g. people, households'}" />
-            <datalist id="s1UnitSuggestions">
-              ${UNIT_SUGGESTIONS.map((u) => `<option value="${escapeHtml(u)}"></option>`).join('')}
-            </datalist>
+            <div id="customUnitRow" class="stack-xs" ${initialData?.count_unit && !UNIT_SUGGESTIONS.includes(initialData.count_unit) ? '' : 'hidden'}>
+              <input class="input" name="count_unit" id="customUnitInput" value="${escapeHtml(initialData?.count_unit || 'คน')}" placeholder="${isTh ? 'ระบุหน่วยนับ' : 'Specify unit'}" />
+            </div>
           </div>
         </div>
 
         <div class="field">
-          <label class="field-label" for="s1TargetCharacteristics">
-            ${isTh ? 'ลักษณะหรือกลุ่มเป้าหมาย' : 'Target Characteristics'}
-          </label>
-          <input type="text" class="input" id="s1TargetCharacteristics" name="target_characteristics" value="${escapeHtml(initialData?.target_characteristics || '')}" placeholder="${isTh ? 'เช่น ผู้สูงอายุ 60 ปีขึ้นไปที่มีปัญหาทางสายตา อาศัยอยู่ในเขต ต.บ้านดู่' : 'e.g. Age 60+ with vision difficulties'}" />
+          <label class="field-label" for="stkRole">${isTh ? 'บทบาทในโครงการ (ไม่บังคับ)' : 'Role in project (Optional)'}</label>
+          <input class="input" id="stkRole" name="role_in_project" value="${escapeHtml(initialData?.role_in_project || '')}" placeholder="${isTh ? 'เช่น เข้ารับการตรวจคัดกรองสายตา, อบรมอาชีพ' : 'e.g. Receives screening, attends training'}" />
         </div>
 
-        <div class="field">
-          <label class="field-label" for="s1NeedsOrProblems">
-            ${isTh ? 'ปัญหาหรือความต้องการของกลุ่มเป้าหมาย' : 'Needs & Problems of Target Group'}
-          </label>
-          <textarea class="input" id="s1NeedsOrProblems" name="needs_or_problems" rows="2" placeholder="${isTh ? 'เช่น ขาดโอกาสในการตรวจวัดสายตา ไม่มีแว่นตาที่เหมาะสม ส่งผลต่อการดำเนินชีวิตประจำวัน' : 'e.g. Lack of eye-care services'}">${escapeHtml(initialData?.needs_or_problems || '')}</textarea>
-        </div>
-
-        <div class="field">
-          <label class="field-label" for="s1Description">${isTh ? 'รายละเอียดเพิ่มเติม' : 'Additional Details'}</label>
-          <textarea class="input" id="s1Description" name="description_s1" rows="2" placeholder="${isTh ? 'ข้อมูลเพิ่มเติมหรือบริบทแวดล้อม (ถ้ามี)...' : 'Context, survey source, or notes...'}">${escapeHtml(initialGroupKey === 'primary_beneficiary' ? (initialData?.description || '') : '')}</textarea>
-        </div>
-      </div>
-
-      <!-- S2 Form Section: Project Implementers (Smart Input Assistance, see stakeholderAssistForms.js) -->
-      <div id="stkSection-project_operator" class="form-stack stk-form-section" ${initialGroupKey === 'project_operator' ? '' : 'hidden'}>
-        ${s2SectionHtml({ initialData: initialGroupKey === 'project_operator' ? initialData : null, isTh })}
-      </div>
-
-      <!-- S3 Form Section: Project Supporters (Smart Input Assistance, see stakeholderAssistForms.js) -->
-      <div id="stkSection-project_supporter" class="form-stack stk-form-section" ${initialGroupKey === 'project_supporter' ? '' : 'hidden'}>
-        ${s3SectionHtml({ initialData: initialGroupKey === 'project_supporter' ? initialData : null, isTh })}
-
-        <!-- Funding lines disclosure (Step 1 Integration) -->
+        <!-- Section 3: Collapsed Funding Disclosure (Revealed only after Section 2 is shown) -->
         <details class="disclosure" id="stkFundingDetails">
           <summary class="disclosure__summary">
-            ${isTh ? 'รายการงบประมาณที่เชื่อมโยงกับขั้นตอนที่ 1 (ไม่บังคับ)' : 'Funding lines linked to Step 1 (Optional)'}
+            ${isTh ? '3. งบประมาณและสิ่งสนับสนุน (ไม่บังคับ)' : '3. Funding & In-kind Support (Optional)'}
           </summary>
-          <div class="stack-sm" style="margin-top: var(--sp-sm);">
+          <div class="stack-sm">
             <div class="cluster cluster--space-between">
               <p class="field-hint">
                 ${isTh ? 'รายการงบประมาณที่กลุ่มนี้สนับสนุนโครงการ ข้อมูลจะเชื่อมโยงไปยังขั้นตอนที่ 1 โดยอัตโนมัติ' : 'Resources provided by this group. Automatically linked to Step 1.'}
@@ -525,12 +479,16 @@ function openStakeholderModal({ initialData = null, defaultGroup = null, onSaved
         </details>
       </div>
 
-      <!-- S4 Form Section: Other Stakeholders (Smart Input Assistance, see stakeholderAssistForms.js) -->
-      <div id="stkSection-other_agency" class="form-stack stk-form-section" ${initialGroupKey === 'other_agency' ? '' : 'hidden'}>
-        ${s4SectionHtml({ initialData: initialGroupKey === 'other_agency' ? initialData : null, isTh })}
+      <div hidden>
+        <input class="input" name="group_code" value="${escapeHtml(initialData?.group_code || '')}" />
+        <input class="input" name="description" value="${escapeHtml(initialData?.description || '')}" />
+        <select name="category">${CATEGORIES.map((c) => `<option value="${c}" ${initialData?.category === c ? 'selected' : ''}>${c}</option>`).join('')}</select>
+        <input name="evidence_source" value="${escapeHtml(initialData?.evidence_source || '')}" />
+        <input name="expected_positive" value="${escapeHtml(initialData?.expected_positive || '')}" />
+        <input name="expected_negative" value="${escapeHtml(initialData?.expected_negative || '')}" />
+        <input name="overlap_notes" value="${escapeHtml(initialData?.overlap_notes || '')}" />
       </div>
 
-      <input type="hidden" name="group_code" value="${escapeHtml(initialData?.group_code || '')}" />
       <div id="stakeholderModalError" class="field-error" hidden></div>
     </form>`;
 
@@ -548,34 +506,51 @@ function openStakeholderModal({ initialData = null, defaultGroup = null, onSaved
 
   const form = document.getElementById('stakeholderForm');
   const errBox = document.getElementById('stakeholderModalError');
+  const presetSelect = document.getElementById('presetSelect');
+  const customNameRow = document.getElementById('customNameRow');
+  const customNameInput = document.getElementById('customNameInput');
+  const stkSection2 = document.getElementById('stkSection2');
   const groupHintBadge = document.getElementById('groupHintBadge');
+  const unitPresetSelect = document.getElementById('unitPresetSelect');
+  const customUnitRow = document.getElementById('customUnitRow');
+  const customUnitInput = document.getElementById('customUnitInput');
   const btnSaveStk = document.getElementById('btnSaveStk');
-
-  const s1PresetSelect = document.getElementById('s1PresetSelect');
-  const s1NameInput = document.getElementById('s1NameInput');
-  const s1UnitInput = document.getElementById('s1UnitInput');
 
   const showErr = (msg) => {
     errBox.textContent = msg;
     errBox.hidden = false;
   };
 
-  const syncPresetS1 = () => {
-    if (!s1PresetSelect) return;
-    const val = s1PresetSelect.value;
-    if (val && val !== '__other__') {
-      const found = BENEFICIARY_PRESETS.find((p) => p.id === val);
+  const getEffectiveName = () => {
+    if (presetSelect.value === '__other__') {
+      return customNameInput.value.trim();
+    }
+    const found = BENEFICIARY_PRESETS.find((p) => p.id === presetSelect.value);
+    return found ? (isTh ? found.th : found.en) : customNameInput.value.trim();
+  };
+
+  const syncPresetUI = () => {
+    const isOther = presetSelect.value === '__other__';
+    const isChosen = presetSelect.value !== '';
+    customNameRow.hidden = !isOther;
+
+    // Reveal Section 2 and Section 3 only once stakeholder is selected
+    stkSection2.hidden = !isChosen;
+
+    if (isOther) {
+      customNameInput.focus();
+    } else if (isChosen) {
+      const found = BENEFICIARY_PRESETS.find((p) => p.id === presetSelect.value);
       if (found) {
-        if (!s1NameInput.value || BENEFICIARY_PRESETS.some((x) => x.th === s1NameInput.value || x.en === s1NameInput.value)) {
-          s1NameInput.value = isTh ? found.th : found.en;
-        }
-        if (found.unit && s1UnitInput) {
-          s1UnitInput.value = found.unit;
+        // NOTE: the S1–S4 group is intentionally NOT changed here; the user picks it themselves.
+        if (found.unit && !unitTouched) {
+          form.count_unit.value = found.unit;
+          if (unitPresetSelect) unitPresetSelect.value = found.unit;
+          customUnitRow.hidden = true;
         }
       }
-    } else if (val === '__other__') {
-      s1NameInput.focus();
     }
+    syncGroupUI();
     validateForm();
   };
 
@@ -586,66 +561,39 @@ function openStakeholderModal({ initialData = null, defaultGroup = null, onSaved
     });
     if (groupHintBadge && group) groupHintBadge.textContent = group.code;
     if (group && !codeTouched) form.group_code.value = nextGroupCode(stakeholders, group);
-
-    const bannerBadge = document.getElementById('stkBannerBadge');
-    const bannerTitle = document.getElementById('stkBannerTitle');
-    const bannerDesc = document.getElementById('stkBannerDesc');
-    const info = GROUP_DESCRIPTIONS[group?.key] || {};
-    if (bannerBadge) bannerBadge.textContent = group?.code || 'S1';
-    if (bannerTitle) bannerTitle.textContent = isTh ? info.th_title : info.en_title;
-    if (bannerDesc) bannerDesc.textContent = isTh ? info.th_desc : info.en_desc;
-
-    document.querySelectorAll('.stk-form-section').forEach((sec) => {
-      sec.hidden = sec.id !== `stkSection-${group?.key}`;
-    });
-
-    validateForm();
+    if (group && !unitTouched && !form.count_unit.value) form.count_unit.value = group.unit;
   };
 
-  // Smart Input Assistance for S2–S4 (S1 keeps its original preset logic above)
-  const assists = {};
   const validateForm = () => {
-    let isValid = true;
-    if (!group) {
-      isValid = false;
-    } else if (group.key === 'primary_beneficiary') {
-      isValid = !!form.name_s1?.value.trim() && form.estimated_count_s1?.value.trim() !== '' && !!form.count_unit_s1?.value.trim();
-    } else {
-      isValid = assists[group.key] ? assists[group.key].isValid() : false;
-    }
+    const name = getEffectiveName();
+    const isValid = !!name;
     if (btnSaveStk) btnSaveStk.disabled = !isValid;
   };
 
-  if (s1PresetSelect) s1PresetSelect.addEventListener('change', syncPresetS1);
-  form.querySelectorAll('input, select, textarea').forEach((input) => {
-    input.addEventListener('input', validateForm);
-    input.addEventListener('change', validateForm);
+  presetSelect.addEventListener('change', syncPresetUI);
+  customNameInput.addEventListener('input', validateForm);
+
+  unitPresetSelect.addEventListener('change', () => {
+    unitTouched = true;
+    if (unitPresetSelect.value === '__other__') {
+      customUnitRow.hidden = false;
+      customUnitInput.focus();
+    } else {
+      customUnitRow.hidden = true;
+      customUnitInput.value = unitPresetSelect.value;
+    }
   });
 
   form.querySelectorAll('#groupChips input[type=radio]').forEach((radio) => {
     radio.addEventListener('change', () => {
       group = groupByKey(radio.value);
-      codeTouched = false;
       syncGroupUI();
-      // Auto focus active name input
-      const sec = document.getElementById(`stkSection-${group?.key}`);
-      sec?.querySelector('input[type=text]')?.focus();
     });
   });
 
-  const assistCtx = (key) => ({
-    initialData: (initialData?.stakeholder_group || 'primary_beneficiary') === key ? initialData : null,
-    isTh,
-    onChange: validateForm,
-  });
-  assists.project_operator = bindS2(form, assistCtx('project_operator'));
-  assists.project_supporter = bindS3(form, assistCtx('project_supporter'));
-  assists.other_agency = bindS4(form, assistCtx('other_agency'));
-
-  // Funding lines (for S3 or existing funding records)
+  // Funding lines
   const rowsBox = document.getElementById('fundRows');
   const renderFundRows = () => {
-    if (!rowsBox) return;
     rowsBox.innerHTML = rows.map((r, i) => fundingRowHtml(r, i, project)).join('');
     updateFundTotal();
     rowsBox.querySelectorAll('.in-fund-row').forEach((div) => {
@@ -694,76 +642,14 @@ function openStakeholderModal({ initialData = null, defaultGroup = null, onSaved
   // Save handler
   const save = async () => {
     errBox.hidden = true;
-    if (!group) {
-      showErr(isTh ? 'กรุณาเลือกกลุ่ม S1–S4' : 'Please select an SROI group (S1–S4).');
+    const name = getEffectiveName();
+    if (!name) {
+      showErr(isTh ? 'กรุณาระบุชื่อผู้ได้รับผลประโยชน์' : 'Please specify a stakeholder name.');
       return;
     }
-
-    const grpKey = group.key;
-    let name = '';
-    let category = null;
-    let estimated_count = null;
-    let count_unit = null;
-    let role_in_project = null;
-    let description = null;
-    let target_characteristics = null;
-    let needs_or_problems = null;
-    let operation_period = null;
-    let resources_used = null;
-    let support_type = null;
-    let support_value = null;
-    let support_amount_or_quantity = null;
-    let cooperation_type = null;
-    let resources_provided = null;
-
-    if (grpKey === 'primary_beneficiary') {
-      name = (form.name_s1?.value || '').trim();
-      if (!name) {
-        showErr(isTh ? 'กรุณาระบุชื่อกลุ่มหรือผู้ได้รับผลประโยชน์' : 'Please enter the beneficiary name.');
-        form.name_s1?.focus();
-        return;
-      }
-      const cntStr = (form.estimated_count_s1?.value || '').trim();
-      if (cntStr === '' || Number.isNaN(Number(cntStr)) || Number(cntStr) < 0) {
-        showErr(isTh ? 'กรุณากรอกจำนวนประชากรที่ได้รับผลกระทบเป็นตัวเลข (0 ขึ้นไป)' : 'Please enter a valid population count (>= 0).');
-        form.estimated_count_s1?.focus();
-        return;
-      }
-      count_unit = (form.count_unit_s1?.value || '').trim();
-      if (!count_unit) {
-        showErr(isTh ? 'กรุณาระบุหน่วยนับ' : 'Please specify a count unit.');
-        form.count_unit_s1?.focus();
-        return;
-      }
-      estimated_count = Number(cntStr);
-      const presetVal = form.s1PresetSelect?.value;
-      const presetObj = BENEFICIARY_PRESETS.find((x) => x.id === presetVal);
-      category = presetObj ? (isTh ? presetObj.th : presetObj.en) : 'Primary Beneficiary';
-      target_characteristics = form.target_characteristics?.value.trim() || null;
-      needs_or_problems = form.needs_or_problems?.value.trim() || null;
-      description = form.description_s1?.value.trim() || null;
-    } else {
-      // S2 / S3 / S4 — values come from the Smart Input Assistance sections
-      const res = assists[grpKey].collect();
-      if (res.error) {
-        showErr(res.error.msg);
-        res.error.el?.focus();
-        return;
-      }
-      const d = res.data;
-      name = d.name;
-      category = d.category ?? null;
-      estimated_count = d.estimated_count ?? null;
-      count_unit = d.count_unit ?? null;
-      role_in_project = d.role_in_project ?? null;
-      description = d.description ?? null;
-      operation_period = d.operation_period ?? null;
-      resources_used = d.resources_used ?? null;
-      support_type = d.support_type ?? null;
-      support_value = d.support_value ?? null;
-      support_amount_or_quantity = d.support_amount_or_quantity ?? null;
-      cooperation_type = d.cooperation_type ?? null;
-      resources_provided = d.resources_provided ?? null;
+    if (!group) {
+      showErr(isTh ? 'กรุณาเลือกกลุ่ม S1–S4' : 'Please select a group (S1–S4).');
+      return;
     }
 
     const badRow = rows.find((r) => r.description?.trim() && Number.isNaN(r.amount));
@@ -784,28 +670,21 @@ function openStakeholderModal({ initialData = null, defaultGroup = null, onSaved
         evidence_source: r.evidence_source?.trim() || null,
       }));
 
+    const countUnit = unitPresetSelect.value === '__other__' ? customUnitInput.value.trim() : unitPresetSelect.value;
+
     const stkData = {
       name,
-      stakeholder_group: grpKey,
+      stakeholder_group: group.key,
       group_code: form.group_code.value.trim() || null,
-      count_unit,
-      estimated_count,
-      role_in_project,
-      description,
-      category,
-      target_characteristics,
-      needs_or_problems,
-      operation_period,
-      resources_used,
-      support_type,
-      support_value,
-      support_amount_or_quantity,
-      cooperation_type,
-      resources_provided,
-      evidence_source: initialData?.evidence_source || null,
-      expected_positive: initialData?.expected_positive || null,
-      expected_negative: initialData?.expected_negative || null,
-      overlap_notes: initialData?.overlap_notes || null,
+      count_unit: countUnit || 'คน',
+      estimated_count: form.estimated_count.value !== '' ? Number(form.estimated_count.value) : null,
+      role_in_project: form.role_in_project.value.trim() || null,
+      description: form.description.value.trim() || null,
+      category: form.category.value,
+      evidence_source: form.evidence_source.value.trim() || null,
+      expected_positive: form.expected_positive.value.trim() || null,
+      expected_negative: form.expected_negative.value.trim() || null,
+      overlap_notes: form.overlap_notes.value.trim() || null,
     };
 
     if (btnSaveStk) btnSaveStk.disabled = true;
