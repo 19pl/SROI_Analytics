@@ -302,6 +302,24 @@ export function renderStep4(container) {
     if (kind === 'saved') setTimeout(() => el.textContent === '✓' && (el.textContent = ''), 1500);
   };
 
+  // The footer's Next button is rendered from state.review, which only changes after a save.
+  // Re-draw just the footer once the latest review is in, so the button unlocks without a page reload.
+  const refreshFooter = () => {
+    const oldFooter = container.querySelector('.wizard-footer');
+    if (!oldFooter) return;
+    const tpl = document.createElement('template');
+    tpl.innerHTML = wizardFooterHtml(4, {
+      canProceed: true,
+      nextLabel: isTh
+        ? 'บันทึกและไปต่อ: ตรวจสอบความถูกต้องและคำนวณ (Step 5) →'
+        : 'Continue: Review & Readiness (Step 5) →',
+    }).trim();
+    const newFooter = tpl.content.firstElementChild;
+    if (!newFooter) return;
+    oldFooter.replaceWith(newFooter);
+    attachWizardFooterEvents(newFooter);
+  };
+
   let chain = Promise.resolve();
   const saveRow = (itemEl, { refresh = true } = {}) => {
     const id = Number(itemEl.dataset.outcomeId);
@@ -313,7 +331,10 @@ export function renderStep4(container) {
     setState(itemEl, 'saving');
     chain = chain
       .then(() => saveAdjustment(id, vals, { refresh }))
-      .then(() => setState(itemEl, 'saved'))
+      .then(() => {
+        setState(itemEl, 'saved');
+        if (refresh) refreshFooter();
+      })
       .catch((err) => setState(itemEl, 'error', err.message));
     return chain;
   };
@@ -412,6 +433,7 @@ export function renderStep4(container) {
 
   accordionList.querySelectorAll('.adj-accordion-item').forEach(paintFactor);
   paintProgress();
+  refreshFooter();
 
   attachWizardFooterEvents(container);
 }
