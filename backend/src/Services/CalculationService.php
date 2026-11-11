@@ -117,9 +117,6 @@ final class CalculationService
 
         $p = $snapshot['project'];
         $issues = [1 => [], 2 => [], 3 => [], 4 => [], 5 => [], 6 => []];
-        if ($snapshot['costs'] === []) {
-            $issues[1][] = 'Add at least one investment item.';
-        }
         if ($p['analysis_period_years'] === null) {
             $issues[1][] = 'Set the analysis period.';
         }
@@ -128,6 +125,9 @@ final class CalculationService
         }
         if ($snapshot['stakeholders'] === []) {
             $issues[2][] = 'Identify at least one stakeholder group.';
+        }
+        if ($snapshot['costs'] === []) {
+            $issues[2][] = 'Add at least one investment item.'; // money is entered on the stakeholder (Step 2)
         }
         if ($snapshot['outcomes'] === []) {
             $issues[3][] = 'Add at least one outcome.';

@@ -71,7 +71,7 @@ export function renderStep1(container) {
   const hasHorizon = Number(project.analysis_period_years) >= 1;
   const profileOk = hasName && hasHorizon;
   const costsOk = costs.length > 0;
-  const unlinked = costs.filter((c) => !c.stakeholder_id).length;
+  const unlinkedCosts = costs.filter((c) => !c.stakeholder_id); // old rows saved before money moved to Step 2
   const horizon = Number(project.analysis_period_years) || 1;
   const showYear = horizon > 1 || costs.some((c) => Number(c.year) > 0);
 
@@ -127,10 +127,10 @@ export function renderStep1(container) {
             <small>${profileOk ? L('พร้อมแล้ว', 'Looks good') : L('ยังขาดชื่อโครงการ', 'Project name missing')}</small>
           </span>
         </a>
-        <a class="s1-todo-item ${costsOk ? 'is-done' : 'is-todo'}" href="#s1-money" data-scroll="s1-money" role="listitem">
+        <a class="s1-todo-item ${costsOk ? 'is-done' : 'is-todo'}" href="#/wizard/step-2" role="listitem">
           <span class="s1-todo-num">${costsOk ? '✓' : '2'}</span>
           <span class="s1-todo-text">
-            <strong>${L('ใส่เงินที่ใช้ทำโครงการ', 'Add the money put in')}</strong>
+            <strong>${L('ใส่เงินที่ขั้นที่ 2 (ที่ผู้ให้เงิน)', 'Add money in Step 2 (on who gives it)')}</strong>
             <small>${
               costsOk
                 ? `${costs.length} ${L('รายการ', 'items')} · ${money(total)}`
@@ -269,14 +269,14 @@ export function renderStep1(container) {
         </form>
       </section>
 
-      <!-- PART 2 · Money put in -->
+      <!-- PART 2 · Money is typed in Step 2, on the stakeholder who provides it. Read-only here. -->
       <section class="card" id="s1-money">
         <div class="card-head">
           <div>
             <h2 class="card-title"><span class="s1-part">2</span> ${L('เงินที่ใช้ทำโครงการ', 'Money put into the project')}</h2>
-            <p class="muted s1-sub">${L('ทุกอย่างที่ต้องจ่าย หรือมีคนสนับสนุน เพื่อทำโครงการนี้ — ยังไม่ครบก็ไม่เป็นไร กลับมาเพิ่มได้', 'Everything spent or given to run the project. It is fine if it is not complete yet.')}</p>
+            <p class="muted s1-sub">${L('ใส่เงินที่ขั้นที่ 2 ตรงกลุ่มที่เป็นผู้ให้เงิน เช่น คณะ หรือ อบต.', 'Add money in Step 2, on the stakeholder who provides it (e.g. the faculty or the local authority).')}</p>
           </div>
-          ${costsOk ? `<button class="btn btn-primary" id="btnAddCost" type="button">${icons.plus} ${L('เพิ่มรายการ', 'Add item')}</button>` : ''}
+          <a class="btn btn-secondary" href="#/wizard/step-2">${L('ไปขั้นที่ 2', 'Go to Step 2')}</a>
         </div>
 
         ${
@@ -286,71 +286,38 @@ export function renderStep1(container) {
           <div class="s1-stat s1-stat-main"><small>${L('รวมทั้งหมด', 'Total')}</small><b>${money(total)}</b></div>
           <div class="s1-stat"><small>${L('เงินสด', 'Cash')}</small><b>${money(cash)}</b></div>
           <div class="s1-stat"><small>${L('ไม่ใช่เงินสด', 'Non-cash')}</small><b>${money(inKind)}</b></div>
-        </div>
+        </div>`
+            : ''
+        }
 
+        ${
+          unlinkedCosts.length
+            ? `
+        <p class="muted s1-sub" style="margin-top: var(--sp-sm);">${unlinkedCosts.length} ${L('รายการเก่ายังไม่ระบุว่าใครให้ — กดแก้ไขเพื่อเลือกผู้ให้', 'older items have no provider yet — press Edit to choose one')}</p>
         <div class="table-wrap">
           <table class="table">
-            <thead>
-              <tr>
-                <th>${L('ใช้ไปกับอะไร', 'What it was for')}</th>
-                <th>${L('ใครให้ / จ่าย', 'Who provided it')}</th>
-                <th>${L('ชนิด', 'Kind')}</th>
-                ${showYear ? `<th class="num">${L('ปีที่', 'Year')}</th>` : ''}
-                <th class="num">${L('จำนวนเงิน', 'Amount')}</th>
-                <th><span class="sr-only">${L('จัดการ', 'Actions')}</span></th>
-              </tr>
-            </thead>
             <tbody id="costTableBody">
-              ${costs
-                .map((c) => {
-                  const stk = c.stakeholder_id ? stkById[c.stakeholder_id] : null;
-                  const notCounted = !c.is_cash && !project.include_in_kind;
-                  return `
-                <tr data-id="${c.id}">
-                  <td>
-                    <div class="strong">${escapeHtml(c.description)}
-                      ${c.period_label ? `<span class="badge badge-integrated s1-mini">${escapeHtml(c.period_label)}</span>` : ''}
-                      ${dupIds.has(c.id) ? `<span class="badge s1-mini s1-warn" title="${L('มีรายการเหมือนกันอีก — ตรวจว่านับซ้ำหรือไม่', 'Another identical item exists — check for double counting')}">${L('อาจซ้ำ', 'Possible duplicate')}</span>` : ''}
-                    </div>
-                    <div class="muted s1-mini-line">${escapeHtml(costCategoryLabel(c.category, isTh))}${c.notes ? ` · <span class="s1-qty-detail">${escapeHtml(c.notes)}</span>` : Array.isArray(c.line_items) && c.line_items.length ? ` · <span class="s1-qty-detail">${escapeHtml(describeLinesForList(c.line_items))}</span>` : ''}</div>
-                  </td>
-                  <td>${stk ? `<span class="badge badge-integrated">${escapeHtml(stk.group_code || '')}</span> ${escapeHtml(stk.name)}` : '<span class="muted">–</span>'}</td>
-                  <td>${c.is_cash ? L('เงินสด', 'Cash') : `<span class="muted">${L('ไม่ใช่เงินสด', 'Non-cash')}</span>`}
-                    ${notCounted ? `<div class="s1-mini-line s1-warn-text">${L('ไม่นับในการคำนวณ', 'Not counted')}</div>` : ''}</td>
-                  ${showYear ? `<td class="num">${Number(c.year) === 0 ? L('เริ่มต้น', 'Start') : `${L('ปีที่', 'Year')} ${c.year}`}</td>` : ''}
-                  <td class="num strong">${money(c.amount * (c.exchange_rate || 1))}</td>
-                  <td>
-                    <div style="display: flex; gap: 4px;">
-                      <button class="btn-icon" data-edit-cost="${c.id}" title="${t('edit', 'Edit')}" aria-label="${t('edit', 'Edit')}">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
-                      </button>
-                      <button class="btn-icon" data-remove-cost="${c.id}" title="${t('delete', 'Delete')}" aria-label="${t('delete', 'Delete')}">${icons.trash}</button>
-                    </div>
-                  </td>
-                </tr>`;
-                })
+              ${unlinkedCosts
+                .map(
+                  (c) => `
+              <tr data-id="${c.id}">
+                <td><div class="strong">${escapeHtml(c.description)}</div></td>
+                <td class="num strong">${money(c.amount * (c.exchange_rate || 1))}</td>
+                <td>
+                  <div style="display: flex; gap: 4px;">
+                    <button class="btn-icon" data-edit-cost="${c.id}" title="${t('edit', 'Edit')}" aria-label="${t('edit', 'Edit')}">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                    </button>
+                    <button class="btn-icon" data-remove-cost="${c.id}" title="${t('delete', 'Delete')}" aria-label="${t('delete', 'Delete')}">${icons.trash}</button>
+                  </div>
+                </td>
+              </tr>`,
+                )
                 .join('')}
             </tbody>
           </table>
-        </div>
-        ${
-          unlinked > 0 && stakeholders.length > 0
-            ? `<p class="muted s1-sub" style="margin-top: var(--sp-sm);">${unlinked} ${L('รายการยังไม่ระบุว่าใครให้ — ระบุตอนนี้ (กดแก้ไข) หรือที่ขั้นที่ 2 ก็ได้', 'items do not say who provided them — set it now (Edit) or in Step 2')}</p>`
-            : ''
-        }`
-            : `
-        <!-- Empty state: say what to do, give examples, one big button -->
-        <div class="s1-empty">
-          <div class="s1-empty-icon" aria-hidden="true"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg></div>
-          <div class="strong">${L('เริ่มจากรายการแรกของโครงการ', 'Start with the first item')}</div>
-          <div class="muted s1-sub">${L('เลือกตัวอย่างด้านล่างเพื่อเริ่มเร็วขึ้น หรือกดปุ่มเพื่อกรอกเอง', 'Pick an example to start faster, or add your own.')}</div>
-          <div class="s1-presets">
-            <button type="button" class="s1-preset" data-preset="honorarium">${L('ค่าตอบแทนวิทยากร / ทีมงาน', 'Speakers & staff pay')}</button>
-            <button type="button" class="s1-preset" data-preset="supplies">${L('ค่าวัสดุ / อุปกรณ์', 'Supplies & equipment')}</button>
-            <button type="button" class="s1-preset" data-preset="volunteer">${L('แรงอาสา / ของบริจาค', 'Volunteer time & donations')}</button>
-          </div>
-          <button class="btn btn-primary s1-empty-btn" id="btnAddCost" type="button">${icons.plus} ${L('เพิ่มรายการแรก', 'Add first item')}</button>
         </div>`
+            : ''
         }
       </section>
 
@@ -554,14 +521,7 @@ export function renderStep1(container) {
     window.location.hash = '#/wizard/step-2';
   });
 
-  // Money
-  const openAdd = (prefill = null) =>
-    openAddCostModal({ project, prefill, onAdded: () => renderStep1(container) });
-  document.getElementById('btnAddCost')?.addEventListener('click', () => openAdd());
-  container
-    .querySelectorAll('[data-preset]')
-    .forEach((b) => b.addEventListener('click', () => openAdd(costPreset(b.dataset.preset, isTh))));
-
+  // Old money rows without a provider can still be edited / removed here.
   container.querySelectorAll('[data-edit-cost]').forEach((btn) => {
     btn.addEventListener('click', () => {
       const target = costs.find((c) => c.id === Number(btn.dataset.editCost));
@@ -585,27 +545,6 @@ export function renderStep1(container) {
   });
 
   attachWizardFooterEvents(container);
-}
-
-function costPreset(key, isTh) {
-  const P = {
-    honorarium: {
-      description: isTh ? 'ค่าตอบแทนวิทยากร / ทีมงาน' : 'Speaker & staff honorarium',
-      category: 'administration',
-      is_cash: 1,
-    },
-    supplies: {
-      description: isTh ? 'ค่าวัสดุ / อุปกรณ์' : 'Supplies & equipment',
-      category: 'opex',
-      is_cash: 1,
-    },
-    volunteer: {
-      description: isTh ? 'แรงอาสาสมัคร / ของบริจาค' : 'Volunteer time & donated items',
-      category: 'in_kind',
-      is_cash: 0,
-    },
-  };
-  return P[key] || null;
 }
 
 function describeLinesForList(lines) {

@@ -48,9 +48,9 @@ export function renderStep6(container) {
   // Helper to determine step link for a blocker
   const getFixLink = (path = '') => {
     const p = String(path).toLowerCase();
-    if (p.includes('cost') || p.includes('investment') || p.includes('discount'))
+    if (p.includes('discount'))
       return { step: 1, hash: '#/wizard/step-1', label: isTh ? 'ขั้นตอนที่ 1 (เงินลงทุน)' : 'Step 1 (Investment)' };
-    if (p.includes('stakeholder'))
+    if (p.includes('stakeholder') || p.includes('cost') || p.includes('investment'))
       return { step: 2, hash: '#/wizard/step-2', label: isTh ? 'ขั้นตอนที่ 2 (ผู้มีส่วนได้เสีย)' : 'Step 2 (Stakeholders)' };
     if (p.includes('outcome') || p.includes('proxy') || p.includes('quantity'))
       return { step: 3, hash: '#/wizard/step-3', label: isTh ? 'ขั้นตอนที่ 3 (ผลลัพธ์)' : 'Step 3 (Outcomes)' };

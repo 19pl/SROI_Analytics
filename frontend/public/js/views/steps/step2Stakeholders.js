@@ -458,14 +458,14 @@ function openStakeholderModal({ initialData = null, defaultGroup = null, onSaved
         </div>
 
         <!-- Section 3: Collapsed Funding Disclosure (Revealed only after Section 2 is shown) -->
-        <details class="disclosure" id="stkFundingDetails">
+        <details class="disclosure" id="stkFundingDetails" ${rows.length ? 'open' : ''}>
           <summary class="disclosure__summary">
-            ${isTh ? '3. งบประมาณและสิ่งสนับสนุน (ไม่บังคับ)' : '3. Funding & In-kind Support (Optional)'}
+            ${isTh ? '3. เงิน / สิ่งสนับสนุนที่กลุ่มนี้ให้โครงการ' : '3. Money & support this group gives the project'}
           </summary>
           <div class="stack-sm">
             <div class="cluster cluster--space-between">
               <p class="field-hint">
-                ${isTh ? 'รายการงบประมาณที่กลุ่มนี้สนับสนุนโครงการ ข้อมูลจะเชื่อมโยงไปยังขั้นตอนที่ 1 โดยอัตโนมัติ' : 'Resources provided by this group. Automatically linked to Step 1.'}
+                ${isTh ? 'ใส่เฉพาะกลุ่มที่เป็นผู้ให้เงินหรือสิ่งสนับสนุน (ส่วนใหญ่คือ S2–S4) ต้องมีอย่างน้อย 1 รายการในโครงการ' : 'Fill in for groups that give money or support (mostly S2–S4). The project needs at least one item.'}
               </p>
               <span class="muted-sm strong" id="fundTotal"></span>
             </div>

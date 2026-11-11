@@ -42,13 +42,13 @@ export function renderStep5(container) {
   // Helper to determine step link for a blocker
   const getFixLink = (path = '') => {
     const p = String(path).toLowerCase();
-    if (p.includes('cost') || p.includes('investment') || p.includes('discount'))
+    if (p.includes('discount'))
       return {
         step: 1,
         hash: '#/wizard/step-1',
         label: isTh ? 'ขั้นตอนที่ 1 (เงินลงทุน)' : 'Step 1 (Investment)',
       };
-    if (p.includes('stakeholder'))
+    if (p.includes('stakeholder') || p.includes('cost') || p.includes('investment'))
       return {
         step: 2,
         hash: '#/wizard/step-2',
@@ -226,7 +226,7 @@ export function renderStep5(container) {
                 </span>
               </div>
             </div>
-            <a href="#/wizard/step-1" class="btn btn-secondary btn-compact">
+            <a href="#/wizard/step-2" class="btn btn-secondary btn-compact">
               ${isTh ? 'แก้ไข' : 'Edit'}
             </a>
           </div>
