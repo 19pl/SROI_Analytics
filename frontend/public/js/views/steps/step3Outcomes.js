@@ -200,6 +200,7 @@ export function renderStep3(container) {
                           <div>
                             <span class="muted-sm">${t('col_outcome_proxy', 'ตัวแทนทางการเงิน (Proxy)')}:</span>
                             <strong>${o.proxy_value !== null ? `${project.currency} ${formatBaht(o.proxy_value)} / ${escapeHtml(o.proxy_unit || '')}` : '-'}</strong>
+                            ${o.proxy_rationale ? `<div class="muted-sm">${isTh ? 'แนวทางการคำนวณ' : 'Calculation'}: ${escapeHtml(o.proxy_rationale)}</div>` : ''}
                             ${o.proxy_source ? `<div class="muted-sm">${escapeHtml(o.proxy_source)}</div>` : ''}
                           </div>
                           <div>
@@ -435,6 +436,13 @@ function openOutcomeModal({ initialData = null, onSaved }) {
           </div>
 
           <div class="field">
+            <label class="field-label" for="ocProxyRationale">
+              ${isTh ? 'แนวทางการคำนวณมูลค่า' : 'How the value was calculated'}
+            </label>
+            <input type="text" id="ocProxyRationale" name="proxy_rationale" class="input" maxlength="2000" value="${escapeHtml(src?.proxy_rationale || '')}" placeholder="${isTh ? 'เช่น ค่ารักษาเฉลี่ยต่อครั้ง × จำนวนครั้งที่ลดลงต่อปี' : 'e.g. average cost per visit × visits avoided per year'}" />
+          </div>
+
+          <div class="field">
             <label class="field-label" for="ocProxySource">
               ${isTh ? 'แหล่งที่มาของมูลค่าอ้างอิง' : 'Source / Citation'}
               <span class="field-hint field-hint--primary">${isTh ? 'จำเป็น' : 'Required'}</span>
@@ -649,6 +657,7 @@ function openOutcomeModal({ initialData = null, onSaved }) {
       proxy_value: proxyVal,
       proxy_unit: proxyUnit || 'คน / ปี',
       proxy_source: ocProxySource.value.trim(),
+      proxy_rationale: document.getElementById('ocProxyRationale')?.value.trim() || null,
       duration_years: parseInt(form.duration_years.value, 10) || 1,
       projection_model: form.projection_model.value,
       evidence_quality: form.evidence_quality.value,

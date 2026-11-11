@@ -83,32 +83,18 @@ export function renderStep2(container) {
         ${s.role_in_project ? `<div class="muted-sm">${escapeHtml(s.role_in_project)}</div>` : ''}
       </td>
       <td class="num">${s.estimated_count !== null && s.estimated_count !== undefined ? `${Number(s.estimated_count).toLocaleString()} <span class="muted-sm">${escapeHtml(s.count_unit || '')}</span>` : '<span class="muted-sm">–</span>'}</td>
+      <td class="num">${
+        fundingCount(s.id)
+          ? `${escapeHtml(project.currency)} ${formatBaht(fundingOf(s.id))} <span class="muted-sm">(${fundingCount(s.id)} ${isTh ? 'รายการ' : fundingCount(s.id) === 1 ? 'line' : 'lines'})</span>`
+          : '<span class="muted-sm">–</span>'
+      }</td>
+      <td class="num">${s.outcome_count ? `${s.outcome_count} <span class="muted-sm">${isTh ? 'ผลลัพธ์' : s.outcome_count === 1 ? 'outcome' : 'outcomes'}</span>` : '<span class="muted-sm">–</span>'}</td>
       <td>
         <div class="row-actions">
-          <button type="button" class="btn-icon" data-toggle-stk="${s.id}" title="${t('view_details', 'Details')}" aria-expanded="false">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
-          </button>
           <button type="button" class="btn-icon" data-edit-stakeholder="${s.id}" title="${t('edit', 'Edit')}">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
           </button>
           <button type="button" class="btn-icon" data-remove-stakeholder="${s.id}" title="${t('delete', 'Delete')}">${icons.trash}</button>
-        </div>
-      </td>
-    </tr>
-    <tr class="stk-detail-row" id="stkDetail-${s.id}" hidden>
-      <td colspan="4">
-        <div class="panel panel--soft stack-sm">
-          <div class="form-row">
-            <div>
-              <span class="muted-sm">${t('in_funding_short', 'งบสนับสนุน')}:</span>
-              <strong>${fundingCount(s.id) ? `${escapeHtml(project.currency)} ${formatBaht(fundingOf(s.id))} (${fundingCount(s.id)} ${isTh ? 'รายการ' : 'lines'})` : (isTh ? 'ไม่มีงบสนับสนุน' : 'None')}</strong>
-            </div>
-            <div>
-              <span class="muted-sm">${t('in_col_outcomes', 'ผลลัพธ์ที่เชื่อมโยง')}:</span>
-              <strong>${s.outcome_count || 0} ${isTh ? 'ผลลัพธ์' : 'outcomes'}</strong>
-            </div>
-          </div>
-          ${s.description ? `<div class="muted-sm">${escapeHtml(s.description)}</div>` : ''}
         </div>
       </td>
     </tr>`;
@@ -158,9 +144,6 @@ export function renderStep2(container) {
               <h2 class="panel__title">${escapeHtml(isTh ? info.th_title : info.en_title)}</h2>
               <div class="muted-sm">${escapeHtml(isTh ? info.th_desc : info.en_desc)}</div>
             </div>
-            <button type="button" class="btn btn-secondary btn-sm" data-add-in="${g.key}">
-              ${icons.plus} ${isTh ? `เพิ่มในกลุ่ม ${g.code}` : `Add to ${g.code}`}
-            </button>
           </div>
         </div>`;
     }
@@ -174,16 +157,18 @@ export function renderStep2(container) {
           </div>
           <div class="page-head__actions">
             ${total ? `<span class="muted-sm">${t('in_funding_total', 'เงินสนับสนุนรวม')}: <b>${escapeHtml(project.currency)} ${formatBaht(total)}</b></span>` : ''}
-            <button type="button" class="btn btn-secondary btn-sm" data-add-in="${g.key}">${icons.plus} ${isTh ? `เพิ่มในกลุ่ม ${g.code}` : `Add to ${g.code}`}</button>
           </div>
         </div>
         <div class="table-wrap">
-          <table class="table">
+          <table class="table" style="table-layout: fixed; width: 100%">
+            <colgroup><col style="width:84px" /><col /><col style="width:15%" /><col style="width:22%" /><col style="width:14%" /><col style="width:92px" /></colgroup>
             <thead>
               <tr>
                 <th>${t('in_code', 'รหัส')}</th>
                 <th>${t('in_name_short', 'ผู้มีส่วนได้ส่วนเสีย')}</th>
                 <th class="num">${t('in_count', 'จำนวนประชากร')}</th>
+                <th class="num">${t('in_funding_short', isTh ? 'งบสนับสนุน' : 'Funding')}</th>
+                <th class="num">${t('in_col_outcomes', isTh ? 'ผลลัพธ์ที่เชื่อมโยง' : 'Linked outcomes')}</th>
                 <th><span class="sr-only">${t('actions', 'Actions')}</span></th>
               </tr>
             </thead>
@@ -270,12 +255,15 @@ export function renderStep2(container) {
               <h2 class="panel__title">${t('grp_none', 'Unclassified')}</h2>
               <p class="muted-sm">${t('in_loose_hint', 'Entries without a group.')}</p>
               <div class="table-wrap">
-                <table class="table">
+                <table class="table" style="table-layout: fixed; width: 100%">
+                  <colgroup><col style="width:84px" /><col /><col style="width:15%" /><col style="width:22%" /><col style="width:14%" /><col style="width:92px" /></colgroup>
                   <thead>
                     <tr>
                       <th>${t('in_code', 'รหัส')}</th>
                       <th>${t('in_name_short', 'ผู้มีส่วนได้ส่วนเสีย')}</th>
                       <th class="num">${t('in_count', 'จำนวนประชากร')}</th>
+                      <th class="num">${t('in_funding_short', isTh ? 'งบสนับสนุน' : 'Funding')}</th>
+                      <th class="num">${t('in_col_outcomes', isTh ? 'ผลลัพธ์ที่เชื่อมโยง' : 'Linked outcomes')}</th>
                       <th><span class="sr-only">${t('actions', 'Actions')}</span></th>
                     </tr>
                   </thead>
@@ -296,28 +284,9 @@ export function renderStep2(container) {
 
   const refresh = () => renderStep2(container);
 
-  // Expandable details row handler
-  container.querySelectorAll('[data-toggle-stk]').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const id = btn.dataset.toggleStk;
-      const detailRow = document.getElementById(`stkDetail-${id}`);
-      if (!detailRow) return;
-      const isOpen = !detailRow.hidden;
-      detailRow.hidden = isOpen;
-      btn.setAttribute('aria-expanded', String(!isOpen));
-      btn.style.transform = isOpen ? 'none' : 'rotate(180deg)';
-    });
-  });
-
   document.getElementById('btnTopAddStakeholder')?.addEventListener('click', () => {
     openStakeholderModal({ defaultGroup: 'primary_beneficiary', onSaved: refresh });
   });
-
-  container.querySelectorAll('[data-add-in]').forEach((btn) =>
-    btn.addEventListener('click', () =>
-      openStakeholderModal({ defaultGroup: btn.dataset.addIn, onSaved: refresh }),
-    ),
-  );
 
   container.querySelectorAll('[data-edit-stakeholder]').forEach((btn) =>
     btn.addEventListener('click', () => {
