@@ -8,7 +8,7 @@
  * List shows Code, Name, Population as main columns; funding and linked outcomes expand in a details row.
  */
 
-import { getState, saveStakeholderWithInputs, removeStakeholder } from '../../store.js';
+import { getState, saveStakeholderWithInputs, removeStakeholder, removeCost } from '../../store.js';
 import { openModal, closeModal, confirmModal } from '../../components/modal.js';
 import { formatBaht } from '../../utils/format.js';
 import { escapeHtml } from '../../utils/html.js';
@@ -24,6 +24,7 @@ import {
 } from '../../utils/stakeholderGroups.js';
 import { t, getLanguage } from '../../i18n.js';
 import { wizardFooterHtml, attachWizardFooterEvents } from '../../components/wizardFooter.js';
+import { openAddCostModal } from './step1Project.js';
 
 export const BENEFICIARY_PRESETS = [
   { id: 'students', th: 'นิสิต / นักศึกษา', en: 'Students & Learners', group: 'primary_beneficiary', unit: 'คน' },
@@ -51,7 +52,7 @@ const CATEGORIES = [
 ];
 
 export function renderStep2(container) {
-  const { project, stakeholders, costs } = getState();
+  const { project, stakeholders, costs, investmentSummary } = getState();
   const lang = getLanguage();
   const isTh = lang !== 'en';
 
@@ -66,6 +67,13 @@ export function renderStep2(container) {
       .reduce((n, c) => n + Number(c.amount) * Number(c.exchange_rate || 1), 0);
   const fundingCount = (id) => costs.filter((c) => c.stakeholder_id === id).length;
   const unlinked = costs.filter((c) => !c.stakeholder_id);
+
+  // Money total (read-only). Money itself is typed on each stakeholder (modal, section 3).
+  const sum = investmentSummary || {};
+  const totalInvest = Number(sum.total_investment || 0);
+  const inKindInvest = Number(sum.in_kind_resources || 0);
+  const cashInvest = Math.max(0, totalInvest - inKindInvest);
+  const cur = escapeHtml(project.currency || 'THB');
 
   const rowHtml = (s) => `
     <tr data-id="${s.id}">
@@ -206,11 +214,49 @@ export function renderStep2(container) {
       </header>
 
       ${
-        unlinked.length
-          ? `<div class="empty-state">
-              <span class="muted-sm">${isTh ? 'มีรายการเงินลงทุนที่ยังไม่ได้เชื่อมโยงกับผู้สนับสนุน' : 'Investment items not linked to any stakeholder'}: <b>${unlinked.length}</b>
-              — <a href="#/wizard/step-1">${isTh ? 'เลือกผู้สนับสนุนในขั้นตอนที่ 1' : 'Link funders in Step 1'}</a></span>
+        costs.length
+          ? `<div class="panel panel--soft">
+              <div class="cluster cluster--space-between">
+                <strong>${isTh ? 'เงินที่ใช้ทำโครงการ (รวมจากทุกกลุ่มด้านล่าง)' : 'Money put into the project (from all groups below)'}</strong>
+                <span class="muted-sm">
+                  ${isTh ? 'รวม' : 'Total'} <b>${cur} ${formatBaht(totalInvest)}</b>
+                  ${inKindInvest > 0 ? `· ${isTh ? 'เงินสด' : 'Cash'} ${formatBaht(cashInvest)} · ${isTh ? 'ไม่ใช่เงินสด' : 'Non-cash'} ${formatBaht(inKindInvest)}` : ''}
+                </span>
+              </div>
             </div>`
+          : `<div class="empty-state">
+              <span class="muted-sm">${isTh ? 'ยังไม่มีรายการเงิน — เพิ่มได้ที่กลุ่มผู้ให้เงิน (ส่วน 3 ในหน้าต่างเพิ่มผู้มีส่วนได้ส่วนเสีย)' : 'No money added yet — add it on the group that gives it (section 3 of the stakeholder form).'}</span>
+            </div>`
+      }
+
+      ${
+        unlinked.length
+          ? `<section class="panel">
+              <h2 class="panel__title">${isTh ? 'รายการเงินเก่าที่ยังไม่ระบุว่าใครให้' : 'Older money items with no provider yet'}</h2>
+              <p class="muted-sm">${isTh ? 'กดแก้ไขเพื่อเลือกผู้ให้ หรือลบทิ้ง' : 'Press Edit to choose who provides it, or delete it.'}</p>
+              <div class="table-wrap">
+                <table class="table">
+                  <tbody>
+                    ${unlinked
+                      .map(
+                        (c) => `<tr>
+                      <td><div class="strong">${escapeHtml(c.description)}</div></td>
+                      <td class="num strong">${cur} ${formatBaht(Number(c.amount) * Number(c.exchange_rate || 1))}</td>
+                      <td>
+                        <div class="row-actions">
+                          <button type="button" class="btn-icon" data-edit-cost="${c.id}" title="${t('edit', 'Edit')}" aria-label="${t('edit', 'Edit')}">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                          </button>
+                          <button type="button" class="btn-icon" data-remove-cost="${c.id}" title="${t('delete', 'Delete')}" aria-label="${t('delete', 'Delete')}">${icons.trash}</button>
+                        </div>
+                      </td>
+                    </tr>`,
+                      )
+                      .join('')}
+                  </tbody>
+                </table>
+              </div>
+            </section>`
           : ''
       }
 
@@ -280,6 +326,27 @@ export function renderStep2(container) {
     }),
   );
 
+  // Old money rows that have no provider yet
+  container.querySelectorAll('[data-edit-cost]').forEach((btn) =>
+    btn.addEventListener('click', () => {
+      const target = costs.find((c) => c.id === Number(btn.dataset.editCost));
+      if (target) openAddCostModal({ project, initialData: target, onAdded: () => renderStep2(container) });
+    }),
+  );
+  container.querySelectorAll('[data-remove-cost]').forEach((btn) =>
+    btn.addEventListener('click', () => {
+      const costId = Number(btn.dataset.removeCost);
+      confirmModal({
+        title: t('delete', 'Delete'),
+        message: isTh ? 'ต้องการลบรายการนี้ใช่หรือไม่?' : 'Remove this item?',
+        onConfirm: async () => {
+          await removeCost(costId);
+          renderStep2(container);
+        },
+      });
+    }),
+  );
+
   container.querySelectorAll('[data-remove-stakeholder]').forEach((btn) =>
     btn.addEventListener('click', () => {
       const sId = Number(btn.dataset.removeStakeholder);
@@ -288,8 +355,8 @@ export function renderStep2(container) {
         title: t('delete', 'Delete'),
         message: n
           ? isTh
-            ? 'ลบผู้มีส่วนได้ส่วนเสียนี้หรือไม่? รายการเงินสนับสนุนจะยังคงอยู่ในขั้นตอนที่ 1 แต่จะกลายเป็นแบบไม่ระบุผู้สนับสนุน'
-            : 'Delete this stakeholder? Its funding lines remain in Step 1 as unlinked.'
+            ? 'ลบผู้มีส่วนได้ส่วนเสียนี้หรือไม่? รายการเงินสนับสนุนจะยังคงอยู่ แต่จะกลายเป็นแบบไม่ระบุผู้สนับสนุน (แสดงด้านบนของหน้านี้)'
+            : 'Delete this stakeholder? Its funding lines stay as unlinked items (shown at the top of this page).'
           : t(
               'confirm_delete',
               'Are you sure you want to delete this stakeholder? Any associated outcomes will need to be re-assigned.',
@@ -312,37 +379,46 @@ export function renderStep2(container) {
   attachWizardFooterEvents(container);
 }
 
-function fundingRowHtml(row, idx, project) {
+function fundingRowHtml(row, idx, project, showYear) {
   const k = row.key;
   const lang = getLanguage();
   const isTh = lang !== 'en';
+  const horizon = Number(project.analysis_period_years) || 1;
+  const maxYear = Math.max(horizon, Number(row.year) || 0);
+  const yearLabel = (y) => (y === 0 ? (isTh ? 'ตอนเริ่มโครงการ' : 'Project start') : isTh ? `ปีที่ ${y}` : `Year ${y}`);
+  const cur = escapeHtml(project.currency || 'THB');
 
   return `
     <div class="in-fund-row" data-key="${k}">
-      <span class="in-fund-n">${idx + 1}</span>
-      <label class="field in-f-desc">
-        <span class="field-label">${isTh ? 'รายการงบประมาณ / สิ่งสนับสนุน' : 'Resource / item'}</span>
-        <input class="input" name="desc" value="${escapeHtml(row.description || '')}" placeholder="${isTh ? 'เช่น งบประมาณจากคณะ, ค่าเดินทาง' : 'e.g. Budget from faculty'}" />
-      </label>
-      <label class="field in-f-amt">
-        <span class="field-label">${isTh ? 'จำนวนเงิน' : 'Amount'} (${escapeHtml(project.currency)})</span>
-        <input class="input" name="amount" type="text" inputmode="decimal" autocomplete="off" value="${row.amount ?? ''}" placeholder="0" />
-      </label>
-      <label class="field in-f-year">
-        <span class="field-label">${isTh ? 'ปีที่เกิด (0 = ปีแรก)' : 'Year (0 = Y0)'}</span>
-        <input class="input" name="year" type="number" min="0" max="${project.analysis_period_years || 5}" value="${row.year ?? 0}" />
-      </label>
-      <label class="field in-f-src">
-        <span class="field-label">${isTh ? 'แหล่งหลักฐาน' : 'Basis / source'}</span>
-        <input class="input" name="source" value="${escapeHtml(row.evidence_source || '')}" placeholder="${isTh ? 'เช่น สรุปงบประมาณจริง' : 'How calculated / source'}" />
-      </label>
-      <label class="in-f-kind" title="${isTh ? 'เลือกหากไม่ใช่เงินสด เช่น เวลาอาสาสมัคร สถานที่ อุปกรณ์' : 'Tick when not cash (volunteer time, venue)'}">
-        <input type="checkbox" name="inkind" ${row.category === 'in_kind' ? 'checked' : ''} />
-        <span>${isTh ? 'In-kind' : 'In-kind'}</span>
-      </label>
-      <button type="button" class="btn-icon in-f-del" data-del-row="${k}" title="${t('delete', 'Delete')}" aria-label="${t('delete', 'Delete')}">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-      </button>
+      <div class="in-fund-row__head">
+        <span class="in-fund-n">${isTh ? `รายการที่ ${idx + 1}` : `Item ${idx + 1}`}</span>
+        <button type="button" class="btn-icon in-f-del" data-del-row="${k}" title="${t('delete', 'Delete')}" aria-label="${t('delete', 'Delete')}">${icons.trash}</button>
+      </div>
+      <div class="in-fund-grid ${showYear ? 'has-year' : ''}">
+        <label class="field in-f-desc">
+          <span class="field-label">${isTh ? 'ระบุทรัพยากรที่ใช้' : 'Resource used'}</span>
+          <input class="input" name="desc" value="${escapeHtml(row.description || '')}" placeholder="${isTh ? 'เช่น งบประมาณจากคณะ, ค่าเดินทาง' : 'e.g. Budget from faculty'}" />
+        </label>
+        <label class="field in-f-amt">
+          <span class="field-label">${isTh ? 'มูลค่าที่ใช้ในปีดำเนินงาน (Y0) (บาทต่อปี)' : `Value used in the operating year (Y0) (${cur} per year)`}</span>
+          <span class="in-f-affix">
+            <input class="input" name="amount" type="text" inputmode="decimal" autocomplete="off" value="${row.amount ?? ''}" placeholder="0" />
+            <span class="in-f-affix__unit">${isTh && cur === 'THB' ? 'บาท' : cur}</span>
+          </span>
+        </label>
+        ${
+          showYear
+            ? `<label class="field in-f-year">
+          <span class="field-label">${isTh ? 'จ่ายในปีที่' : 'Paid in'}</span>
+          <select class="input" name="year">${Array.from({ length: maxYear + 1 }, (_, y) => `<option value="${y}" ${y === (Number(row.year) || 0) ? 'selected' : ''}>${yearLabel(y)}</option>`).join('')}</select>
+        </label>`
+            : ''
+        }
+        <label class="field in-f-src">
+          <span class="field-label">${isTh ? 'ระบุแนวทางการคำนวณและแหล่งที่มา' : 'How it was calculated and the source'}</span>
+          <input class="input" name="source" value="${escapeHtml(row.evidence_source || '')}" placeholder="${isTh ? 'เช่น สรุปงบประมาณจริง' : 'How calculated / source'}" />
+        </label>
+      </div>
     </div>`;
 }
 
@@ -472,7 +548,7 @@ function openStakeholderModal({ initialData = null, defaultGroup = null, onSaved
             <div id="fundRows"></div>
             <div>
               <button type="button" class="btn btn-secondary btn-sm" id="btnAddFund">
-                ${icons.plus} ${isTh ? 'เพิ่มรายการงบประมาณ / สิ่งสนับสนุน' : 'Add funding line'}
+                ${icons.plus} ${isTh ? 'เพิ่มรายการ' : 'Add item'}
               </button>
             </div>
           </div>
@@ -594,7 +670,10 @@ function openStakeholderModal({ initialData = null, defaultGroup = null, onSaved
   // Funding lines
   const rowsBox = document.getElementById('fundRows');
   const renderFundRows = () => {
-    rowsBox.innerHTML = rows.map((r, i) => fundingRowHtml(r, i, project)).join('');
+    const showYear = (Number(project.analysis_period_years) || 1) > 1 || rows.some((r) => Number(r.year) > 0);
+    rowsBox.innerHTML = rows.length
+      ? rows.map((r, i) => fundingRowHtml(r, i, project, showYear)).join('')
+      : `<div class="in-fund-empty">${isTh ? 'ยังไม่มีรายการ — กด “เพิ่มรายการ” ด้านล่าง' : 'No items yet — press “Add item” below.'}</div>`;
     updateFundTotal();
     rowsBox.querySelectorAll('.in-fund-row').forEach((div) => {
       const k = div.dataset.key;
@@ -604,12 +683,8 @@ function openStakeholderModal({ initialData = null, defaultGroup = null, onSaved
         r.amount = parseAmount(e.target.value);
         updateFundTotal();
       });
-      div.querySelector('input[name=year]')?.addEventListener('input', (e) => (r.year = parseInt(e.target.value, 10) || 0));
+      div.querySelector('select[name=year]')?.addEventListener('change', (e) => (r.year = parseInt(e.target.value, 10) || 0));
       div.querySelector('input[name=source]')?.addEventListener('input', (e) => (r.evidence_source = e.target.value));
-      div.querySelector('input[name=inkind]')?.addEventListener('change', (e) => {
-        r.category = e.target.checked ? 'in_kind' : 'opex';
-        r.is_cash = !e.target.checked;
-      });
       div.querySelector('[data-del-row]')?.addEventListener('click', () => {
         const idx = rows.findIndex((x) => x.key === k);
         if (idx !== -1) rows.splice(idx, 1);

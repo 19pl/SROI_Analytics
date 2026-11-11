@@ -118,33 +118,10 @@ export function renderStep1(container) {
   container.innerHTML = `
     <div class="stack s1" style="gap: var(--sp-xl);">
 
-      <!-- What to do on this page: a live checklist instead of a paragraph -->
-      <div class="s1-todo" role="list">
-        <a class="s1-todo-item ${profileOk ? 'is-done' : 'is-todo'}" href="#s1-profile" data-scroll="s1-profile" role="listitem">
-          <span class="s1-todo-num">${profileOk ? '✓' : '1'}</span>
-          <span class="s1-todo-text">
-            <strong>${L('ตรวจข้อมูลโครงการ', 'Check your project info')}</strong>
-            <small>${profileOk ? L('พร้อมแล้ว', 'Looks good') : L('ยังขาดชื่อโครงการ', 'Project name missing')}</small>
-          </span>
-        </a>
-        <a class="s1-todo-item ${costsOk ? 'is-done' : 'is-todo'}" href="#/wizard/step-2" role="listitem">
-          <span class="s1-todo-num">${costsOk ? '✓' : '2'}</span>
-          <span class="s1-todo-text">
-            <strong>${L('ใส่เงินที่ขั้นที่ 2 (ที่ผู้ให้เงิน)', 'Add money in Step 2 (on who gives it)')}</strong>
-            <small>${
-              costsOk
-                ? `${costs.length} ${L('รายการ', 'items')} · ${money(total)}`
-                : L('ยังไม่มีรายการ', 'Nothing added yet')
-            }</small>
-          </span>
-        </a>
-      </div>
-
-      <!-- PART 1 · Project profile -->
       <section class="card" id="s1-profile">
         <div class="card-head">
           <div>
-            <h2 class="card-title"><span class="s1-part">1</span> ${L('ข้อมูลโครงการ', 'About your project')}</h2>
+            <h2 class="card-title">${L('ข้อมูลโครงการ', 'About your project')}</h2>
             <p class="muted s1-sub">${L('ส่วนใหญ่กรอกไว้แล้วตอนสร้างโครงการ — ตรวจดูแล้วแก้เฉพาะที่ไม่ถูกต้อง', 'Most of this was filled in when you created the plan — just check it.')}</p>
           </div>
           <div class="s1-savebox">
@@ -267,58 +244,6 @@ export function renderStep1(container) {
             </details>
           </div>
         </form>
-      </section>
-
-      <!-- PART 2 · Money is typed in Step 2, on the stakeholder who provides it. Read-only here. -->
-      <section class="card" id="s1-money">
-        <div class="card-head">
-          <div>
-            <h2 class="card-title"><span class="s1-part">2</span> ${L('เงินที่ใช้ทำโครงการ', 'Money put into the project')}</h2>
-            <p class="muted s1-sub">${L('ใส่เงินที่ขั้นที่ 2 ตรงกลุ่มที่เป็นผู้ให้เงิน เช่น คณะ หรือ อบต.', 'Add money in Step 2, on the stakeholder who provides it (e.g. the faculty or the local authority).')}</p>
-          </div>
-          <a class="btn btn-secondary" href="#/wizard/step-2">${L('ไปขั้นที่ 2', 'Go to Step 2')}</a>
-        </div>
-
-        ${
-          costsOk
-            ? `
-        <div class="s1-stats">
-          <div class="s1-stat s1-stat-main"><small>${L('รวมทั้งหมด', 'Total')}</small><b>${money(total)}</b></div>
-          <div class="s1-stat"><small>${L('เงินสด', 'Cash')}</small><b>${money(cash)}</b></div>
-          <div class="s1-stat"><small>${L('ไม่ใช่เงินสด', 'Non-cash')}</small><b>${money(inKind)}</b></div>
-        </div>`
-            : ''
-        }
-
-        ${
-          unlinkedCosts.length
-            ? `
-        <p class="muted s1-sub" style="margin-top: var(--sp-sm);">${unlinkedCosts.length} ${L('รายการเก่ายังไม่ระบุว่าใครให้ — กดแก้ไขเพื่อเลือกผู้ให้', 'older items have no provider yet — press Edit to choose one')}</p>
-        <div class="table-wrap">
-          <table class="table">
-            <tbody id="costTableBody">
-              ${unlinkedCosts
-                .map(
-                  (c) => `
-              <tr data-id="${c.id}">
-                <td><div class="strong">${escapeHtml(c.description)}</div></td>
-                <td class="num strong">${money(c.amount * (c.exchange_rate || 1))}</td>
-                <td>
-                  <div style="display: flex; gap: 4px;">
-                    <button class="btn-icon" data-edit-cost="${c.id}" title="${t('edit', 'Edit')}" aria-label="${t('edit', 'Edit')}">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
-                    </button>
-                    <button class="btn-icon" data-remove-cost="${c.id}" title="${t('delete', 'Delete')}" aria-label="${t('delete', 'Delete')}">${icons.trash}</button>
-                  </div>
-                </td>
-              </tr>`,
-                )
-                .join('')}
-            </tbody>
-          </table>
-        </div>`
-            : ''
-        }
       </section>
 
       ${wizardFooterHtml(1, {
@@ -521,29 +446,6 @@ export function renderStep1(container) {
     window.location.hash = '#/wizard/step-2';
   });
 
-  // Old money rows without a provider can still be edited / removed here.
-  container.querySelectorAll('[data-edit-cost]').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const target = costs.find((c) => c.id === Number(btn.dataset.editCost));
-      if (target)
-        openAddCostModal({ project, initialData: target, onAdded: () => renderStep1(container) });
-    });
-  });
-
-  container.querySelectorAll('[data-remove-cost]').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const costId = Number(btn.dataset.removeCost);
-      confirmModal({
-        title: t('delete', 'Delete'),
-        message: L('ต้องการลบรายการนี้ใช่หรือไม่?', 'Remove this item?'),
-        onConfirm: async () => {
-          await removeCost(costId);
-          renderStep1(container);
-        },
-      });
-    });
-  });
-
   attachWizardFooterEvents(container);
 }
 
@@ -575,7 +477,7 @@ function costCategoryLabel(cat, isTh) {
   return isTh ? mapTh[cat] || cat : mapEn[cat] || cat;
 }
 
-function openAddCostModal({ project, initialData = null, prefill = null, onAdded }) {
+export function openAddCostModal({ project, initialData = null, prefill = null, onAdded }) {
   const { stakeholders } = getState();
   const isEdit = !!initialData;
   const isTh = getLanguage() !== 'en';
