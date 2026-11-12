@@ -1358,14 +1358,41 @@ function openCreateProjectModal({ currentOrgId, faculties, onCreated }) {
     if (ownerType === 'faculty') faculty_id = Number(modalFacSelect.value);
     else if (ownerType === 'department') department_id = Number(modalDeptSelect.value);
 
+    /** Send the user to the step that holds the problem box, say what is wrong, and focus it. */
+    const failAt = (step, el, msg) => {
+      currentStep = step;
+      updateStepUI();
+      el.closest('details')?.setAttribute('open', '');
+      showError(msg);
+      el.setAttribute('aria-invalid', 'true');
+      el.addEventListener('input', () => el.removeAttribute('aria-invalid'), { once: true });
+      el.focus();
+    };
+
     let yearsVal = horizonSelect.value || '1';
-    if (yearsVal === 'Other') yearsVal = form.analysis_period_years.value;
+    if (yearsVal === 'Other') {
+      yearsVal = form.analysis_period_years.value;
+      const n = parseInt(yearsVal, 10);
+      if (Number.isNaN(n) || n < 1 || n > 100) {
+        return failAt(2, form.analysis_period_years, t('required_years_other', 'You chose “Other” — enter the number of years (1–100).'));
+      }
+    }
 
     let catVal = categorySelect.value || '';
-    if (catVal === 'Other') catVal = $('modalCategoryCustom').value.trim();
+    if (catVal === 'Other') {
+      catVal = $('modalCategoryCustom').value.trim();
+      if (!catVal) {
+        return failAt(3, $('modalCategoryCustom'), t('required_category_other', 'You chose “Other” — type the project category.'));
+      }
+    }
 
     let curVal = currencySelect.value || 'THB';
-    if (curVal === 'Other') curVal = $('modalCurrencyCustom').value.trim().toUpperCase() || 'THB';
+    if (curVal === 'Other') {
+      curVal = $('modalCurrencyCustom').value.trim().toUpperCase();
+      if (!/^[A-Z]{3}$/.test(curVal)) {
+        return failAt(3, $('modalCurrencyCustom'), t('required_currency_other', 'You chose “Other” — enter a 3-letter currency code, e.g. GBP.'));
+      }
+    }
 
     const data = {
       name: form.name.value.trim(),

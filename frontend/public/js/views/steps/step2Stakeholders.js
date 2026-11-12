@@ -489,7 +489,7 @@ function openStakeholderModal({ initialData = null, defaultGroup = null, onSaved
             <label class="field-label" for="unitPresetSelect">${isTh ? 'หน่วยนับ' : 'Unit'} ${optTag(isTh)}</label>
             <select id="unitPresetSelect" class="input">
               ${[...UNIT_SUGGESTIONS, '__other__'].map((u) => `
-                <option value="${u}" ${(initialData?.count_unit === u || (!initialData?.count_unit && u === 'คน')) ? 'selected' : ''}>
+                <option value="${u}" ${(initialData?.count_unit === u || (!initialData?.count_unit && u === 'คน') || (u === '__other__' && initialData?.count_unit && !UNIT_SUGGESTIONS.includes(initialData.count_unit))) ? 'selected' : ''}>
                   ${u === '__other__' ? (isTh ? 'อื่น ๆ (ระบุ)' : 'Other (specify)') : displayUnit(u)}
                 </option>
               `).join('')}
@@ -612,14 +612,25 @@ function openStakeholderModal({ initialData = null, defaultGroup = null, onSaved
     if (group && !unitTouched && !form.count_unit.value) form.count_unit.value = group.unit;
   };
 
+  // Save is never greyed out: a disabled button gives no reason. Instead, Save explains what is missing
+  // (see `fail` below) and jumps to the box.
   const validateForm = () => {
-    const name = getEffectiveName();
-    const isValid = !!name;
-    if (btnSaveStk) btnSaveStk.disabled = !isValid;
+    customNameInput.removeAttribute('aria-invalid');
+    presetSelect.removeAttribute('aria-invalid');
+    customUnitInput.removeAttribute('aria-invalid');
+    errBox.hidden = true;
+  };
+
+  const fail = (el, msg) => {
+    el.setAttribute('aria-invalid', 'true');
+    showErr(msg);
+    el.scrollIntoView({ block: 'center' });
+    el.focus({ preventScroll: true });
   };
 
   presetSelect.addEventListener('change', syncPresetUI);
   customNameInput.addEventListener('input', validateForm);
+  customUnitInput.addEventListener('input', validateForm);
 
   unitPresetSelect.addEventListener('change', () => {
     unitTouched = true;
@@ -690,9 +701,15 @@ function openStakeholderModal({ initialData = null, defaultGroup = null, onSaved
   const save = async () => {
     errBox.hidden = true;
     const name = getEffectiveName();
+    if (!presetSelect.value && !name) {
+      return fail(presetSelect, isTh ? 'กรุณาเลือกผู้มีส่วนได้ส่วนเสีย' : 'Please choose a stakeholder.');
+    }
     if (!name) {
-      showErr(isTh ? 'กรุณาระบุชื่อผู้ได้รับผลประโยชน์' : 'Please specify a stakeholder name.');
-      return;
+      return fail(customNameInput, isTh ? 'เลือก “อื่น ๆ” แล้ว กรุณาพิมพ์ชื่อผู้มีส่วนได้ส่วนเสียในช่องที่ขึ้นมา' : 'You chose “Other” — please type the stakeholder name in the box.');
+    }
+    if (unitPresetSelect.value === '__other__' && !customUnitInput.value.trim()) {
+      customUnitRow.hidden = false;
+      return fail(customUnitInput, isTh ? 'เลือก “อื่น ๆ” ที่หน่วยนับแล้ว กรุณาพิมพ์หน่วยนับ' : 'You chose “Other” for the unit — please type the unit.');
     }
     if (!group) {
       showErr(isTh ? 'กรุณาเลือกกลุ่ม S1–S4' : 'Please select a group (S1–S4).');

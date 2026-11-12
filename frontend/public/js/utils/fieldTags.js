@@ -82,10 +82,12 @@ function hasValue(el) {
   if (el.type === 'checkbox') return el.checked;
   if (el.tagName === 'SELECT') {
     if (el.value === '') return false;
-    // "Other (specify)" with nothing typed is not done yet
+    // "Other (specify)" paired with its own `<id>Other` text box: not done until something is typed there.
+    // When the "specify" box is a separate field with its own tag (e.g. the stakeholder name box), choosing "Other"
+    // IS this select's answer, so it is done; the other field's tag shows whether the name has been typed.
     if (el.value === '__other__') {
       const other = document.getElementById(`${el.id}Other`);
-      return !!other && other.value.trim() !== '';
+      return other ? other.value.trim() !== '' : true;
     }
     return true;
   }

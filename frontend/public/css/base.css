@@ -65,3 +65,9 @@ button {
     transition: none !important;
   }
 }
+
+/* The `hidden` attribute must always win. Without this, any class that sets `display` (.field, .form-stack, ...) keeps
+   "hidden" rows visible (e.g. the "Other - specify" boxes). */
+[hidden] {
+  display: none !important;
+}

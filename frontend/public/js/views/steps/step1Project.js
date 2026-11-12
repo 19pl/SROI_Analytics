@@ -358,6 +358,9 @@ export function renderStep1(container) {
     if (currencySelect && currencySelect.value !== 'Other') {
       form.currency.value = currencySelect.value;
     }
+    if (!/^[A-Za-z]{3}$/.test(form.currency.value.trim())) {
+      return blockAt(form.currency, L('เลือก “อื่น ๆ” ที่สกุลเงินแล้ว กรุณาพิมพ์รหัสสกุลเงิน 3 ตัวอักษร เช่น GBP', 'You chose “Other” for currency — enter a 3-letter code such as GBP'));
+    }
     if (Number.isNaN(years) || years < 1) {
       return blockAt(form.analysis_period_years, L('กรุณากรอกระยะเวลาวิเคราะห์ (ปี) เป็นตัวเลขตั้งแต่ 1 ขึ้นไป', 'Enter the analysis period in years (1 or more)'));
     }

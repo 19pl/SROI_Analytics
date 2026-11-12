@@ -264,3 +264,9 @@
     transition: none;
   }
 }
+
+/* Field that blocked a save: red border until the user edits it */
+.input[aria-invalid='true'] {
+  border-color: var(--negative-fg, #dc2626);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--negative-fg, #dc2626) 18%, transparent);
+}

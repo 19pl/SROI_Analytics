@@ -1285,3 +1285,21 @@
 .s1-add-factor {
   align-self: flex-start;
 }
+
+/* Outcome form: optional money value for S2-S4 */
+.oc-value-toggle {
+  display: grid;
+  gap: 4px;
+}
+.oc-value-toggle__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.oc-value-toggle__label input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent, var(--primary));
+}

@@ -310,6 +310,12 @@ function openOutcomeModal({ initialData = null, onSaved }) {
     if (stkObj && stkObj.estimated_count) startCount = stkObj.estimated_count;
   }
 
+  /** Money value is required only for S1 (primary beneficiaries); S2-S4 may leave it off. */
+  const isOptionalGroup = (stakeholderId) => {
+    const g = stakeholders.find((x) => x.id === Number(stakeholderId))?.stakeholder_group;
+    return !!g && g !== 'primary_beneficiary';
+  };
+
   const matchedPreset = src
     ? OUTCOME_PRESETS.find((p) => p.th === src.name || p.en === src.name)
     : null;
@@ -412,6 +418,16 @@ function openOutcomeModal({ initialData = null, onSaved }) {
             </button>
           </div>
 
+          <!-- S2-S4 (operators, supporters, other agencies) normally have outcomes but no money value: optional, off by default -->
+          <div id="ocValueToggleRow" class="oc-value-toggle" ${isOptionalGroup(src?.stakeholder_id || startStk) ? '' : 'hidden'}>
+            <label class="oc-value-toggle__label">
+              <input type="checkbox" id="ocValueToggle" ${src && src.proxy_value !== null && src.proxy_value !== undefined ? 'checked' : ''} />
+              <span>${isTh ? 'ใส่มูลค่าทางการเงินของผลลัพธ์นี้ (ไม่บังคับ)' : 'Add a money value for this outcome (optional)'}</span>
+            </label>
+            <p id="ocValueOffNote" class="field-hint">${isTh ? 'ถ้าไม่ใส่ ผลลัพธ์นี้จะรายงานเป็นข้อมูลเชิงคุณภาพ และไม่ถูกนับรวมในมูลค่ารวมของโครงการ' : 'If left off, this outcome is reported qualitatively and is not counted in the project total.'}</p>
+          </div>
+
+          <div id="ocProxyFields" class="stack-sm">
           <div class="form-row">
             <div class="field">
               <label class="field-label" for="ocProxyValue">
@@ -425,7 +441,7 @@ function openOutcomeModal({ initialData = null, onSaved }) {
               <label class="field-label" for="ocProxyUnitSelect">${isTh ? 'หน่วยนับ' : 'Unit'} ${reqTag(isTh)}</label>
               <select id="ocProxyUnitSelect" class="input">
                 ${[...PROXY_UNIT_SUGGESTIONS, '__other__'].map((u) => `
-                  <option value="${u}" ${(src?.proxy_unit === u || (!src?.proxy_unit && u === 'คน / ปี')) ? 'selected' : ''}>
+                  <option value="${u}" ${(src?.proxy_unit === u || (!src?.proxy_unit && u === 'คน / ปี') || (u === '__other__' && src?.proxy_unit && !PROXY_UNIT_SUGGESTIONS.includes(src.proxy_unit))) ? 'selected' : ''}>
                     ${u === '__other__' ? (isTh ? 'อื่น ๆ (ระบุ)' : 'Other (specify)') : displayUnit(u)}
                   </option>
                 `).join('')}
@@ -450,6 +466,7 @@ function openOutcomeModal({ initialData = null, onSaved }) {
               ${reqTag(isTh)}
             </label>
             <input type="text" id="ocProxySource" name="proxy_source" class="input" value="${escapeHtml(src?.proxy_source || '')}" placeholder="${isTh ? 'เช่น อัตราค่าบริการ รพ.มหาวิทยาลัยนเรศวร, รายงาน SROI' : 'e.g. University hospital fee schedule, research citation'}" />
+          </div>
           </div>
         </div>
 
@@ -498,7 +515,7 @@ function openOutcomeModal({ initialData = null, onSaved }) {
     size: 'lg',
     footer: `
       <button type="button" class="btn btn-secondary" data-modal-close>${t('cancel', 'Cancel')}</button>
-      <button type="button" class="btn btn-primary" id="btnSaveOutcomeDirect" disabled>
+      <button type="button" class="btn btn-primary" id="btnSaveOutcomeDirect">
         ${isEdit ? (isTh ? 'อัปเดตผลลัพธ์' : 'Update Outcome') : (isTh ? 'บันทึกผลลัพธ์' : 'Save Outcome')}
       </button>
     `,
@@ -522,6 +539,27 @@ function openOutcomeModal({ initialData = null, onSaved }) {
   const customProxyUnitInput = document.getElementById('customProxyUnitInput');
   const ocProxySource = document.getElementById('ocProxySource');
   const btnSave = document.getElementById('btnSaveOutcomeDirect');
+  const ocValueToggle = document.getElementById('ocValueToggle');
+  const ocValueToggleRow = document.getElementById('ocValueToggleRow');
+  const ocValueOffNote = document.getElementById('ocValueOffNote');
+  const ocProxyFields = document.getElementById('ocProxyFields');
+  const btnPickProxy = document.getElementById('btnPickProxyFromLib');
+
+  const valueIsOptional = () => isOptionalGroup(ocStakeholderSelect.value);
+  /** true when the money-value boxes must be filled (S1) or the user chose to add a value (S2-S4) */
+  const valueIsNeeded = () => !valueIsOptional() || ocValueToggle.checked;
+  const applyValueMode = () => {
+    const optional = valueIsOptional();
+    const needed = valueIsNeeded();
+    ocValueToggleRow.hidden = !optional;
+    ocValueOffNote.hidden = !(optional && !ocValueToggle.checked);
+    ocProxyFields.hidden = !needed;
+    btnPickProxy.hidden = !needed;
+  };
+  ocValueToggle.addEventListener('change', () => {
+    applyValueMode();
+    if (ocValueToggle.checked) ocProxyValue.focus();
+  });
 
   const showErr = (msg) => {
     errBox.textContent = msg;
@@ -571,19 +609,10 @@ function openOutcomeModal({ initialData = null, onSaved }) {
     const hasIndicator = !!ocIndicator.value.trim();
     ocPart4.hidden = !((hasStk && outcomeName && hasIndicator));
 
-    const qty = parseFloat(ocQuantity.value);
-    const proxyVal = parseFloat(ocProxyValue.value);
-    const hasProxySource = !!ocProxySource.value.trim();
-
-    const isComplete =
-      hasStk &&
-      outcomeName &&
-      hasIndicator &&
-      !isNaN(qty) && qty >= 0 &&
-      !isNaN(proxyVal) && proxyVal >= 0 &&
-      hasProxySource;
-
-    if (btnSave) btnSave.disabled = !isComplete;
+    // Save stays clickable; it explains what is missing (see `fail` in the save handler).
+    form.querySelectorAll('[aria-invalid]').forEach((el) => el.removeAttribute('aria-invalid'));
+    errBox.hidden = true;
+    applyValueMode();
   };
 
   ocStakeholderSelect.addEventListener('change', () => {
@@ -597,6 +626,10 @@ function openOutcomeModal({ initialData = null, onSaved }) {
     checkVisibilityAndValidity();
   });
 
+  form.addEventListener('input', (e) => {
+    e.target.removeAttribute?.('aria-invalid');
+    errBox.hidden = true;
+  });
   ocPresetSelect.addEventListener('change', syncOutcomePresetUI);
   customOutcomeInput.addEventListener('input', checkVisibilityAndValidity);
   ocQuantity.addEventListener('input', checkVisibilityAndValidity);
@@ -617,6 +650,8 @@ function openOutcomeModal({ initialData = null, onSaved }) {
   document.getElementById('btnPickProxyFromLib')?.addEventListener('click', () => {
     openProxyLibraryModal({
       onSelectProxy: (selectedProxy) => {
+        ocValueToggle.checked = true; // picking a library value means the user wants a money value
+        applyValueMode();
         if (ocProxyValue) ocProxyValue.value = selectedProxy.value;
         if (selectedProxy.unit) {
           if (PROXY_UNIT_SUGGESTIONS.includes(selectedProxy.unit)) {
@@ -646,13 +681,49 @@ function openOutcomeModal({ initialData = null, onSaved }) {
   // Save handler
   const save = async () => {
     errBox.hidden = true;
+    form.querySelectorAll('[aria-invalid]').forEach((el) => el.removeAttribute('aria-invalid'));
     const name = getEffectiveOutcomeName();
+
+    /** Mark the box, reveal the section it lives in, say what is wrong, and jump there. */
+    const fail = (el, msg) => {
+      [ocPart2, ocPart3, ocPart4].forEach((p) => {
+        if (p.contains(el)) p.hidden = false;
+      });
+      el.setAttribute('aria-invalid', 'true');
+      showErr(msg);
+      el.scrollIntoView({ block: 'center' });
+      el.focus({ preventScroll: true });
+    };
+
+    if (!ocStakeholderSelect.value) {
+      return fail(ocStakeholderSelect, isTh ? 'กรุณาเลือกผู้ที่เกิดการเปลี่ยนแปลง' : 'Please choose who experiences the change.');
+    }
     if (!name) {
-      showErr(isTh ? 'กรุณาระบุชื่อผลลัพธ์' : 'Please enter an outcome name.');
-      return;
+      if (ocPresetSelect.value === '__other__') {
+        return fail(customOutcomeInput, isTh ? 'เลือก “อื่น ๆ” แล้ว กรุณาพิมพ์ชื่อผลลัพธ์ในช่องที่ขึ้นมา' : 'You chose “Other” — please type the outcome name in the box.');
+      }
+      return fail(ocPresetSelect, isTh ? 'กรุณาเลือกการเปลี่ยนแปลงที่เกิดขึ้น' : 'Please choose the change / outcome.');
+    }
+    if (!ocQuantity.value.trim() || Number.isNaN(parseFloat(ocQuantity.value)) || parseFloat(ocQuantity.value) < 0) {
+      return fail(ocQuantity, isTh ? 'กรุณาระบุจำนวนคนที่เกิดการเปลี่ยนแปลง' : 'Please enter the number of people affected.');
+    }
+    if (!ocIndicator.value.trim()) {
+      return fail(ocIndicator, isTh ? 'กรุณาระบุตัวชี้วัด (วัดผลได้อย่างไร)' : 'Please enter the indicator (how it is measured).');
+    }
+    const needValue = valueIsNeeded();
+    if (needValue && (ocProxyValue.value.trim() === '' || Number.isNaN(parseFloat(ocProxyValue.value)) || parseFloat(ocProxyValue.value) < 0)) {
+      return fail(ocProxyValue, isTh ? 'กรุณาระบุมูลค่าต่อหน่วย' : 'Please enter the value per unit.');
+    }
+    if (needValue && ocProxyUnitSelect.value === '__other__' && !customProxyUnitInput.value.trim()) {
+      customProxyUnitRow.hidden = false;
+      return fail(customProxyUnitInput, isTh ? 'เลือก “อื่น ๆ” ที่หน่วยนับแล้ว กรุณาพิมพ์หน่วยนับ' : 'You chose “Other” for the unit — please type the unit.');
+    }
+    if (needValue && !ocProxySource.value.trim()) {
+      return fail(ocProxySource, isTh ? 'กรุณาระบุแหล่งที่มาของมูลค่าต่อหน่วย' : 'Please enter where the value per unit comes from.');
     }
 
-    const proxyVal = ocProxyValue.value ? parseFloat(ocProxyValue.value) : null;
+    // No money value (allowed for S2-S4): sent as null = "not monetised", never as 0.
+    const proxyVal = needValue && ocProxyValue.value ? parseFloat(ocProxyValue.value) : null;
     const qty = parseFloat(ocQuantity.value) || 0;
     const proxyUnit = ocProxyUnitSelect.value === '__other__' ? customProxyUnitInput.value.trim() : ocProxyUnitSelect.value;
 
@@ -664,9 +735,9 @@ function openOutcomeModal({ initialData = null, onSaved }) {
       indicator: ocIndicator.value.trim(),
       quantity: qty,
       proxy_value: proxyVal,
-      proxy_unit: proxyUnit || 'คน / ปี',
-      proxy_source: ocProxySource.value.trim(),
-      proxy_rationale: document.getElementById('ocProxyRationale')?.value.trim() || null,
+      proxy_unit: needValue ? proxyUnit || 'คน / ปี' : null,
+      proxy_source: needValue ? ocProxySource.value.trim() : null,
+      proxy_rationale: needValue ? document.getElementById('ocProxyRationale')?.value.trim() || null : null,
       duration_years: parseInt(form.duration_years.value, 10) || 1,
       projection_model: form.projection_model.value,
       evidence_quality: form.evidence_quality.value,
