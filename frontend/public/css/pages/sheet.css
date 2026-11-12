@@ -46,6 +46,14 @@
   margin: 0;
   font-size: 0.8125rem;
   color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+.sheet-tip svg {
+  flex: none;
+  width: 14px;
+  height: 14px;
 }
 .sheet-status {
   font-size: 0.8125rem;
@@ -91,6 +99,12 @@
 }
 .sheet-settings .set-title {
   font-weight: 700;
+}
+.sheet-settings .set-title svg {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  vertical-align: middle;
 }
 .sheet-settings .set-sum {
   color: var(--muted);
@@ -212,6 +226,12 @@
   padding: 8px 12px;
   font-weight: 600;
   color: var(--muted);
+}
+.sheet-issues > summary svg {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  vertical-align: middle;
 }
 .sheet-issues.has-errors {
   border-color: var(--negative);
@@ -541,6 +561,12 @@
   color: var(--muted);
   font-weight: 400;
   cursor: help;
+}
+.fld .hint svg {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  vertical-align: middle;
 }
 .fld.custom .fld-label {
   font-style: italic;

@@ -93,9 +93,15 @@ export async function loadProject(projectId) {
 
 /**
  * Refresh Live Calculation Data (Summary, Review, Dashboard)
+ *
+ * Sheet-mode projects have no scenarios rows and use their own dedicated
+ * API endpoint (/projects/{id}/sheet).  Calling the wizard calculation
+ * endpoints for them would always throw "Scenario not found", so we bail
+ * out early for those projects.
  */
 export async function refreshCalculations() {
   if (!state.project?.id) return;
+  if (state.project?.calc_method === 'sheet') return; // Sheet projects load their own data via sheetView
   const pId = state.project.id;
 
   try {

@@ -6,7 +6,7 @@
  */
 
 import { api } from '../api.js';
-import { loadProject } from '../store.js';
+import { loadProject, getState } from '../store.js';
 import { openModal, closeModal } from '../components/modal.js';
 import { icons } from '../components/icons.js';
 import { showToast } from '../components/toast.js';
@@ -725,7 +725,12 @@ export async function renderProjects(root) {
 
   async function openProject(id) {
     await loadProject(id);
-    window.location.hash = '#/wizard/step-1';
+    // Sheet-mode projects have their own single-page view; routing to
+    // '#/wizard' (without a step suffix) triggers renderCalculator which
+    // immediately hands off to renderSheet().  Wizard projects start at
+    // step-1 as before.
+    const proj = getState().project;
+    window.location.hash = proj?.calc_method === 'sheet' ? '#/wizard' : '#/wizard/step-1';
   }
 
   async function patchProject(p, data, okKey, okFallback) {
