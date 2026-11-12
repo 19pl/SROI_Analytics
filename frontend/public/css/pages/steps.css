@@ -489,29 +489,105 @@
   color: var(--muted);
   font-size: 0.6875rem;
 }
-.s1-fact-edit {
+/* "Change these": light outlined pill */
+.s1-facts .s1-fact-edit {
   align-self: center;
-  padding: 6px 8px;
-  border: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 14px;
+  border: 1px solid var(--outline-strong);
+  border-radius: 999px;
   background: transparent;
-  color: var(--primary);
+  color: var(--on-background);
+  font: inherit;
   font-size: 0.8125rem;
   cursor: pointer;
+  transition: border-color 150ms ease, color 150ms ease, background 150ms ease;
 }
-.s1-fact-edit:hover {
-  text-decoration: underline;
+.s1-facts .s1-fact-edit:hover,
+.s1-facts .s1-fact-edit.is-open {
+  border-color: var(--accent, var(--primary));
+  color: var(--accent-strong, var(--primary));
+  background: var(--accent-soft, transparent);
 }
+/* plain section: no gray panel, fields sit directly on the card like the rest of the page */
 .s1-settings {
-  padding: var(--sp-lg);
-  border: 1px dashed var(--outline-strong);
-  border-radius: var(--radius-lg);
-  background: var(--surface-soft);
+  padding: 0;
+  border: 0;
+  background: none;
 }
-.s1-more > summary {
+/* Settings grid: labels start at the top and share a 2-line slot, so every input in a row sits on the same line
+   (the global .field uses align-content:end, which pushed boxes up/down whenever a label or hint wrapped). */
+.s1-settings .form-grid {
+  align-items: start;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+.s1-settings .field {
+  align-content: start;
+}
+.s1-settings .field-label {
+  display: block;
+  line-height: 1.5;
+}
+.s1-settings .input {
+  height: 42px;
+}
+/* The "Done/Optional" badge lives inside the label and wraps, so label heights differ. Where subgrid is
+   supported, each field spans 4 rows shared by the whole grid row: label row = tallest label, so all
+   boxes in a row start on the same line; the hint / "Other" box fall in the rows below. */
+@supports (grid-template-rows: subgrid) {
+  .s1-settings .form-grid {
+    row-gap: var(--sp-md);
+  }
+  .s1-settings .field {
+    display: grid;
+    grid-row: span 4;
+    grid-template-rows: subgrid;
+    row-gap: 6px;
+  }
+  .s1-settings .field-label {
+    align-self: end;
+  }
+}
+@media (max-width: 768px) {
+  .s1-settings .form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+/* Advanced finance settings: dashed "add" bar */
+.s1-more > summary.s1-more__summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 42px;
+  padding: 8px 14px;
+  border: 1px dashed var(--outline-strong);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--muted);
+  list-style: none;
   cursor: pointer;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: var(--primary);
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: border-color 150ms ease, color 150ms ease, background 150ms ease;
+}
+.s1-more > summary::-webkit-details-marker { display: none; }
+.s1-more > summary.s1-more__summary:hover,
+.s1-more[open] > summary.s1-more__summary {
+  border-color: var(--accent, var(--primary));
+  color: var(--accent-strong, var(--primary));
+  background: var(--accent-soft, transparent);
+}
+.s1-more__label { flex: 1 1 auto; min-width: 0; }
+.s1-more__plus { flex: none; transition: transform 160ms ease; }
+.s1-more[open] > summary .s1-more__plus { transform: rotate(45deg); }
+.s1-more > summary:focus-visible,
+.s1-fact-edit:focus-visible {
+  outline: 2px solid var(--primary-focus, var(--primary));
+  outline-offset: 2px;
 }
 
 /* money summary tiles */

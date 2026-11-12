@@ -77,13 +77,6 @@ export function renderStep1(container) {
   const showYear = horizon > 1 || costs.some((c) => Number(c.year) > 0);
 
   const L = (th, en) => (isTh ? th : en);
-  const evalLabel =
-    project.evaluation_type === 'forecast'
-      ? L('ประเมินล่วงหน้า', 'Forecast (before the project)')
-      : L('ประเมินย้อนหลัง', 'Evaluation (after the project)');
-  const monthsLabel = project.assessment_months
-    ? `${project.assessment_months} ${L('เดือน', 'months')}`
-    : L('เต็มปี', 'Full year');
 
   // ── Owner (read-only: it is fixed when the plan is created) ──────────────────────────────
   const levelTh = { faculty: 'คณะ', department: 'ภาควิชา', organization: 'ทั้งมหาวิทยาลัย' };
@@ -152,19 +145,7 @@ export function renderStep1(container) {
             <input id="s1Cat" type="text" name="category" class="input" value="${escapeHtml(project.category || '')}" placeholder="${L('เช่น สาธารณสุข, การศึกษา, ชุมชน', 'e.g. Health, Education, Community')}" />
           </div>
 
-          <!-- Facts that were already chosen: shown as chips, not blank boxes -->
-          <div class="s1-facts" aria-label="${L('ค่าที่เลือกไว้แล้ว', 'Already chosen')}">
-            <span class="s1-fact"><small>${L('รูปแบบ', 'Type')}</small><b>${evalLabel}</b></span>
-            <span class="s1-fact"><small>${L('ติดตามผล', 'Impact tracked for')}</small><b>${horizon} ${L('ปี', horizon === 1 ? 'year' : 'years')}</b></span>
-            <span class="s1-fact"><small>${L('ช่วงที่ประเมิน', 'Period')}</small><b>${monthsLabel}</b></span>
-            <span class="s1-fact"><small>${L('สกุลเงิน', 'Currency')}</small><b>${escapeHtml(cur)}</b></span>
-            <button type="button" class="btn-text s1-fact-edit" id="btnToggleAdvancedScope" aria-expanded="false" aria-controls="advancedScopeContent">${L('เปลี่ยนค่าเหล่านี้', 'Change these')}</button>
-          </div>
-
-          <div class="s1-settings" id="advancedScopeContent" hidden>
-            <p class="muted s1-sub" style="margin-bottom: var(--sp-md);">
-              ${L('ระบบกำหนดค่ามาตรฐานไว้แล้ว หากไม่แน่ใจ ไม่จำเป็นต้องแก้ไข', 'Standard values have already been set. If you are unsure, no change is required.')}
-            </p>
+          <div class="s1-settings" id="advancedScopeContent">
             <div class="form-grid">
               <div class="field">
                 <label class="field-label" for="s1HorizonSelect">${L('ติดตามผลกี่ปี', 'Years of impact to count')} ${req}</label>
@@ -208,7 +189,10 @@ export function renderStep1(container) {
             </div>
 
             <details class="s1-more" style="margin-top: var(--sp-lg);">
-              <summary>${L('การตั้งค่าทางการเงินขั้นสูง (ผู้เชี่ยวชาญ)', 'Advanced finance settings (experts)')}</summary>
+              <summary class="s1-more__summary">
+                <svg class="s1-more__plus" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                <span class="s1-more__label">${L('การตั้งค่าทางการเงินขั้นสูง (ผู้เชี่ยวชาญ)', 'Advanced finance settings (experts)')}</span>
+              </summary>
               <div class="form-grid" style="margin-top: var(--sp-md);">
                 <div class="field">
                   <label class="field-label">${L('อัตราคิดลดต่อปี (%)', 'Discount rate per year (%)')} ${req}</label>
@@ -306,7 +290,6 @@ export function renderStep1(container) {
       .catch(() => {});
   }
 
-  const toggleBtn = document.getElementById('btnToggleAdvancedScope');
   const horizonSelect = document.getElementById('s1HorizonSelect');
   const horizonCustomWrap = document.getElementById('s1HorizonCustomWrap');
   const currencySelect = document.getElementById('s1CurrencySelect');
@@ -332,14 +315,6 @@ export function renderStep1(container) {
       form.currency.value = e.target.value;
       setDirty(true);
     }
-  });
-  const advContent = document.getElementById('advancedScopeContent');
-  toggleBtn?.addEventListener('click', () => {
-    advContent.hidden = !advContent.hidden;
-    toggleBtn.setAttribute('aria-expanded', String(!advContent.hidden));
-    toggleBtn.textContent = advContent.hidden
-      ? L('เปลี่ยนค่าเหล่านี้', 'Change these')
-      : L('ซ่อนการตั้งค่า', 'Hide settings');
   });
 
   container.querySelectorAll('[data-scroll]').forEach((a) => {
@@ -384,7 +359,6 @@ export function renderStep1(container) {
       form.currency.value = currencySelect.value;
     }
     if (Number.isNaN(years) || years < 1) {
-      if (advContent.hidden) toggleBtn?.click();
       return blockAt(form.analysis_period_years, L('กรุณากรอกระยะเวลาวิเคราะห์ (ปี) เป็นตัวเลขตั้งแต่ 1 ขึ้นไป', 'Enter the analysis period in years (1 or more)'));
     }
     const rate = form.discount_rate.value;
