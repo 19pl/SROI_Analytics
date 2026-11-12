@@ -213,6 +213,13 @@ export async function saveStakeholderWithInputs({ id = null, data, inputs = [] }
         stakeholder_id: stk.id,
       };
       if (i.id) {
+        // A line made in Step 1 by quantity x unit price (or several line items) rejects a bare new amount.
+        // When the amount was changed here, turn it into a plain total; unchanged amounts keep their breakdown.
+        const before = state.costs.find((c) => c.id === i.id);
+        const hasBreakdown = before && (before.calculation_mode === 'quantity' || (Array.isArray(before.line_items) && before.line_items.length));
+        if (hasBreakdown && Math.abs(Number(i.amount) - Number(before.amount)) > 0.02) {
+          Object.assign(payload, { calculation_mode: 'manual', quantity: null, unit: null, unit_price: null, line_items: null });
+        }
         const r = await api.updateCost(pid, i.id, payload);
         const idx = state.costs.findIndex((c) => c.id === i.id);
         if (idx !== -1) state.costs[idx] = r.data;
