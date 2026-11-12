@@ -35,11 +35,11 @@ export function renderStakeholderChart(stakeholders = []) {
   }
 
   // Calculate SVG arc paths
-  const size = 180;
-  const radius = 70;
-  const cx = 90;
-  const cy = 90;
-  const strokeWidth = 24;
+  const size = 150;
+  const radius = 58;
+  const cx = 75;
+  const cy = 75;
+  const strokeWidth = 20;
 
   let currentAngle = -Math.PI / 2;
   const slices = positiveShares.map((s, idx) => {
@@ -67,20 +67,20 @@ export function renderStakeholderChart(stakeholders = []) {
   const legendHtml = slices
     .map(
       (s) => `
-    <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.8125rem; gap: 8px;">
-      <div style="display: flex; align-items: center; gap: 6px; overflow: hidden;">
-        <span style="width: 10px; height: 10px; border-radius: 50%; background: ${s.color}; flex-shrink: 0;"></span>
+    <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.8125rem; gap: 8px; min-width: 0;">
+      <div style="display: flex; align-items: center; gap: 6px; overflow: hidden; min-width: 0;">
+        <span style="width: 8px; height: 8px; border-radius: 50%; background: ${s.color}; flex-shrink: 0;"></span>
         <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(s.name)}</span>
       </div>
-      <span style="font-weight: 600; white-space: nowrap;">${s.sharePct}% <small class="muted">(${formatBahtCompact(s.value)})</small></span>
+      <span style="font-weight: 600; white-space: nowrap; flex-shrink: 0; font-size: 0.75rem;">${s.sharePct}% <small class="muted" style="font-weight: normal;">(${formatBahtCompact(s.value)})</small></span>
     </div>
   `,
     )
     .join('');
 
   return `
-    <div style="display: grid; grid-template-columns: 180px 1fr; gap: var(--sp-lg); align-items: center;">
-      <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+    <div style="display: grid; grid-template-columns: 150px 1fr; gap: var(--sp-md); align-items: center; width: 100%;">
+      <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" style="flex-shrink: 0;">
         <circle cx="${cx}" cy="${cy}" r="${radius}" fill="none" stroke="var(--surface-soft)" stroke-width="${strokeWidth}" />
         ${slices
           .map(
@@ -93,11 +93,10 @@ export function renderStakeholderChart(stakeholders = []) {
         `,
           )
           .join('')}
-        <text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="middle" font-size="13" font-weight="700" fill="var(--on-background)">
-          ${positiveShares.length} Groups
-        </text>
+        <text x="${cx}" y="${cy - 7}" text-anchor="middle" font-size="10" fill="var(--muted)">Total PV</text>
+        <text x="${cx}" y="${cy + 10}" text-anchor="middle" font-size="13" font-weight="700" fill="var(--on-background)">${formatBahtCompact(totalPositive)}</text>
       </svg>
-      <div style="display: flex; flex-direction: column; gap: 6px;">
+      <div style="display: flex; flex-direction: column; gap: 6px; min-width: 0; overflow: hidden;">
         ${legendHtml}
       </div>
     </div>

@@ -1218,7 +1218,7 @@ function openCreateProjectModal({ currentOrgId, faculties, onCreated }) {
             </div>
 
             <div class="field">
-              <label class="field-label" for="modalDiscountRate">${optLabel('field_discount_rate', 'Annual Discount Rate (%)')}</label>
+              <label class="field-label" for="modalDiscountRate">${reqLabel('field_discount_rate', 'Annual Discount Rate (%)')}</label>
               <input type="number" id="modalDiscountRate" name="discount_rate" min="0" max="100" step="0.1" class="input" value="0.0" />
             </div>
           </div>

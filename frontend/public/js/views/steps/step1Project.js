@@ -211,7 +211,7 @@ export function renderStep1(container) {
               <summary>${L('การตั้งค่าทางการเงินขั้นสูง (ผู้เชี่ยวชาญ)', 'Advanced finance settings (experts)')}</summary>
               <div class="form-grid" style="margin-top: var(--sp-md);">
                 <div class="field">
-                  <label class="field-label">${L('อัตราคิดลดต่อปี (%)', 'Discount rate per year (%)')} ${opt}</label>
+                  <label class="field-label">${L('อัตราคิดลดต่อปี (%)', 'Discount rate per year (%)')} ${req}</label>
                   <input type="number" name="discount_rate" step="0.1" min="0" max="100" class="input" value="${project.discount_rate !== null && project.discount_rate !== undefined ? (project.discount_rate * 100).toFixed(1) : '0.0'}" />
                   <span class="muted s1-hint">${L('แนะนำ 0% สำหรับ 1 ปี หรือ 3% ตามเกณฑ์ธนาคารแห่งประเทศไทย', 'Suggested: 0% for 1 year, or 3% for longer')}</span>
                 </div>
@@ -227,7 +227,7 @@ export function renderStep1(container) {
                   <input type="text" name="discount_rate_source" class="input" value="${escapeHtml(project.discount_rate_source || '')}" placeholder="${L('เช่น ธนาคารแห่งประเทศไทย', 'e.g. Bank of Thailand')}" />
                 </div>
                 <div class="field">
-                  <label class="field-label">${L('มูลค่าเงินลงทุนคิดแบบ', 'Value investment as')} ${opt}</label>
+                  <label class="field-label">${L('มูลค่าเงินลงทุนคิดแบบ', 'Value investment as')} ${req}</label>
                   <select name="investment_basis" class="input">
                     <option value="nominal" ${project.investment_basis === 'nominal' ? 'selected' : ''}>${L('ยอดเงินจริง', 'Actual amount')}</option>
                     <option value="present_value" ${project.investment_basis === 'present_value' ? 'selected' : ''}>${L('มูลค่าปัจจุบัน (คิดลด)', 'Present value (discounted)')}</option>
@@ -577,13 +577,13 @@ export function openAddCostModal({ project, initialData = null, prefill = null, 
 
           <div class="form-grid">
             <div class="field">
-              <label class="field-label">${L('หมวดค่าใช้จ่าย', 'Category')} ${optTag(isTh)}</label>
+              <label class="field-label">${L('หมวดค่าใช้จ่าย', 'Category')} ${reqTag(isTh)}</label>
               <select name="category" class="input">
                 ${categories.map(([k, l]) => `<option value="${k}" ${v('category', isCash ? 'opex' : 'in_kind') === k ? 'selected' : ''}>${l}</option>`).join('')}
               </select>
             </div>
             <div class="field">
-              <label class="field-label">${L('จ่ายในปีที่', 'Which year was it spent?')} ${optTag(isTh)}</label>
+              <label class="field-label">${L('จ่ายในปีที่', 'Which year was it spent?')} ${reqTag(isTh)}</label>
               <input type="number" name="year" min="0" max="${project.analysis_period_years || 5}" class="input" value="${v('year', 0)}" />
               <span class="muted s1-hint">${L('0 = ปีที่เริ่มโครงการ', '0 = the year the project starts')}</span>
             </div>

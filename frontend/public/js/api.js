@@ -198,8 +198,10 @@ export const api = {
   getOrganizations: () => request('/organizations'),
   createOrganization: (name) => request('/organizations', { method: 'POST', body: { name } }),
   getOrgMembers: (orgId) => request(`/organizations/${orgId}/members`),
-  updateOrgMember: (orgId, userId, role) => request(`/organizations/${orgId}/members/${userId}`, { method: 'PATCH', body: { role } }),
-  removeOrgMember: (orgId, userId) => request(`/organizations/${orgId}/members/${userId}`, { method: 'DELETE' }),
+  updateOrgMember: (orgId, userId, role) =>
+    request(`/organizations/${orgId}/members/${userId}`, { method: 'PATCH', body: { role } }),
+  removeOrgMember: (orgId, userId) =>
+    request(`/organizations/${orgId}/members/${userId}`, { method: 'DELETE' }),
   createOrgProxy: (orgId, proxyData) =>
     request(`/organizations/${orgId}/proxies`, { method: 'POST', body: proxyData }),
 
@@ -343,6 +345,10 @@ export const api = {
   createScenario: (projectId, data) =>
     request(`/projects/${projectId}/scenarios`, { method: 'POST', body: data }),
   getScenarioComparison: (projectId) => request(`/projects/${projectId}/scenario-comparison`),
+  updateScenario: (projectId, scenarioId, data) =>
+    request(`/projects/${projectId}/scenarios/${scenarioId}`, { method: 'PATCH', body: data }),
+  deleteScenario: (projectId, scenarioId) =>
+    request(`/projects/${projectId}/scenarios/${scenarioId}`, { method: 'DELETE' }),
   getSensitivity: (projectId) => request(`/projects/${projectId}/sensitivity`),
 
   // Reports & Exports
@@ -350,7 +356,12 @@ export const api = {
   createReport: (projectId, runId, type = 'detailed', title = '', scenarioId = null) =>
     request(`/projects/${projectId}/reports`, {
       method: 'POST',
-      body: { calculation_run_id: runId, type, title, ...(scenarioId ? { scenario_id: scenarioId } : {}) },
+      body: {
+        calculation_run_id: runId,
+        type,
+        title,
+        ...(scenarioId ? { scenario_id: scenarioId } : {}),
+      },
     }),
   getReport: (reportId) => request(`/reports/${reportId}`),
   exportReport: async (reportId, format = 'pdf', dataset = null, lang = null) => {

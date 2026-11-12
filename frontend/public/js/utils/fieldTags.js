@@ -30,18 +30,19 @@ const CHECK =
   '<svg class="ftag__icon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg>';
 const DOT = '<span class="ftag__dot" aria-hidden="true"></span>';
 
-function build(kind, isTh) {
+function build(kind, isTh, any = false) {
   const lang = isTh ? 'th' : 'en';
   const text = LABELS[kind][lang];
   const done = LABELS.done[lang];
   return (
-    `<span class="ftag ftag--${kind}" data-ftag="${kind}" data-state="todo" data-text="${text}" data-done="${done}">` +
+    `<span class="ftag ftag--${kind}" data-ftag="${kind}" data-state="todo"${any ? ' data-any="1"' : ''} data-text="${text}" data-done="${done}">` +
     `${DOT}<span class="ftag__text">${text}</span></span>`
   );
 }
 
-/** "Required" tag — put it inside the field's <label> */
-export const reqTag = (isTh = isThai()) => build('req', isTh);
+/** "Required" tag — put it inside the field's <label>. With { any: true } filling ANY box in the field
+ *  is enough (e.g. "reason or source"). */
+export const reqTag = (isTh = isThai(), { any = false } = {}) => build('req', isTh, any);
 /** "Optional" tag — the box can stay blank */
 export const optTag = (isTh = isThai()) => build('opt', isTh);
 /** reqTag or optTag from a boolean */
@@ -61,6 +62,7 @@ function controlsFor(tag) {
   const STOP = '.field, fieldset, .form-group, form, th, td, tr, .form-row';
   for (let node = tag.parentElement; node && node !== document.body; node = node.parentElement) {
     const main = node.querySelector(CONTROL);
+    if (main && tag.dataset.any) return [...node.querySelectorAll(CONTROL)];
     if (main) return [main]; // the main control comes first; "Other…" boxes follow it
     // radio group (e.g. cash / in-kind): done when one is picked
     const radios = node.querySelectorAll('input[type=radio]');

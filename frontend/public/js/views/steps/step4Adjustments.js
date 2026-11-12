@@ -144,7 +144,7 @@ export function renderStep4(container) {
 
           <!-- Justification box (Reason + Source) -->
           <div class="field">
-            <label class="field-label">${t('col_justification', 'คำอธิบายเหตุผลและแหล่งอ้างอิง (Justification & Source)')} ${optTag(isTh)}</label>
+            <label class="field-label">${t('col_justification', 'คำอธิบายเหตุผลและแหล่งอ้างอิง (Justification & Source)')} ${reqTag(isTh, { any: true })}<span class="ftag-note">${isTh ? 'กรอกอย่างน้อย 1 ช่อง' : 'fill in at least one'}</span></label>
             <div class="form-row">
               <input class="input adj-in adj-text" type="text" data-f="justification" value="${escapeHtml(adj.justification || '')}" placeholder="${isTh ? 'เหตุผลในการกำหนด %' : 'Reason / Rationale'}" aria-label="${isTh ? 'เหตุผลในการกำหนด %' : 'Reason / Rationale'}" />
               <input class="input adj-in adj-text" type="text" data-f="source" value="${escapeHtml(adj.source || '')}" placeholder="${isTh ? 'แหล่งอ้างอิง / ข้อมูลสำรวจ' : 'Citation / Source'}" aria-label="${isTh ? 'แหล่งอ้างอิง / ข้อมูลสำรวจ' : 'Citation / Source'}" />

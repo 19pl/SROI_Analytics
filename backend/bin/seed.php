@@ -1,338 +1,1491 @@
 <?php
 declare(strict_types=1);
 
+/**
+ * Database Seeder for SROI Analytics
+ * 
+ * Re-seeds the database with a complete, modern, institutional-grade dataset for Naresuan University:
+ * - Creates/finds Naresuan University organization and default owner user.
+ * - Deletes old/stale seed projects and org hierarchy (cascade deletes child items).
+ * - Creates 4 faculties and their respective academic departments.
+ * - Creates full, high-fidelity SROI plans:
+ *     1. Faculty-owned Evaluative Plan (คณะสหเวชศาสตร์)
+ *     2. Department-owned Evaluative Plan (ภาควิชากายภาพบำบัด)
+ *     3. Department-owned Plan (ภาควิชาเทคนิคการแพทย์)
+ *     4. Faculty-owned Multi-year Plan (คณะสาธารณสุขศาสตร์)
+ *     5. Department-owned Multi-year Plan (ภาควิชาอนามัยชุมชน)
+ *     6. Department-owned Excel Sheet-Mode Plan (ภาควิชากายภาพบำบัด)
+ * - Persists authoritative Calculation Runs for all plans so dashboards, reports, and lists are populated.
+ * 
+ * Usage: php bin/seed.php [--clean]
+ */
+
 require dirname(__DIR__) . '/bootstrap.php';
 
 use App\Core\App;
+use App\Services\CalculationService;
+use App\Domain\Calculation\SheetEngine;
 
 $app = App::fromEnv();
 $db = $app->db;
 
-echo "Seeding database...\n";
+echo "========================================================\n";
+echo "SROI Analytics - Seeding Full Comprehensive Dataset\n";
+echo "========================================================\n\n";
 
-// 1. No users are created here. Accounts are added by hand: `php bin/user.php add --email=... --name=...`
-//    Seeded rows therefore have created_by = NULL (the column is nullable).
-$ownerId = null;
+// 1. Identify or create owner user
+$user = $db->one('SELECT * FROM users ORDER BY id ASC LIMIT 1');
+if (!$user) {
+    $uid = $db->insert('users', [
+        'email' => 'admin@nu.ac.th',
+        'name' => 'ผู้ดูแลระบบ SROI (Naresuan University)',
+        'password_hash' => password_hash('nu-sroi-2026', PASSWORD_DEFAULT),
+    ]);
+    $user = $db->one('SELECT * FROM users WHERE id = ?', [$uid]);
+    echo "Created default admin user: {$user['email']} (#{$user['id']})\n";
+} else {
+    echo "Using existing user: {$user['email']} (#{$user['id']})\n";
+}
+$ownerId = (int)$user['id'];
 
-// 2. Create (or find) the Naresuan University organization
-$org = $db->one('SELECT * FROM organizations WHERE name = ?', ['มหาวิทยาลัยนเรศวร (Naresuan University)']);
+// 2. Identify or create Naresuan University organization
+$orgName = 'มหาวิทยาลัยนเรศวร (Naresuan University)';
+$org = $db->one('SELECT * FROM organizations WHERE name = ?', [$orgName]);
 if (!$org) {
     $orgId = $db->insert('organizations', [
-        'name' => 'มหาวิทยาลัยนเรศวร (Naresuan University)',
+        'name' => $orgName,
         'created_by' => $ownerId,
     ]);
     $org = $db->one('SELECT * FROM organizations WHERE id = ?', [$orgId]);
+    echo "Created organization: $orgName (#{$org['id']})\n";
+} else {
+    echo "Found organization: $orgName (#{$org['id']})\n";
+}
+$orgId = (int)$org['id'];
+
+// Ensure user has owner membership
+$membership = $db->one('SELECT * FROM memberships WHERE organization_id = ? AND user_id = ?', [$orgId, $ownerId]);
+if (!$membership) {
+    $db->insert('memberships', [
+        'organization_id' => $orgId,
+        'user_id' => $ownerId,
+        'role' => 'owner',
+    ]);
+    echo "Granted owner role to user #$ownerId in organization #$orgId\n";
 }
 
-// 3. Global financial proxies are NOT seeded here. The library is loaded from a reviewed, sourced file by an administrator:
-//    php bin/load-proxies.php        (see README: "Thai financial-proxy library")
+// 3. Clean out old stale seeded data
+echo "\nCleaning old projects and organizational hierarchy under organization #$orgId...\n";
+$db->transaction(function () use ($db, $orgId) {
+    // Delete all projects belonging to the org (cascades to costs, stakeholders, outcomes, adjustments, scenarios, runs, sheet tables)
+    $db->run('DELETE FROM projects WHERE organization_id = ?', [$orgId]);
+    // Delete all faculties belonging to the org (cascades to departments)
+    $db->run('DELETE FROM faculties WHERE organization_id = ?', [$orgId]);
+});
+echo "Old project and hierarchy data cleared successfully.\n\n";
 
-// 4. Seed PRD Demo Project: University Tutoring Initiative
-$proj = $db->one('SELECT * FROM projects WHERE name = ? AND organization_id = ?', ['University Community Tutoring Initiative', $org['id']]);
-if (!$proj) {
-    $pId = $db->insert('projects', [
-        'organization_id' => $org['id'],
-        'name' => 'University Community Tutoring Initiative',
-        'organization_name' => 'Naresuan University',
-        'description' => 'Supplementary tutoring and educational mentoring for underserved secondary school students in Phitsanulok.',
-        'category' => 'Education',
-        'country' => 'Thailand',
-        'evaluation_type' => 'evaluative',
-        'currency' => 'THB',
-        'price_basis' => 'constant 2026 prices',
-        'analysis_period_years' => 5,
-        'discount_rate' => 0.035,
-        'discount_rate_basis' => 'real',
-        'discount_rate_source' => 'National Social Time Preference Framework',
-        'discount_base_year' => 0,
-        'investment_basis' => 'nominal',
-        'include_in_kind' => 1,
-        'status' => 'ready',
-        'created_by' => $ownerId,
+// 4. Seed Faculties & Academic Departments (Institutional Structure)
+echo "Seeding Faculties and Departments...\n";
+
+// 4.1 คณะสหเวชศาสตร์ (Faculty of Allied Health Sciences)
+$facAlliedId = $db->insert('faculties', [
+    'organization_id' => $orgId,
+    'name'            => 'คณะสหเวชศาสตร์',
+    'description'     => 'Faculty of Allied Health Sciences, Naresuan University - ศูนย์ความเป็นเลิศด้านการฟื้นฟูสมรรถภาพและการตรวจวินิจฉัยทางการแพทย์',
+    'created_by'      => $ownerId,
+]);
+
+$deptPTId = $db->insert('departments', [
+    'faculty_id'  => $facAlliedId,
+    'name'        => 'ภาควิชากายภาพบำบัด',
+    'description' => 'Department of Physical Therapy - บริการฟื้นฟูสมรรถภาพทางกายภาพบำบัดและธาราบำบัด',
+    'created_by'  => $ownerId,
+]);
+
+$deptMedTechId = $db->insert('departments', [
+    'faculty_id'  => $facAlliedId,
+    'name'        => 'ภาควิชาเทคนิคการแพทย์',
+    'description' => 'Department of Medical Technology - บริการตรวจวิเคราะห์ทางห้องปฏิบัติการทางการแพทย์เชิงรุก',
+    'created_by'  => $ownerId,
+]);
+
+$deptOptoId = $db->insert('departments', [
+    'faculty_id'  => $facAlliedId,
+    'name'        => 'ภาควิชาทัศนมาตรศาสตร์',
+    'description' => 'Department of Optometry - บริการตรวจวัดสายตาและสุขภาพการมองเห็นเฉพาะทาง',
+    'created_by'  => $ownerId,
+]);
+
+$deptRadioId = $db->insert('departments', [
+    'faculty_id'  => $facAlliedId,
+    'name'        => 'ภาควิชารังสีเทคนิค',
+    'description' => 'Department of Radiological Technology - บริการรังสีวินิจฉัยและสร้างภาพทางการแพทย์',
+    'created_by'  => $ownerId,
+]);
+
+// 4.2 คณะสาธารณสุขศาสตร์ (Faculty of Public Health)
+$facPHId = $db->insert('faculties', [
+    'organization_id' => $orgId,
+    'name'            => 'คณะสาธารณสุขศาสตร์',
+    'description'     => 'Faculty of Public Health, Naresuan University - ผู้นำด้านการสร้างเสริมสุขภาพและการจัดการอนามัยสิ่งแวดล้อมชุมชน',
+    'created_by'      => $ownerId,
+]);
+
+$deptCommHealthId = $db->insert('departments', [
+    'faculty_id'  => $facPHId,
+    'name'        => 'ภาควิชาอนามัยชุมชน',
+    'description' => 'Department of Community Health - พัฒนาระบบสุขภาพปฐมภูมิและสุขอนามัยในโรงเรียนและชุมชน',
+    'created_by'  => $ownerId,
+]);
+
+$deptEnvHealthId = $db->insert('departments', [
+    'faculty_id'  => $facPHId,
+    'name'        => 'ภาควิชาอนามัยสิ่งแวดล้อมและอาชีวอนามัย',
+    'description' => 'Department of Environmental and Occupational Health - เฝ้าระวังมลพิษทางอากาศและความปลอดภัยในการทำงาน',
+    'created_by'  => $ownerId,
+]);
+
+// 4.3 คณะเกษตรศาสตร์ ทรัพยากรธรรมชาติและสิ่งแวดล้อม
+$facAgriId = $db->insert('faculties', [
+    'organization_id' => $orgId,
+    'name'            => 'คณะเกษตรศาสตร์ ทรัพยากรธรรมชาติและสิ่งแวดล้อม',
+    'description'     => 'Faculty of Agriculture, Natural Resources and Environment - นวัตกรรมเกษตรปลอดภัยและการจัดการทรัพยากรชุมชน',
+    'created_by'      => $ownerId,
+]);
+
+$deptAgriSciId = $db->insert('departments', [
+    'faculty_id'  => $facAgriId,
+    'name'        => 'ภาควิชาวิทยาศาสตร์การเกษตร',
+    'description' => 'Department of Agricultural Science - การถ่ายทอดเทคโนโลยีเกษตรแม่นยำและเกษตรอินทรีย์',
+    'created_by'  => $ownerId,
+]);
+
+$deptAgroIndId = $db->insert('departments', [
+    'faculty_id'  => $facAgriId,
+    'name'        => 'ภาควิชาอุตสาหกรรมเกษตร',
+    'description' => 'Department of Agro-Industry - การแปรรูปเพิ่มมูลค่าผลผลิตการเกษตรและมาตรฐานอาหารปลอดภัย',
+    'created_by'  => $ownerId,
+]);
+
+// 4.4 คณะวิศวกรรมศาสตร์
+$facEngId = $db->insert('faculties', [
+    'organization_id' => $orgId,
+    'name'            => 'คณะวิศวกรรมศาสตร์',
+    'description'     => 'Faculty of Engineering, Naresuan University - วิศวกรรมเพื่อการพัฒนาที่ยั่งยืนและพลังงานทดแทน',
+    'created_by'      => $ownerId,
+]);
+
+$deptCivilId = $db->insert('departments', [
+    'faculty_id'  => $facEngId,
+    'name'        => 'ภาควิชาวิศวกรรมโยธา',
+    'description' => 'Department of Civil Engineering - การบริหารจัดการน้ำชุมชนและโครงสร้างพื้นฐาน',
+    'created_by'  => $ownerId,
+]);
+
+echo "Created 4 Faculties and 9 Departments.\n\n";
+
+// Helper for loading proxies from the database
+$proxies = $db->all('SELECT * FROM financial_proxies WHERE organization_id IS NULL');
+$proxyMap = [];
+foreach ($proxies as $p) {
+    $proxyMap[$p['name']] = $p;
+}
+
+$calcService = new CalculationService($app);
+
+// =========================================================================
+// PLAN 1: Faculty-owned Evaluative Plan (คณะสหเวชศาสตร์)
+// =========================================================================
+echo "Seeding Plan 1 (Faculty-Owned): โครงการตรวจคัดกรองสายตาผู้สูงอายุ 2568...\n";
+
+$p1Id = $db->insert('projects', [
+    'organization_id'       => $orgId,
+    'faculty_id'            => $facAlliedId,
+    'department_id'         => null, // Direct Faculty Ownership
+    'name'                  => 'โครงการบริการวิชาการตรวจคัดกรองสายตาและส่งมอบแว่นสายตาในผู้สูงอายุชุมชน ประจำปี 2568',
+    'organization_name'     => 'คณะสหเวชศาสตร์ มหาวิทยาลัยนเรศวร',
+    'description'           => 'การประเมินผลตอบแทนทางสังคม (SROI) โครงการบริการตรวจคัดกรองสายตา ตรวจความดันลูกตา และส่งมอบแว่นสายตาแก่ผู้สูงอายุในเขตชนบท จ.พิษณุโลก (อ้างอิงข้อมูลวิเคราะห์ SROI โครงการตา 68)',
+    'category'              => 'Health and wellbeing',
+    'country'               => 'Thailand',
+    'start_date'            => '2025-10-01',
+    'end_date'              => '2026-09-30',
+    'evaluation_type'       => 'evaluative',
+    'currency'              => 'THB',
+    'price_basis'           => 'constant 2026 prices',
+    'analysis_period_years' => 1,
+    'assessment_months'     => 12,
+    'discount_rate'         => 0.0,
+    'discount_base_year'    => 0,
+    'investment_basis'      => 'nominal',
+    'include_in_kind'       => 1,
+    'status'                => 'ready',
+    'created_by'            => $ownerId,
+]);
+
+// Stakeholders (S1-S4)
+$s1_beneficiary = $db->insert('stakeholders', [
+    'project_id'             => $p1Id,
+    'name'                   => 'ผู้สูงอายุที่มีปัญหาทางสายตาในชุมชนรอบมหาวิทยาลัย',
+    'category'               => 'Beneficiary households',
+    'stakeholder_group'      => 'primary_beneficiary',
+    'group_code'             => 'S1',
+    'role_in_project'        => 'Primary Beneficiary',
+    'estimated_count'        => 150,
+    'count_unit'             => 'คน',
+    'target_characteristics' => 'ผู้สูงอายุ 60 ปีขึ้นไปที่มีปัญหาการมองเห็นไม่ชัดเจน',
+    'needs_or_problems'      => 'ขาดโอกาสเข้าถึงการตรวจวัดสายตาเฉพาะทางและไม่มีแว่นสายตาที่เหมาะสม',
+    'expected_positive'      => 'สายตามองเห็นชัดเจนขึ้น ลดความเสี่ยงในการพลัดตกหกล้ม ช่วยเหลือตนเองในชีวิตประจำวันได้',
+    'evidence_source'        => 'แบบคัดกรองสุขภาพสายตาผู้สูงอายุชุมชน ต.ท่าโพธิ์ 2568',
+]);
+
+$s1_family = $db->insert('stakeholders', [
+    'project_id'             => $p1Id,
+    'name'                   => 'ครอบครัวและผู้ดูแลผู้สูงอายุ',
+    'category'               => 'Beneficiary households',
+    'stakeholder_group'      => 'primary_beneficiary',
+    'group_code'             => 'S1.2',
+    'role_in_project'        => 'Supported Family',
+    'estimated_count'        => 120,
+    'count_unit'             => 'ครัวเรือน',
+    'target_characteristics' => 'สมาชิกในครอบครัวที่เป็นผู้ดูแลหลัก',
+    'needs_or_problems'      => 'ภาระค่าใช้จ่ายในการตัดแว่นสายตาและการพาผู้สูงอายุเดินทางไปพบแพทย์',
+    'expected_positive'      => 'ประหยัดค่าใช้จ่ายการตัดแว่นตา และลดเวลาเฝ้าระวังผู้สูงอายุ',
+    'evidence_source'        => 'แบบสำรวจความพึงพอใจและภาระค่าใช้จ่ายครัวเรือน',
+]);
+
+$s1_operators = $db->insert('stakeholders', [
+    'project_id'             => $p1Id,
+    'name'                   => 'คณาจารย์และนิสิตหลักสูตรทัศนมาตรศาสตร์ คณะสหเวชศาสตร์',
+    'category'               => 'Teachers and educational staff',
+    'stakeholder_group'      => 'project_operator',
+    'group_code'             => 'S2',
+    'role_in_project'        => 'Delivery Institution',
+    'estimated_count'        => 25,
+    'count_unit'             => 'คน',
+    'resources_used'         => 'องค์ความรู้ทัศนมาตรศาสตร์ เครื่องตรวจวัดความดันตา ชุดทดลองเลนส์',
+    'expected_positive'      => 'ทักษะทางคลินิกและการเรียนรู้เชิงประสบการณ์จริงในชุมชน',
+    'evidence_source'        => 'รายงานการประเมินสมรรถนะการฝึกปฏิบัติงานวิชาชีพ',
+]);
+
+$s1_supporters = $db->insert('stakeholders', [
+    'project_id'             => $p1Id,
+    'name'                   => 'รพ.สต. และ อาสาสมัครสาธารณสุขประจำหมู่บ้าน (อสม.)',
+    'category'               => 'Community groups and civil society',
+    'stakeholder_group'      => 'project_supporter',
+    'group_code'             => 'S3',
+    'role_in_project'        => 'Community Partner',
+    'estimated_count'        => 4,
+    'count_unit'             => 'แห่ง',
+    'support_type'           => 'การประสานงานพื้นที่และคัดกรองเบื้องต้น',
+    'expected_positive'      => 'ฐานข้อมูลสุขภาพสายตาผู้สูงอายุในความรับผิดชอบ',
+    'evidence_source'        => 'บันทึกความร่วมมือพัฒนาสุขภาพชุมชน',
+]);
+
+// Costs (Step 1)
+$p1Costs = [
+    ['delivery', 'เลนส์และกรอบแว่นสายตาคุณภาพมาตรฐานสำหรับผู้สูงอายุ', 52500.0, 0, 1, 'quantity', 150, 'อัน', 350.0, 'ใบเสนอราคาและจัดซื้อวัสดุตรวจสายตา', $s1_beneficiary],
+    ['delivery', 'เวชภัณฑ์และน้ำยาตรวจคัดกรองสุขภาพดวงตาและต้อหิน', 18200.0, 0, 1, 'manual', null, null, null, 'ใบเบิกเวชภัณฑ์ทางการแพทย์', null],
+    ['opex', 'ค่าตอบแทนและเบี้ยเลี้ยงทีมตรวจวัดสายตาและจักษุวิทยา', 24000.0, 0, 1, 'quantity', 8, 'คน-วัน', 3000.0, 'หลักฐานการจ่ายเงินค่าตอบแทนบุคลากร', $s1_operators],
+    ['administration', 'ยานพาหนะ ค่าน้ำมันเชื้อเพลิง และเอกสารประสานงานชุมชน', 14500.0, 0, 1, 'manual', null, null, null, 'ใบเสร็จค่าน้ำมันและใบสำคัญรับเงิน', null],
+];
+foreach ($p1Costs as [$cat, $desc, $amt, $yr, $cash, $mode, $qty, $unit, $price, $ev, $stkId]) {
+    $db->insert('project_costs', [
+        'project_id'             => $p1Id,
+        'stakeholder_id'         => $stkId,
+        'category'               => $cat,
+        'description'            => $desc,
+        'amount'                 => $amt,
+        'currency'               => 'THB',
+        'exchange_rate'          => 1.0,
+        'year'                   => $yr,
+        'period_label'           => 'Y0',
+        'is_cash'                => $cash,
+        'calculation_mode'       => $mode,
+        'quantity'               => $qty,
+        'unit'                   => $unit,
+        'unit_price'             => $price,
+        'include_in_calculation' => 1,
+        'evidence_source'        => $ev,
     ]);
+}
 
-    // Costs (matching PRD Section 1.2: Equipment 20,000, Staff 50,000, Materials 10,000, Admin 10,000 = 90,000)
-    $costs = [
-        ['capex', 'Initial equipment & computer hardware', 20000.0, 0, 1],
-        ['opex', 'Staff and tutoring honorarium', 50000.0, 0, 1],
-        ['delivery', 'Learning materials & workbooks', 10000.0, 0, 1],
-        ['administration', 'Program administration & management overhead', 10000.0, 0, 1],
-    ];
-    foreach ($costs as [$cat, $desc, $amt, $yr, $cash]) {
-        $db->insert('project_costs', [
-            'project_id' => $pId,
-            'category' => $cat,
-            'description' => $desc,
-            'amount' => $amt,
-            'currency' => 'THB',
-            'exchange_rate' => 1.0,
-            'year' => $yr,
-            'is_cash' => $cash,
-            'include_in_calculation' => 1,
-            'evidence_source' => 'Project Budget FY2026',
-        ]);
+// Outcomes (Step 3)
+$fallProxy = $proxyMap['ต้นทุนผู้ป่วยใน เฉลี่ยต่อ AdjRW: โรงพยาบาลสังกัดมหาวิทยาลัย']['value'] ?? 34807.0;
+$o1_1 = $db->insert('outcomes', [
+    'project_id'         => $p1Id,
+    'stakeholder_id'     => $s1_beneficiary,
+    'proxy_id'           => $proxyMap['ต้นทุนผู้ป่วยใน เฉลี่ยต่อ AdjRW: โรงพยาบาลสังกัดมหาวิทยาลัย']['id'] ?? null,
+    'name'               => 'การป้องกันอุบัติเหตุสะดุดล้มและลดค่ารักษาพยาบาลจากภาวะกระดูกหักในผู้สูงอายุ',
+    'activity'           => 'ตรวจวัดสายตาประกอบแว่นสายตาเฉพาะบุคคลและการให้คำแนะนำความปลอดภัยในบ้าน',
+    'output_description' => 'ส่งมอบแว่นสายตาที่ตรงกับค่าสายตาจริงแก่ผู้สูงอายุ 150 ราย',
+    'indicator'          => 'จำนวนผู้สูงอายุที่หลีกเลี่ยงอุบัติเหตุพลัดตกหกล้มที่มีความรุนแรงระดับต้องนอน รพ.',
+    'baseline'           => 'อัตราการสะดุดล้มเฉลี่ยในผู้สูงอายุที่มีสายตาผิดปกติ 25% ต่อปี',
+    'observed_result'    => 'ลดอุบัติเหตุล้มรุนแรงได้ 15 รายในรอบ 1 ปีหลังได้รับแว่นตา',
+    'quantity'           => 15,
+    'proxy_value'        => $fallProxy,
+    'proxy_unit'         => 'คน / ปี',
+    'proxy_source'       => 'ต้นทุนผู้ป่วยใน เฉลี่ยต่อ AdjRW: โรงพยาบาลสังกัดมหาวิทยาลัย (สปสช.)',
+    'proxy_rationale'    => 'การมองเห็นชัดเจนช่วยลดการสะดุดล้ม ป้องกันการบาดเจ็บกระดูกสะโพกหักและการนอนรักษาในโรงพยาบาล',
+    'polarity'           => 'positive',
+    'projection_model'   => 'cohort',
+    'duration_years'     => 1,
+    'evidence_quality'   => 'measured',
+]);
+
+$o1_2 = $db->insert('outcomes', [
+    'project_id'         => $p1Id,
+    'stakeholder_id'     => $s1_family,
+    'name'               => 'การลดภาระค่าใช้จ่ายในการตัดแว่นสายตาและการตรวจสายตาภาคเอกชนของครอบครัว',
+    'activity'           => 'บริการตรวจวัดและส่งมอบแว่นสายตาฟรีในพื้นที่ชุมชน',
+    'output_description' => '150 ครัวเรือนได้รับบริการโดยไม่ต้องเดินทางเข้าคลินิกเอกชนในตัวเมือง',
+    'indicator'          => 'มูลค่าค่าบริการตัดแว่นตาและค่าเดินทางเฉลี่ยที่ประหยัดได้',
+    'baseline'           => 'ค่าตัดแว่นสายตาคลินิกเอกชนเฉลี่ย 1,800 บาทต่ออัน',
+    'observed_result'    => 'ประหยัดค่าใช้จ่ายได้ 1,500 บาทต่อคน',
+    'quantity'           => 150,
+    'proxy_value'        => 1500.0,
+    'proxy_unit'         => 'ครัวเรือน / ครั้ง',
+    'proxy_source'       => 'การสำรวจอัตราค่าบริการตัดแว่นสายตาร้านแว่นตาในจังหวัดพิษณุโลก 2568',
+    'proxy_rationale'    => 'มูลค่าทดแทนค่าใช้จ่ายจริงที่ครอบครัวต้องจ่ายเพื่อจัดหาแว่นตาให้ผู้สูงอายุ',
+    'polarity'           => 'positive',
+    'projection_model'   => 'cohort',
+    'duration_years'     => 1,
+    'evidence_quality'   => 'external',
+]);
+
+$o1_3 = $db->insert('outcomes', [
+    'project_id'         => $p1Id,
+    'stakeholder_id'     => $s1_operators,
+    'name'               => 'การพัฒนาทักษะทางคลินิกทัศนมาตรและการตรวจสายตาชุมชนของนิสิต',
+    'activity'           => 'การฝึกปฏิบัติการทางทัศนมาตรศาสตร์คลินิกภาคสนาม',
+    'output_description' => 'นิสิต 20 รายได้รับการฝึกปฏิบัติจริงกับผู้ป่วยสายตามนุษย์ปฐมภูมิ',
+    'indicator'          => 'มูลค่าเทียบเท่าการฝึกอบรมเชิงปฏิบัติการวิชาชีพเฉพาะทาง',
+    'baseline'           => 'การฝึกปฏิบัติในห้องทดลองจำลอง 30 ชั่วโมง',
+    'observed_result'    => 'การตรวจวัดผู้ป่วยจริงในสถานการณ์ภาคสนาม 50 ชั่วโมง',
+    'quantity'           => 20,
+    'proxy_value'        => 4500.0,
+    'proxy_unit'         => 'คน / โครงการ',
+    'proxy_source'       => 'เกณฑ์มูลค่าการฝึกปฏิบัติงานคลินิกวิชาชีพสุขภาพ สปสช.',
+    'proxy_rationale'    => 'ทักษะทางคลินิกที่นิสิตได้รับช่วยเพิ่มความพร้อมในการสอบใบประกอบโรคศิลปะและการทำงานจริง',
+    'polarity'           => 'positive',
+    'projection_model'   => 'cohort',
+    'duration_years'     => 1,
+    'evidence_quality'   => 'estimated',
+]);
+
+// Adjustments (Step 4)
+$db->insert('impact_adjustments', [
+    'outcome_id'    => $o1_1,
+    'deadweight'    => 0.10,
+    'attribution'   => 0.15,
+    'displacement'  => 0.00,
+    'drop_off'      => 0.00,
+    'source'        => 'สถิติอุบัติเหตุผู้สูงอายุ รพ.สต. ในพื้นที่',
+    'justification' => '10% ของผู้สูงอายุอาจระมัดระวังตนเองได้โดยธรรมชาติ และ 15% ได้รับการช่วยเหลือดูแลปรับปรุงสภาพบ้านจากบุตรหลาน',
+]);
+
+$db->insert('impact_adjustments', [
+    'outcome_id'    => $o1_2,
+    'deadweight'    => 0.15,
+    'attribution'   => 0.10,
+    'displacement'  => 0.00,
+    'drop_off'      => 0.00,
+    'source'        => 'แบบสำรวจพฤติกรรมการจัดหาแว่นตาของครอบครัว',
+    'justification' => '15% ของครอบครัวมีแผนจะตัดแว่นให้อยู่แล้ว และ 10% ได้รับการสนับสนุนจากกองทุนสวัสดิการชุมชน',
+]);
+
+$db->insert('impact_adjustments', [
+    'outcome_id'    => $o1_3,
+    'deadweight'    => 0.20,
+    'attribution'   => 0.10,
+    'displacement'  => 0.00,
+    'drop_off'      => 0.00,
+    'source'        => 'การประเมินหลักสูตรทัศนมาตรศาสตรบัณฑิต',
+    'justification' => '20% ของทักษะได้จากการฝึกในห้องปฏิบัติการปกติของมหาวิทยาลัย',
+]);
+
+// Scenarios (Step 5)
+$sc1_base = $db->insert('scenarios', [
+    'project_id'  => $p1Id,
+    'name'        => 'Base case',
+    'kind'        => 'base',
+    'description' => 'สมมติฐานตามหลักฐานเชิงประจักษ์จริงจากการดำเนินงานโครงการ',
+    'is_base'     => 1,
+    'assumptions' => json_encode(['global' => [], 'outcomes' => []]),
+]);
+$db->insert('scenarios', [
+    'project_id'  => $p1Id,
+    'name'        => 'Conservative Case',
+    'kind'        => 'conservative',
+    'description' => 'กรณีคิดการป้องกันอุบัติเหตุลดลงและเพิ่มค่า Deadweight',
+    'is_base'     => 0,
+    'assumptions' => json_encode([
+        'outcomes' => [$o1_1 => ['quantity_multiplier' => 0.8, 'deadweight_delta' => 0.1]]
+    ]),
+]);
+$db->insert('scenarios', [
+    'project_id'  => $p1Id,
+    'name'        => 'Optimistic Case',
+    'kind'        => 'optimistic',
+    'description' => 'กรณีขยายผลการส่งมอบแว่นตาครอบคลุมชุมชนข้างเคียง',
+    'is_base'     => 0,
+    'assumptions' => json_encode([
+        'outcomes' => [$o1_1 => ['quantity_multiplier' => 1.25]]
+    ]),
+]);
+
+// Run calculation and save to calculation_runs (Step 6)
+$p1Row = $db->one('SELECT * FROM projects WHERE id = ?', [$p1Id]);
+$c1 = $calcService->calculate($p1Row, $sc1_base, null, true);
+echo "  -> Plan #$p1Id calculated: Investment = ฿" . number_format($c1['run']['investment']) .
+     ", PV = ฿" . number_format($c1['run']['present_value']) .
+     ", SROI = " . number_format((float)$c1['run']['sroi_ratio'], 2) . ":1\n";
+
+
+// =========================================================================
+// PLAN 2: Department-owned Plan (ภาควิชากายภาพบำบัด under คณะสหเวชศาสตร์)
+// =========================================================================
+echo "\nSeeding Plan 2 (Department-Owned): โครงการบริการอาคารธาราบำบัด 2568...\n";
+
+$p2Id = $db->insert('projects', [
+    'organization_id'       => $orgId,
+    'faculty_id'            => null,
+    'department_id'         => $deptPTId, // Department Ownership
+    'name'                  => 'โครงการบริการฟื้นฟูสมรรถภาพผู้ป่วยโรคหลอดเลือดสมองและระบบประสาทด้วยธาราบำบัด (Hydrotherapy)',
+    'organization_name'     => 'ภาควิชากายภาพบำบัด คณะสหเวชศาสตร์',
+    'description'           => 'การประเมินผลตอบแทนทางสังคมจากการให้บริการฟื้นฟูสมรรถภาพผู้ป่วยด้วยธาราบำบัด (รอบการประเมิน 6 เดือน อ้างอิงสมุดงานอาคารธาราบำบัด_SROI Data 18.4.67)',
+    'category'              => 'Health and wellbeing',
+    'country'               => 'Thailand',
+    'start_date'            => '2026-01-01',
+    'end_date'              => '2026-06-30',
+    'evaluation_type'       => 'evaluative',
+    'currency'              => 'THB',
+    'price_basis'           => 'constant 2026 prices',
+    'analysis_period_years' => 1,
+    'assessment_months'     => 6,
+    'discount_rate'         => 0.0,
+    'discount_base_year'    => 0,
+    'investment_basis'      => 'nominal',
+    'include_in_kind'       => 1,
+    'status'                => 'ready',
+    'created_by'            => $ownerId,
+]);
+
+// Stakeholders
+$s2_patients = $db->insert('stakeholders', [
+    'project_id'             => $p2Id,
+    'name'                   => 'ผู้ป่วยโรคหลอดเลือดสมองและระบบประสาทกล้ามเนื้อที่รับบริการธาราบำบัด',
+    'category'               => 'Beneficiary households',
+    'stakeholder_group'      => 'primary_beneficiary',
+    'group_code'             => 'S1',
+    'role_in_project'        => 'Primary Beneficiary',
+    'estimated_count'        => 542,
+    'count_unit'             => 'คน',
+    'target_characteristics' => 'ผู้ป่วย Stroke, พาร์กินสัน, และผู้ป่วยฟื้นฟูหลังผ่าตัดข้อ',
+    'needs_or_problems'      => 'ต้องการสถานที่ธาราบำบัดมาตรฐานและนักกายภาพบำบัดดูแลใกล้ชิดเพื่อฟื้นตัวเร็วขึ้น',
+    'expected_positive'      => 'ความสามารถในการทรงตัวและการเคลื่อนไหวดีขึ้น ลดอาการปวดกล้ามเนื้อ',
+    'evidence_source'        => 'เวชระเบียนคลินิกกายภาพบำบัดและอาคารธาราบำบัด ม.นเรศวร',
+]);
+
+$s2_caregivers = $db->insert('stakeholders', [
+    'project_id'             => $p2Id,
+    'name'                   => 'ญาติและผู้ดูแลผู้ป่วยติดเตียงหรือกึ่งติดเตียง',
+    'category'               => 'Beneficiary households',
+    'stakeholder_group'      => 'primary_beneficiary',
+    'group_code'             => 'S1.2',
+    'role_in_project'        => 'Supported Family',
+    'estimated_count'        => 450,
+    'count_unit'             => 'ครัวเรือน',
+    'target_characteristics' => 'ผู้ดูแลในครอบครัวที่ต้องคอยพยุงช่วยเหลือผู้ป่วยตลอด 24 ชั่วโมง',
+    'needs_or_problems'      => 'ความเครียดสะสม อาการปวดหลังจากการยกพยุง และการเสียโอกาสในการประกอบอาชีพ',
+    'expected_positive'      => 'ลดเวลาในการช่วยพยุงเมื่อผู้ป่วยเคลื่อนไหวได้เอง และลดความเครียดสะสม',
+    'evidence_source'        => 'แบบสอบถามความเครียดและภาระผู้ดูแล (Caregiver Burden Survey)',
+]);
+
+$s2_therapists = $db->insert('stakeholders', [
+    'project_id'             => $p2Id,
+    'name'                   => 'นักกายภาพบำบัดและคณาจารย์ ภาควิชากายภาพบำบัด',
+    'category'               => 'Teachers and educational staff',
+    'stakeholder_group'      => 'project_operator',
+    'group_code'             => 'S2',
+    'role_in_project'        => 'Operating Team',
+    'estimated_count'        => 18,
+    'count_unit'             => 'คน',
+    'resources_used'         => 'ทักษะวิชาชีพการบำบัดในน้ำ และการใช้อุปกรณ์ไฮโดรเธอราปี',
+    'expected_positive'      => 'การพัฒนาทักษะวิชาชีพชั้นสูงด้านธาราบำบัดและการผลิตงานวิจัยฟื้นฟูสมรรถภาพ',
+    'evidence_source'        => 'รายงานการประเมินสมรรถนะบุคลากรวิชาชีพ',
+]);
+
+$s2_nhso = $db->insert('stakeholders', [
+    'project_id'             => $p2Id,
+    'name'                   => 'สำนักงานหลักประกันสุขภาพแห่งชาติ (สปสช.) เขต 2 พิษณุโลก',
+    'category'               => 'Government agencies',
+    'stakeholder_group'      => 'project_supporter',
+    'group_code'             => 'S3',
+    'role_in_project'        => 'Fund / Policy Supporter',
+    'estimated_count'        => 1,
+    'count_unit'             => 'แห่ง',
+    'support_type'           => 'กองทุนฟื้นฟูสมรรถภาพทางการแพทย์ระดับจังหวัด',
+    'expected_positive'      => 'การกระจายบริการฟื้นฟูเฉพาะทางระดับตติยภูมิสู่ชุมชน',
+    'evidence_source'        => 'บันทึกข้อตกลงความร่วมมือการจัดบริการฟื้นฟูสมรรถภาพ',
+]);
+
+// Costs (Step 1)
+$p2Costs = [
+    ['capex', 'ค่าเสื่อมราคาอาคารธาราบำบัดและระบบสระน้ำอุ่น (รอบ 6 เดือน)', 1426383.0, 0, 1, 'manual', null, null, null, 'ทะเบียนสินทรัพย์และงบเสื่อมราคา มหาวิทยาลัยนเรศวร (J46 Excel)', $s2_nhso],
+    ['opex', 'ค่าน้ำประปา ไฟฟ้า สารเคมี และค่าบำรุงรักษาระบบกรองน้ำสระ', 320000.0, 0, 1, 'manual', null, null, null, 'ใบแจ้งหนี้สาธารณูปโภคและสัญญาบำรุงรักษาอาคาร', null],
+    ['opex', 'ค่าตอบแทนนักกายภาพบำบัด ช่างเทคนิค และเจ้าหน้าที่ความปลอดภัยสระ', 240000.0, 0, 1, 'quantity', 6, 'เดือน', 40000.0, 'บัญชีการจ่ายค่าตอบแทนบุคลากรประจำอาคาร', $s2_therapists],
+];
+foreach ($p2Costs as [$cat, $desc, $amt, $yr, $cash, $mode, $qty, $unit, $price, $ev, $stkId]) {
+    $db->insert('project_costs', [
+        'project_id'             => $p2Id,
+        'stakeholder_id'         => $stkId,
+        'category'               => $cat,
+        'description'            => $desc,
+        'amount'                 => $amt,
+        'currency'               => 'THB',
+        'exchange_rate'          => 1.0,
+        'year'                   => $yr,
+        'period_label'           => '6 เดือน',
+        'is_cash'                => $cash,
+        'calculation_mode'       => $mode,
+        'quantity'               => $qty,
+        'unit'                   => $unit,
+        'unit_price'             => $price,
+        'include_in_calculation' => 1,
+        'evidence_source'        => $ev,
+    ]);
+}
+
+// Outcomes (Step 3)
+$timeValueProxy = $proxyMap['มูลค่าเวลารายชั่วโมง (คำนวณจากค่าจ้างขั้นต่ำ จังหวัดพิษณุโลก)']['value'] ?? 44.0;
+$elecProxy = $proxyMap['ค่าไฟฟ้าเรียกเก็บเฉลี่ย (ไม่รวม VAT)']['value'] ?? 3.86;
+
+$o2_1 = $db->insert('outcomes', [
+    'project_id'         => $p2Id,
+    'stakeholder_id'     => $s2_patients,
+    'name'               => 'การฟื้นฟูสมรรถภาพทางกายภาพบำบัดและการประหยัดค่ารักษาพยาบาลเปรียบเทียบภาคเอกชน',
+    'activity'           => 'การฝึกฟื้นฟูระบบประสาทและการทรงตัวในสระธาราบำบัด',
+    'output_description' => 'ให้บริการผู้ป่วยระบบประสาทและกล้ามเนื้อรวม 1,768 ครั้ง (542 ราย)',
+    'indicator'          => 'ค่าใช้จ่ายส่วนต่างเปรียบเทียบกับการทำธาราบำบัดในโรงพยาบาลเอกชน',
+    'baseline'           => 'ค่าบริการธาราบำบัด รพ.เอกชน เฉลี่ย 1,800 บาทต่อครั้ง',
+    'observed_result'    => 'ผู้ป่วยจ่ายค่าธรรมเนียมเพียง 350-500 บาท ประหยัดได้ 1,300 บาทต่อครั้ง',
+    'quantity'           => 1768,
+    'proxy_value'        => 1300.0,
+    'proxy_unit'         => 'ครั้ง / 6 เดือน',
+    'proxy_source'       => 'การเปรียบเทียบอัตราค่าบริการธาราบำบัดในโรงพยาบาลเอกชนเขตภาคเหนือ',
+    'proxy_rationale'    => 'ส่วนต่างค่าบริการที่ผู้ป่วยประหยัดได้จริงจากการรับบริการที่อาคารธาราบำบัดมหาวิทยาลัย',
+    'polarity'           => 'positive',
+    'projection_model'   => 'cohort',
+    'duration_years'     => 1,
+    'evidence_quality'   => 'measured',
+]);
+
+$o2_2 = $db->insert('outcomes', [
+    'project_id'         => $p2Id,
+    'stakeholder_id'     => $s2_caregivers,
+    'proxy_id'           => $proxyMap['มูลค่าเวลารายชั่วโมง (คำนวณจากค่าจ้างขั้นต่ำ จังหวัดพิษณุโลก)']['id'] ?? null,
+    'name'               => 'การประหยัดเวลาและลดภาระการเฝ้าดูแลของญาติผู้ดูแลผู้ป่วย',
+    'activity'           => 'การฟื้นฟูสมรรถภาพให้ผู้ป่วยสามารถเดินทรงตัวและช่วยเหลือตนเองในชีวิตประจำวันได้',
+    'output_description' => 'ผู้ป่วย 280 รายมีความสามารถในการทำกิจวัตรประจำวันด้วยตนเองดีขึ้น (Barthel Index ดีขึ้น)',
+    'indicator'          => 'เวลาที่ผู้ดูแลประหยัดได้เฉลี่ย 60 ชั่วโมงต่อคน ในช่วง 6 เดือน',
+    'baseline'           => 'ผู้ดูแลต้องประกบช่วยเหลือตลอดเวลา 4-6 ชั่วโมงต่อวัน',
+    'observed_result'    => 'ผู้ป่วยช่วยเหลือตนเองได้เพิ่มขึ้น ประหยัดเวลาผู้ดูแลเฉลี่ย 1.5 ชม./วัน',
+    'quantity'           => 280,
+    'proxy_value'        => $timeValueProxy * 60, // 2,640 THB
+    'proxy_unit'         => 'ครัวเรือน / 6 เดือน',
+    'proxy_source'       => 'มูลค่าเวลารายชั่วโมง (คำนวณจากค่าจ้างขั้นต่ำ จังหวัดพิษณุโลก)',
+    'proxy_rationale'    => 'เวลาที่ประหยัดได้ช่วยให้ผู้ดูแลสามารถไปประกอบอาชีพหารายได้หรือมีเวลาพักผ่อน',
+    'polarity'           => 'positive',
+    'projection_model'   => 'cohort',
+    'duration_years'     => 1,
+    'evidence_quality'   => 'external',
+]);
+
+$o2_3 = $db->insert('outcomes', [
+    'project_id'         => $p2Id,
+    'stakeholder_id'     => $s2_therapists,
+    'proxy_id'           => $proxyMap['ค่าไฟฟ้าเรียกเก็บเฉลี่ย (ไม่รวม VAT)']['id'] ?? null,
+    'name'               => 'การลดค่าใช้จ่ายพลังงานไฟฟ้าจากการติดตั้งระบบโซลาร์เซลล์สระธาราบำบัด',
+    'activity'           => 'ผลิตไฟฟ้าพลังงานแสงอาทิตย์สำหรับระบบหมุนเวียนและบำบัดน้ำอุ่น',
+    'output_description' => 'ผลิตไฟฟ้าได้ 22,221 kWh ในรอบ 6 เดือน (อ้างอิง Excel S48)',
+    'indicator'          => 'หน่วยไฟฟ้าที่ผลิตและนำมาใช้จริงในอาคารธาราบำบัด',
+    'baseline'           => 'ใช้ไฟฟ้าจากระบบจำหน่าย 100%',
+    'observed_result'    => 'ผลิตไฟฟ้าทดแทนได้ 22,221 kWh',
+    'quantity'           => 22221,
+    'proxy_value'        => $elecProxy,
+    'proxy_unit'         => 'kWh',
+    'proxy_source'       => 'ค่าไฟฟ้าเรียกเก็บเฉลี่ย (ไม่รวม VAT) กฟภ.',
+    'proxy_rationale'    => 'ค่าไฟฟ้าจริงที่คณะประหยัดได้จากการใช้พลังงานแสงอาทิตย์ในการอุ่นน้ำสระธาราบำบัด',
+    'polarity'           => 'positive',
+    'projection_model'   => 'cohort',
+    'duration_years'     => 1,
+    'evidence_quality'   => 'measured',
+]);
+
+// Adjustments (Step 4)
+$db->insert('impact_adjustments', [
+    'outcome_id'    => $o2_1,
+    'deadweight'    => 0.15,
+    'attribution'   => 0.20,
+    'displacement'  => 0.05,
+    'drop_off'      => 0.05,
+    'source'        => 'การวิเคราะห์กลุ่มเปรียบเทียบและการประเมินทางคลินิก',
+    'justification' => '15% ของผู้ป่วยอาจฟื้นตัวตามธรรมชาติ, 20% ได้รับผลจากการรับประทานยาและกายภาพบนบก, 5% ย้ายจากคลินิกอื่น',
+]);
+
+$db->insert('impact_adjustments', [
+    'outcome_id'    => $o2_2,
+    'deadweight'    => 0.10,
+    'attribution'   => 0.15,
+    'displacement'  => 0.00,
+    'drop_off'      => 0.05,
+    'source'        => 'แบบสำรวจผู้ดูแลผู้ป่วยระบบประสาท',
+    'justification' => '10% ของครอบครัวมีการจ้างผู้ช่วยดูแลอยู่เดิม และ 15% เป็นผลจากการปรับสภาพแวดล้อมในบ้าน',
+]);
+
+$db->insert('impact_adjustments', [
+    'outcome_id'    => $o2_3,
+    'deadweight'    => 0.00,
+    'attribution'   => 0.00,
+    'displacement'  => 0.00,
+    'drop_off'      => 0.00,
+    'source'        => 'มิเตอร์วัดพลังงานไฟฟ้าโซลาร์เซลล์',
+    'justification' => 'ไฟฟ้าที่ผลิตได้จากแผงโซลาร์เซลล์ของอาคารเกิดจากโครงการโดยตรง 100%',
+]);
+
+// Scenarios (Step 5)
+$sc2_base = $db->insert('scenarios', [
+    'project_id'  => $p2Id,
+    'name'        => 'Base case',
+    'kind'        => 'base',
+    'description' => 'สมมติฐานหลักตามสถิติการให้บริการจริง 6 เดือน',
+    'is_base'     => 1,
+    'assumptions' => json_encode(['global' => [], 'outcomes' => []]),
+]);
+$db->insert('scenarios', [
+    'project_id'  => $p2Id,
+    'name'        => 'Conservative Case',
+    'kind'        => 'conservative',
+    'description' => 'กรณีคิดการฟื้นตัวต่ำกว่าเป้าหมายและหัก Deadweight เพิ่ม 10%',
+    'is_base'     => 0,
+    'assumptions' => json_encode([
+        'outcomes' => [$o2_1 => ['deadweight_delta' => 0.10]]
+    ]),
+]);
+$db->insert('scenarios', [
+    'project_id'  => $p2Id,
+    'name'        => 'Optimistic Full Capacity',
+    'kind'        => 'optimistic',
+    'description' => 'กรณีขยายเวลาเปิดให้บริการช่วงเย็นและวันเสาร์-อาทิตย์',
+    'is_base'     => 0,
+    'assumptions' => json_encode([
+        'outcomes' => [$o2_1 => ['quantity_multiplier' => 1.30]]
+    ]),
+]);
+
+// Run calculation (Step 6)
+$p2Row = $db->one('SELECT * FROM projects WHERE id = ?', [$p2Id]);
+$c2 = $calcService->calculate($p2Row, $sc2_base, null, true);
+echo "  -> Plan #$p2Id calculated: Investment = ฿" . number_format($c2['run']['investment']) .
+     ", PV = ฿" . number_format($c2['run']['present_value']) .
+     ", SROI = " . number_format((float)$c2['run']['sroi_ratio'], 2) . ":1\n";
+
+
+// =========================================================================
+// PLAN 3: Department-owned Plan (ภาควิชาเทคนิคการแพทย์ under คณะสหเวชศาสตร์)
+// =========================================================================
+echo "\nSeeding Plan 3 (Department-Owned): โครงการตรวจคัดกรองเบาหวานและไขมันเชิงรุก 2568...\n";
+
+$p3Id = $db->insert('projects', [
+    'organization_id'       => $orgId,
+    'faculty_id'            => null,
+    'department_id'         => $deptMedTechId, // Medical Technology Department
+    'name'                  => 'โครงการตรวจประเมินความเสี่ยงโรคไตและเบาหวานในชุมชนเชิงรุก ประจำปี 2568',
+    'organization_name'     => 'ภาควิชาเทคนิคการแพทย์ คณะสหเวชศาสตร์',
+    'description'           => 'การประเมิน SROI โครงการบริการตรวจวิเคราะห์ทางห้องปฏิบัติการทางการแพทย์เชิงรุก เพื่อคัดกรองความเสี่ยงโรคเบาหวานและโรคไตเรื้อรังในประชากรวัยแรงงานและผู้สูงอายุในชนบท',
+    'category'              => 'Health and wellbeing',
+    'country'               => 'Thailand',
+    'start_date'            => '2025-11-01',
+    'end_date'              => '2026-08-31',
+    'evaluation_type'       => 'evaluative',
+    'currency'              => 'THB',
+    'price_basis'           => 'constant 2026 prices',
+    'analysis_period_years' => 1,
+    'assessment_months'     => 10,
+    'discount_rate'         => 0.0,
+    'discount_base_year'    => 0,
+    'investment_basis'      => 'nominal',
+    'include_in_kind'       => 1,
+    'status'                => 'ready',
+    'created_by'            => $ownerId,
+]);
+
+$s3_community = $db->insert('stakeholders', [
+    'project_id'             => $p3Id,
+    'name'                   => 'ประชาชนกลุ่มเสี่ยงโรคไม่ติดต่อเรื้อรัง (NCDs) ในชุมชนชนบท',
+    'category'               => 'Beneficiary households',
+    'stakeholder_group'      => 'primary_beneficiary',
+    'group_code'             => 'S1',
+    'role_in_project'        => 'Target Population',
+    'estimated_count'        => 350,
+    'count_unit'             => 'คน',
+    'needs_or_problems'      => 'ไม่เคยได้รับการตรวจระดับน้ำตาลสะสม (HbA1c) และการทำงานของไต (eGFR)',
+    'expected_positive'      => 'ทราบสถานะสุขภาพระยะเริ่มต้น ได้รับการส่งต่อก่อนไตเสื่อมระยะรุนแรง',
+    'evidence_source'        => 'ระบบคัดกรองความเสี่ยง NCDs ชุมชน',
+]);
+
+$s3Costs = [
+    ['delivery', 'ชุดน้ำยาตรวจวิเคราะห์ทางห้องปฏิบัติการ HbA1c, Creatinine และ Lipid Profile', 68000.0, 0, 1, 'quantity', 350, 'ชุด', 194.28, 'ใบเสนอราคาน้ำยาตรวจแล็บ', null],
+    ['delivery', 'หลอดเก็บตัวอย่างเลือด เข็ม และอุปกรณ์ป้องกันการติดเชื้อ', 16500.0, 0, 1, 'manual', null, null, null, 'ใบเบิกเวชภัณฑ์ห้องปฏิบัติการ', null],
+    ['opex', 'ค่าตอบแทนนักเทคนิคการแพทย์และเจ้าหน้าที่ออกหน่วยตรวจภาคสนาม', 25000.0, 0, 1, 'quantity', 5, 'ครั้ง', 5000.0, 'หลักฐานการจ่ายเงินค่าตอบแทนบุคลากร', null],
+];
+foreach ($s3Costs as [$cat, $desc, $amt, $yr, $cash, $mode, $qty, $unit, $price, $ev, $stkId]) {
+    $db->insert('project_costs', [
+        'project_id'             => $p3Id,
+        'stakeholder_id'         => $stkId,
+        'category'               => $cat,
+        'description'            => $desc,
+        'amount'                 => $amt,
+        'currency'               => 'THB',
+        'exchange_rate'          => 1.0,
+        'year'                   => $yr,
+        'period_label'           => 'Y0',
+        'is_cash'                => $cash,
+        'calculation_mode'       => $mode,
+        'quantity'               => $qty,
+        'unit'                   => $unit,
+        'unit_price'             => $price,
+        'include_in_calculation' => 1,
+        'evidence_source'        => $ev,
+    ]);
+}
+
+$dmOutpatientProxy = $proxyMap['ต้นทุนผู้ป่วยนอกโรคเบาหวาน เฉลี่ยต่อครั้ง']['value'] ?? 1676.0;
+$o3_1 = $db->insert('outcomes', [
+    'project_id'         => $p3Id,
+    'stakeholder_id'     => $s3_community,
+    'proxy_id'           => $proxyMap['ต้นทุนผู้ป่วยนอกโรคเบาหวาน เฉลี่ยต่อครั้ง']['id'] ?? null,
+    'name'               => 'การตรวจพบเบาหวานระยะแรกและการป้องกันภาวะแทรกซ้อนไตเสื่อม',
+    'activity'           => 'ตรวจวิเคราะห์ระดับน้ำตาลสะสมและค่าการทำงานของไตในชุมชน',
+    'output_description' => 'ตรวจคัดกรองประชาชน 350 ราย พบกลุ่มเสี่ยงสูงและส่งเข้าสู่การปรับพฤติกรรม 65 ราย',
+    'indicator'          => 'จำนวนผู้ป่วยที่ตรวจพบแต่เนิ่นๆ และลดการต้องมารับบริการผู้ป่วยนอกซ้ำซ้อน',
+    'baseline'           => 'ตรวจพบช้าเมื่อมีอาการไตวายระยะ 3-4',
+    'observed_result'    => 'ตรวจพบระยะก่อนเบาหวานและระยะที่ 1 รวม 65 ราย',
+    'quantity'           => 65,
+    'proxy_value'        => $dmOutpatientProxy * 4, // 6,704 THB (ประหยัดการมา รพ. 4 ครั้ง/ปี)
+    'proxy_unit'         => 'คน / ปี',
+    'proxy_source'       => 'ต้นทุนผู้ป่วยนอกโรคเบาหวาน เฉลี่ยต่อครั้ง (สปสช.)',
+    'proxy_rationale'    => 'การตรวจพบและควบคุมระดับน้ำตาลได้แต่เนิ่นๆ ช่วยลดจำนวนครั้งที่ต้องมาตรวจรักษาภาวะแทรกซ้อนที่ รพ.',
+    'polarity'           => 'positive',
+    'projection_model'   => 'cohort',
+    'duration_years'     => 1,
+    'evidence_quality'   => 'measured',
+]);
+
+$o3_2 = $db->insert('outcomes', [
+    'project_id'         => $p3Id,
+    'stakeholder_id'     => $s3_community,
+    'name'               => 'การประหยัดค่าตรวจวิเคราะห์ทางห้องปฏิบัติการเอกชนของประชาชน',
+    'activity'           => 'บริการเจาะเลือดตรวจแล็บฟรีถึงในหมู่บ้าน',
+    'output_description' => 'ประชาชน 350 รายไม่ต้องเดินทางไปตรวจที่คลินิกแล็บเอกชน',
+    'indicator'          => 'อัตราค่าตรวจชุดตรวจเบาหวานและไตในคลินิกเอกชน',
+    'baseline'           => 'ค่าตรวจแล็บเอกชนเฉลี่ย 650 บาทต่อชุด',
+    'observed_result'    => 'ประหยัดค่าตรวจได้ 650 บาทต่อคน',
+    'quantity'           => 350,
+    'proxy_value'        => 650.0,
+    'proxy_unit'         => 'คน / ครั้ง',
+    'proxy_source'       => 'การสำรวจราคาค่าบริการห้องปฏิบัติการเอกชน จ.พิษณุโลก',
+    'proxy_rationale'    => 'มูลค่าทดแทนค่าใช้จ่ายโดยตรงที่ประชาชนประหยัดได้',
+    'polarity'           => 'positive',
+    'projection_model'   => 'cohort',
+    'duration_years'     => 1,
+    'evidence_quality'   => 'external',
+]);
+
+$db->insert('impact_adjustments', [
+    'outcome_id'    => $o3_1,
+    'deadweight'    => 0.10,
+    'attribution'   => 0.15,
+    'displacement'  => 0.00,
+    'drop_off'      => 0.00,
+    'source'        => 'รายงานการติดตามผลสุขภาพ รพ.สต.',
+    'justification' => '10% ของประชาชนอาจไปตรวจประจำปีเอง และ 15% เป็นผลจากการรณรงค์ของ อสม.',
+]);
+
+$db->insert('impact_adjustments', [
+    'outcome_id'    => $o3_2,
+    'deadweight'    => 0.15,
+    'attribution'   => 0.10,
+    'displacement'  => 0.00,
+    'drop_off'      => 0.00,
+    'source'        => 'แบบสำรวจการเข้าถึงบริการสุขภาพ',
+    'justification' => '15% ของประชาชนมีสิทธิเบิกจ่ายค่ารักษาพยาบาลอยู่แล้ว',
+]);
+
+$sc3_base = $db->insert('scenarios', [
+    'project_id'  => $p3Id,
+    'name'        => 'Base case',
+    'kind'        => 'base',
+    'description' => 'สมมติฐานหลักตามสถิติผลการตรวจวิเคราะห์จริง',
+    'is_base'     => 1,
+    'assumptions' => json_encode(['global' => [], 'outcomes' => []]),
+]);
+$db->insert('scenarios', [
+    'project_id'  => $p3Id,
+    'name'        => 'Conservative Case',
+    'kind'        => 'conservative',
+    'description' => 'กรณีคิดการคุมระดับน้ำตาลได้ผลเพียง 70%',
+    'is_base'     => 0,
+    'assumptions' => json_encode([
+        'outcomes' => [$o3_1 => ['quantity_multiplier' => 0.70]]
+    ]),
+]);
+
+$p3Row = $db->one('SELECT * FROM projects WHERE id = ?', [$p3Id]);
+$c3 = $calcService->calculate($p3Row, $sc3_base, null, true);
+echo "  -> Plan #$p3Id calculated: Investment = ฿" . number_format($c3['run']['investment']) .
+     ", PV = ฿" . number_format($c3['run']['present_value']) .
+     ", SROI = " . number_format((float)$c3['run']['sroi_ratio'], 2) . ":1\n";
+
+
+// =========================================================================
+// PLAN 4: Faculty-owned Multi-year Plan (คณะสาธารณสุขศาสตร์)
+// =========================================================================
+echo "\nSeeding Plan 4 (Faculty-Owned, Multi-Year): โครงการเฝ้าระวังมลพิษ PM 2.5 และห้องปลอดฝุ่น...\n";
+
+$p4Id = $db->insert('projects', [
+    'organization_id'       => $orgId,
+    'faculty_id'            => $facPHId, // Direct Faculty Ownership
+    'department_id'         => null,
+    'name'                  => 'โครงการพัฒนาระบบเฝ้าระวังมลพิษอากาศ PM 2.5 และห้องปลอดฝุ่นต้นแบบเพื่อสุขภาพประชาชนกลุ่มเปราะบาง',
+    'organization_name'     => 'คณะสาธารณสุขศาสตร์ มหาวิทยาลัยนเรศวร',
+    'description'           => 'การประเมิน SROI โครงการจัดตั้งห้องปลอดฝุ่นต้นแบบและการพัฒนาระบบแจ้งเตือนมลพิษทางอากาศในศูนย์พัฒนาเด็กเล็กและโรงเรียนประถมศึกษา จังหวัดพิษณุโลก (ระยะเวลาประเมิน 3 ปี)',
+    'category'              => 'Environmental benefits',
+    'country'               => 'Thailand',
+    'start_date'            => '2026-01-01',
+    'end_date'              => '2028-12-31',
+    'evaluation_type'       => 'forecast',
+    'currency'              => 'THB',
+    'price_basis'           => 'constant 2026 prices',
+    'analysis_period_years' => 3,
+    'discount_rate'         => 0.035,
+    'discount_rate_basis'   => 'real',
+    'discount_rate_source'  => 'National Social Time Preference Framework (3.5%)',
+    'discount_base_year'    => 0,
+    'investment_basis'      => 'nominal',
+    'include_in_kind'       => 1,
+    'status'                => 'ready',
+    'created_by'            => $ownerId,
+]);
+
+$s4_children = $db->insert('stakeholders', [
+    'project_id'             => $p4Id,
+    'name'                   => 'เด็กปฐมวัยในศูนย์พัฒนาเด็กเล็กและโรงเรียนอนุบาล',
+    'category'               => 'Students and learners',
+    'stakeholder_group'      => 'primary_beneficiary',
+    'group_code'             => 'S1',
+    'role_in_project'        => 'Vulnerable Beneficiary',
+    'estimated_count'        => 420,
+    'count_unit'             => 'คน',
+    'needs_or_problems'      => 'เสี่ยงต่อการเจ็บป่วยระบบทางเดินหายใจเฉียบพลันช่วงวิกฤตฝุ่น PM 2.5',
+    'expected_positive'      => 'ลดการสัมผัสฝุ่นพิษในห้องเรียน ลดอัตราป่วยโรคหอบหืดและทางเดินหายใจ',
+    'evidence_source'        => 'ระบบเฝ้าระวังโรคจากมลพิษสิ่งแวดล้อม กรมควบคุมโรค',
+]);
+
+$s4_schools = $db->insert('stakeholders', [
+    'project_id'             => $p4Id,
+    'name'                   => 'ศูนย์พัฒนาเด็กเล็กและโรงเรียนสังกัด อปท.',
+    'category'               => 'Local authorities and municipalities',
+    'stakeholder_group'      => 'project_supporter',
+    'group_code'             => 'S3',
+    'role_in_project'        => 'Host Institution',
+    'estimated_count'        => 8,
+    'count_unit'             => 'แห่ง',
+    'support_type'           => 'พื้นที่ติดตั้งห้องปลอดฝุ่นและงบสนับสนุนการบำรุงรักษา',
+    'evidence_source'        => 'บันทึกข้อตกลง อปท. และมหาวิทยาลัย',
+]);
+
+$p4Costs = [
+    ['capex', 'เครื่องฟอกอากาศประสิทธิภาพสูงระบบ HEPA H14 สำหรับห้องเรียนเด็กเล็ก', 112000.0, 0, 1, 'quantity', 16, 'เครื่อง', 7000.0, 'ใบสั่งซื้อเครื่องฟอกอากาศมาตรฐาน มอก.', $s4_schools],
+    ['capex', 'เซนเซอร์ตรวจวัดคุณภาพอากาศ IoT และจอแสดงผลดัชนีคุณภาพอากาศ (AQI)', 48000.0, 0, 1, 'quantity', 8, 'ชุด', 6000.0, 'ใบเสนอราคาระบบตรวจวัดคุณภาพอากาศ IoT', null],
+    ['opex', 'ค่าเปลี่ยนแผ่นกรองอากาศ HEPA และการบำรุงรักษาระบบระบายอากาศ (รายปี)', 36000.0, 0, 1, 'manual', null, null, null, 'สัญญาบริการบำรุงรักษาระบบกรองอากาศ', null],
+    ['delivery', 'คู่มือแนวทางการจัดทำห้องปลอดฝุ่นและการจัดอบรมครูผู้ดูแลเด็ก', 24000.0, 0, 1, 'manual', null, null, null, 'ใบเบิกค่าใช้จ่ายการจัดอบรมเชิงปฏิบัติการ', null],
+];
+foreach ($p4Costs as [$cat, $desc, $amt, $yr, $cash, $mode, $qty, $unit, $price, $ev, $stkId]) {
+    $db->insert('project_costs', [
+        'project_id'             => $p4Id,
+        'stakeholder_id'         => $stkId,
+        'category'               => $cat,
+        'description'            => $desc,
+        'amount'                 => $amt,
+        'currency'               => 'THB',
+        'exchange_rate'          => 1.0,
+        'year'                   => $yr,
+        'period_label'           => 'Y0',
+        'is_cash'                => $cash,
+        'calculation_mode'       => $mode,
+        'quantity'               => $qty,
+        'unit'                   => $unit,
+        'unit_price'             => $price,
+        'include_in_calculation' => 1,
+        'evidence_source'        => $ev,
+    ]);
+}
+
+$inpatientHospitalCommunityProxy = $proxyMap['ต้นทุนผู้ป่วยใน เฉลี่ยต่อ AdjRW: โรงพยาบาลชุมชนแม่ข่าย']['value'] ?? 13721.0;
+$o4_1 = $db->insert('outcomes', [
+    'project_id'         => $p4Id,
+    'stakeholder_id'     => $s4_children,
+    'proxy_id'           => $proxyMap['ต้นทุนผู้ป่วยใน เฉลี่ยต่อ AdjRW: โรงพยาบาลชุมชนแม่ข่าย']['id'] ?? null,
+    'name'               => 'การลดอัตราการเจ็บป่วยระบบทางเดินหายใจเฉียบพลันและการนอนโรงพยาบาลในเด็กเล็ก',
+    'activity'           => 'การจัดทำห้องปลอดฝุ่น HEPA และมาตรการลดกิจกรรมกลางแจ้งเมื่อค่าฝุ่นเกินเกณฑ์',
+    'output_description' => 'เด็กเล็ก 420 คนได้รับการปกป้องในห้องปลอดฝุ่นตลอดฤดูกาลวิกฤตฝุ่น 3 เดือนต่อปี',
+    'indicator'          => 'จำนวนเด็กเล็กที่หลีกเลี่ยงการเจ็บป่วยจนต้องนอนรักษาใน รพ.',
+    'baseline'           => 'อัตราป่วยทางเดินหายใจจนต้องนอน รพ. ในช่วงวิกฤตฝุ่น 12 รายต่อปี',
+    'observed_result'    => 'ลดผู้ป่วยต้องนอน รพ. ได้ 8 รายต่อปี',
+    'quantity'           => 8,
+    'proxy_value'        => $inpatientHospitalCommunityProxy,
+    'proxy_unit'         => 'คน / ปี',
+    'proxy_source'       => 'ต้นทุนผู้ป่วยใน เฉลี่ยต่อ AdjRW: โรงพยาบาลชุมชนแม่ข่าย (สปสช.)',
+    'proxy_rationale'    => 'การนอนรักษาโรคปอดอักเสบ/หลอดลมอักเสบในเด็กเล็กก่อให้เกิดต้นทุนทางสาธารณสุขสูง',
+    'polarity'           => 'positive',
+    'projection_model'   => 'cohort',
+    'duration_years'     => 3,
+    'evidence_quality'   => 'measured',
+]);
+
+$o4_2 = $db->insert('outcomes', [
+    'project_id'         => $p4Id,
+    'stakeholder_id'     => $s4_children,
+    'name'               => 'การลดการขาดเรียนและการประหยัดค่ารักษาพยาบาลผู้ป่วยนอกของครอบครัว',
+    'activity'           => 'ระบบแจ้งเตือนมลพิษและการดูแลสุขภาพเด็กเล็ก',
+    'output_description' => 'เด็กเล็กมีสุขภาพแข็งแรงขึ้น ลดการขาดเรียนเฉลี่ย 4 วันต่อคนต่อปี',
+    'indicator'          => 'ค่าใช้จ่ายการพาบุตรหลานไปพบแพทย์คลินิกและค่ายาที่ประหยัดได้',
+    'baseline'           => 'ค่าใช้จ่ายพาเด็กไปหาหมอคลินิกทางเดินหายใจเฉลี่ย 850 บาทต่อครั้ง',
+    'observed_result'    => 'ประหยัดการไปหาหมอได้ 1 ครั้งต่อคนต่อปี ในกลุ่มเด็ก 180 คน',
+    'quantity'           => 180,
+    'proxy_value'        => 850.0,
+    'proxy_unit'         => 'ครัวเรือน / ปี',
+    'proxy_source'       => 'การสำรวจค่าใช้จ่ายในการรักษาพยาบาลโรคทางเดินหายใจในเด็กปฐมวัย',
+    'proxy_rationale'    => 'มูลค่าค่ารักษาและค่ายาที่ผู้ปกครองไม่ต้องแบกรับ',
+    'polarity'           => 'positive',
+    'projection_model'   => 'cohort',
+    'duration_years'     => 3,
+    'evidence_quality'   => 'external',
+]);
+
+$db->insert('impact_adjustments', [
+    'outcome_id'    => $o4_1,
+    'deadweight'    => 0.10,
+    'attribution'   => 0.15,
+    'displacement'  => 0.00,
+    'drop_off'      => 0.05,
+    'source'        => 'ข้อมูลสถิติโรงพยาบาลและการตรวจวัดค่าฝุ่นในห้องเรียน',
+    'justification' => '10% ของครอบครัวมีเครื่องฟอกอากาศที่บ้านอยู่แล้ว และ 15% เป็นผลจากมาตรการปิดโรงเรียนของภาครัฐ',
+]);
+
+$db->insert('impact_adjustments', [
+    'outcome_id'    => $o4_2,
+    'deadweight'    => 0.15,
+    'attribution'   => 0.10,
+    'displacement'  => 0.00,
+    'drop_off'      => 0.05,
+    'source'        => 'แบบสำรวจผู้ปกครองศูนย์เด็กเล็ก',
+    'justification' => '15% ของเด็กอาจมีภูมิต้านทานดีขึ้นตามวัย',
+]);
+
+$sc4_base = $db->insert('scenarios', [
+    'project_id'  => $p4Id,
+    'name'        => 'Base case',
+    'kind'        => 'base',
+    'description' => 'สมมติฐานการวิเคราะห์ระยะยาว 3 ปี คิดอัตราคิดลดสังคม 3.5%',
+    'is_base'     => 1,
+    'assumptions' => json_encode(['global' => [], 'outcomes' => []]),
+]);
+
+$p4Row = $db->one('SELECT * FROM projects WHERE id = ?', [$p4Id]);
+$c4 = $calcService->calculate($p4Row, $sc4_base, null, true);
+echo "  -> Plan #$p4Id calculated: Investment = ฿" . number_format($c4['run']['investment']) .
+     ", PV = ฿" . number_format($c4['run']['present_value']) .
+     ", SROI = " . number_format((float)$c4['run']['sroi_ratio'], 2) . ":1\n";
+
+
+// =========================================================================
+// PLAN 5: Department-owned Plan (ภาควิชาอนามัยชุมชน under คณะสาธารณสุขศาสตร์)
+// =========================================================================
+echo "\nSeeding Plan 5 (Department-Owned): โครงการสุขาภิบาลอาหารและน้ำดื่มปลอดภัยในโรงเรียน...\n";
+
+$p5Id = $db->insert('projects', [
+    'organization_id'       => $orgId,
+    'faculty_id'            => null,
+    'department_id'         => $deptCommHealthId, // Community Health Department
+    'name'                  => 'โครงการยกระดับสุขาภิบาลอาหารและระบบน้ำดื่มปลอดภัยในโรงเรียนประถมศึกษาพื้นที่สูง',
+    'organization_name'     => 'ภาควิชาอนามัยชุมชน คณะสาธารณสุขศาสตร์',
+    'description'           => 'การประเมิน SROI โครงการติดตั้งระบบกรองน้ำดื่มสะอาดและปรับปรุงมาตรฐานสุขาภิบาลโรงอาหารในโรงเรียนขยายโอกาสพื้นที่ห่างไกล (ระยะเวลาประเมิก 2 ปี)',
+    'category'              => 'Health and wellbeing',
+    'country'               => 'Thailand',
+    'start_date'            => '2026-05-01',
+    'end_date'              => '2028-04-30',
+    'evaluation_type'       => 'evaluative',
+    'currency'              => 'THB',
+    'price_basis'           => 'constant 2026 prices',
+    'analysis_period_years' => 2,
+    'discount_rate'         => 0.035,
+    'discount_base_year'    => 0,
+    'investment_basis'      => 'nominal',
+    'include_in_kind'       => 1,
+    'status'                => 'ready',
+    'created_by'            => $ownerId,
+]);
+
+$s5_students = $db->insert('stakeholders', [
+    'project_id'             => $p5Id,
+    'name'                   => 'นักเรียนและบุคลากรครูในโรงเรียนพื้นที่สูง',
+    'category'               => 'Students and learners',
+    'stakeholder_group'      => 'primary_beneficiary',
+    'group_code'             => 'S1',
+    'role_in_project'        => 'Target School',
+    'estimated_count'        => 320,
+    'count_unit'             => 'คน',
+    'needs_or_problems'      => 'น้ำดื่มมีตะกอนและเชื้อแบคทีเรียปนเปื้อน ส่งผลให้เกิดโรคอุจจาระร่วงบ่อยครั้ง',
+    'expected_positive'      => 'ได้ดื่มน้ำสะอาดผ่านมาตรฐาน ปลอดโรคระบบทางเดินอาหาร',
+    'evidence_source'        => 'ผลตรวจวิเคราะห์คุณภาพน้ำดื่มทางจุลชีววิทยา',
+]);
+
+$p5Costs = [
+    ['capex', 'ระบบเครื่องกรองน้ำดื่ม RO มาตรฐานอุตสาหกรรมพร้อมถังเก็บน้ำสแตนเลส', 65000.0, 0, 1, 'quantity', 2, 'ระบบ', 32500.0, 'ใบสั่งซื้อและตรวจรับเครื่องกรองน้ำ', null],
+    ['opex', 'ไส้กรองและสารเคมีล้างระบบกรองน้ำรายปี', 18000.0, 0, 1, 'manual', null, null, null, 'สัญญาบริการเปลี่ยนไส้กรอง', null],
+    ['delivery', 'ชุดอุปกรณ์ปรับปรุงสุขาภิบาลโรงอาหารและถาดหลุมสแตนเลส', 22000.0, 0, 1, 'manual', null, null, null, 'ใบตรวจรับพัสดุสุขาภิบาลโรงเรียน', null],
+];
+foreach ($p5Costs as [$cat, $desc, $amt, $yr, $cash, $mode, $qty, $unit, $price, $ev, $stkId]) {
+    $db->insert('project_costs', [
+        'project_id'             => $p5Id,
+        'stakeholder_id'         => $stkId,
+        'category'               => $cat,
+        'description'            => $desc,
+        'amount'                 => $amt,
+        'currency'               => 'THB',
+        'exchange_rate'          => 1.0,
+        'year'                   => $yr,
+        'period_label'           => 'Y0',
+        'is_cash'                => $cash,
+        'calculation_mode'       => $mode,
+        'quantity'               => $qty,
+        'unit'                   => $unit,
+        'unit_price'             => $price,
+        'include_in_calculation' => 1,
+        'evidence_source'        => $ev,
+    ]);
+}
+
+$rphOutpatientProxy = $proxyMap['ต้นทุนบริการ รพ.สต. ต่อครั้ง: ผู้ป่วยนอก (ไม่รวมทันตกรรม)']['value'] ?? 180.0;
+$o5_1 = $db->insert('outcomes', [
+    'project_id'         => $p5Id,
+    'stakeholder_id'     => $s5_students,
+    'proxy_id'           => $proxyMap['ต้นทุนบริการ รพ.สต. ต่อครั้ง: ผู้ป่วยนอก (ไม่รวมทันตกรรม)']['id'] ?? null,
+    'name'               => 'การลดการป่วยด้วยโรคอุจจาระร่วงเฉียบพลันและการรักษาพยาบาลที่ รพ.สต.',
+    'activity'           => 'ติดตั้งระบบกรองน้ำดื่มสะอาดและการอบรมสุขาภิบาลแม่ครัว',
+    'output_description' => 'นักเรียนและครู 320 คนมีน้ำดื่มสะอาดบริโภคตลอดปีการศึกษา',
+    'indicator'          => 'จำนวนครั้งการเข้ารับการรักษาโรคระบบทางเดินอาหารที่ รพ.สต.',
+    'baseline'           => 'มีผู้ป่วยอุจจาระร่วงในโรงเรียนเฉลี่ย 120 ครั้งต่อปี',
+    'observed_result'    => 'ลดลงเหลือไม่เกิน 20 ครั้งต่อปี (ลดลง 100 ครั้ง)',
+    'quantity'           => 100,
+    'proxy_value'        => $rphOutpatientProxy,
+    'proxy_unit'         => 'ครั้ง / ปี',
+    'proxy_source'       => 'ต้นทุนบริการ รพ.สต. ต่อครั้ง: ผู้ป่วยนอก (ไม่รวมทันตกรรม)',
+    'proxy_rationale'    => 'ต้นทุนบริการสาธารณสุขของ รพ.สต. ที่ประหยัดได้จากการลดโรคระบาดในโรงเรียน',
+    'polarity'           => 'positive',
+    'projection_model'   => 'cohort',
+    'duration_years'     => 2,
+    'evidence_quality'   => 'measured',
+]);
+
+$o5_2 = $db->insert('outcomes', [
+    'project_id'         => $p5Id,
+    'stakeholder_id'     => $s5_students,
+    'name'               => 'การประหยัดค่าใช้จ่ายจัดซื้อน้ำดื่มบรรจุถังของโรงเรียนและผู้ปกครอง',
+    'activity'           => 'ผลิตน้ำดื่มสะอาดได้เองภายในโรงเรียน',
+    'output_description' => 'ผลิตน้ำดื่มสะอาดได้วันละ 500 ลิตรสำหรับครูและนักเรียน',
+    'indicator'          => 'มูลค่าน้ำดื่มบรรจุถังที่โรงเรียนต้องสั่งซื้อลดลง',
+    'baseline'           => 'โรงเรียนต้องซื้อน้ำดื่มถัง 20 ลิตร สัปดาห์ละ 30 ถัง (ถังละ 15 บาท)',
+    'observed_result'    => 'โรงเรียนไม่ต้องจัดซื้อน้ำถังจากภายนอก ประหยัดได้ 1,800 บาทต่อเดือน',
+    'quantity'           => 10,
+    'proxy_value'        => 1800.0 * 8, // 14,400 THB ต่อปี (8 เดือนการศึกษา)
+    'proxy_unit'         => 'โรงเรียน / ปี',
+    'proxy_source'       => 'ใบแจ้งหนี้จัดซื้อน้ำดื่มของโรงเรียน',
+    'proxy_rationale'    => 'งบประมาณค่าอาหารกลางวันและน้ำดื่มที่โรงเรียนประหยัดได้จริง',
+    'polarity'           => 'positive',
+    'projection_model'   => 'cohort',
+    'duration_years'     => 2,
+    'evidence_quality'   => 'measured',
+]);
+
+$db->insert('impact_adjustments', [
+    'outcome_id'    => $o5_1,
+    'deadweight'    => 0.10,
+    'attribution'   => 0.10,
+    'displacement'  => 0.00,
+    'drop_off'      => 0.05,
+    'source'        => 'สถิติการป่วย รพ.สต.',
+    'justification' => '10% อาจเกิดจากอาหารที่รับประทานจากบ้าน',
+]);
+
+$db->insert('impact_adjustments', [
+    'outcome_id'    => $o5_2,
+    'deadweight'    => 0.05,
+    'attribution'   => 0.05,
+    'displacement'  => 0.00,
+    'drop_off'      => 0.00,
+    'source'        => 'ใบเบิกเงินงบประมาณโรงเรียน',
+    'justification' => 'ประหยัดได้โดยตรงจากระบบกรองน้ำของโครงการ',
+]);
+
+$sc5_base = $db->insert('scenarios', [
+    'project_id'  => $p5Id,
+    'name'        => 'Base case',
+    'kind'        => 'base',
+    'description' => 'สมมติฐานการวิเคราะห์ 2 ปีตามอายุรอบไส้กรอง',
+    'is_base'     => 1,
+    'assumptions' => json_encode(['global' => [], 'outcomes' => []]),
+]);
+
+$p5Row = $db->one('SELECT * FROM projects WHERE id = ?', [$p5Id]);
+$c5 = $calcService->calculate($p5Row, $sc5_base, null, true);
+echo "  -> Plan #$p5Id calculated: Investment = ฿" . number_format($c5['run']['investment']) .
+     ", PV = ฿" . number_format($c5['run']['present_value']) .
+     ", SROI = " . number_format((float)$c5['run']['sroi_ratio'], 2) . ":1\n";
+
+
+// =========================================================================
+// PLAN 6: Excel Sheet Mode Plan (ภาควิชากายภาพบำบัด under คณะสหเวชศาสตร์)
+// =========================================================================
+echo "\nSeeding Plan 6 (Excel Sheet Mode): โครงการอาคารธาราบำบัดฉบับสมบูรณ์ตามโครงสร้าง Excel...\n";
+
+$p6Id = $db->insert('projects', [
+    'organization_id'       => $orgId,
+    'faculty_id'            => null,
+    'department_id'         => $deptPTId,
+    'name'                  => 'การประเมิน SROI อาคารบริการธาราบำบัด (Sheet Mode โครงสร้างสมุดงาน Excel 6 เดือน)',
+    'organization_name'     => 'ภาควิชากายภาพบำบัด คณะสหเวชศาสตร์',
+    'description'           => 'โครงการจำลองการประเมิน SROI ตามโครงสร้างสมุดงาน Excel อาคารธาราบำบัด (Template 6 เดือน) รองรับสูตรคำนวณและสถาปัตยกรรมกลุ่มผู้มีส่วนได้ส่วนเสีย S1-S4',
+    'category'              => 'Health and wellbeing',
+    'country'               => 'Thailand',
+    'start_date'            => '2026-01-01',
+    'end_date'              => '2026-06-30',
+    'evaluation_type'       => 'evaluative',
+    'currency'              => 'THB',
+    'price_basis'           => 'constant 2026 prices',
+    'analysis_period_years' => 1,
+    'assessment_months'     => 6,
+    'calc_method'           => 'sheet',
+    'y0_label'              => 'ปีงบประมาณ 2566',
+    'y1_label'              => 'ปีงบประมาณ 2567',
+    'sheet_adjustment_mode' => 'deduct',
+    'status'                => 'ready',
+    'created_by'            => $ownerId,
+]);
+
+// Sheet Groups (Excel Column A..H)
+$g1_s1 = $db->insert('sheet_groups', [
+    'project_id'          => $p6Id,
+    'parent_id'           => null,
+    'code'                => 'S1',
+    'group_type'          => 'primary_beneficiary',
+    'name'                => 'ผู้รับประโยชน์หลัก (Primary Beneficiary)',
+    'population_raw'      => '1768',
+    'unit'                => 'คน',
+    'note'                => 'ผู้ป่วยโรคหลอดเลือดสมอง ระบบประสาท และฟื้นฟูกล้ามเนื้อ',
+    'actual_count_raw'    => '=542+485+4+385+281+29+42',
+    'actual_count_method' => 'ทะเบียนสถิติผู้รับบริการจริงอาคารธาราบำบัด',
+    'sort_order'          => 1,
+]);
+
+$g1_s1_1 = $db->insert('sheet_groups', [
+    'project_id'          => $p6Id,
+    'parent_id'           => $g1_s1,
+    'code'                => 'S1.1',
+    'group_type'          => 'primary_beneficiary',
+    'name'                => 'บริการกายภาพบำบัดและธาราบำบัดเฉพาะทาง',
+    'unit'                => 'คน',
+    'activity'            => 'การฟื้นฟูการเคลื่อนไหวในน้ำสำหรับผู้ป่วยหลอดเลือดสมอง',
+    'sort_order'          => 2,
+]);
+
+$g1_s2 = $db->insert('sheet_groups', [
+    'project_id'          => $p6Id,
+    'parent_id'           => null,
+    'code'                => 'S2',
+    'group_type'          => 'project_operator',
+    'name'                => 'ผู้ดำเนินโครงการหลัก (คณะสหเวชศาสตร์ มหาวิทยาลัยนเรศวร)',
+    'unit'                => 'คณะ',
+    'activity'            => 'บริหารจัดการและให้บริการอาคารธาราบำบัด',
+    'sort_order'          => 3,
+]);
+
+$g1_s3 = $db->insert('sheet_groups', [
+    'project_id'          => $p6Id,
+    'parent_id'           => null,
+    'code'                => 'S3',
+    'group_type'          => 'project_supporter',
+    'name'                => 'ผู้สนับสนุนงบประมาณ (จังหวัดพิษณุโลก และ มหาวิทยาลัยนเรศวร)',
+    'unit'                => 'หน่วยงาน',
+    'sort_order'          => 4,
+]);
+
+$g1_s4 = $db->insert('sheet_groups', [
+    'project_id'          => $p6Id,
+    'parent_id'           => null,
+    'code'                => 'S4',
+    'group_type'          => 'other_agency',
+    'name'                => 'หน่วยงานที่เกี่ยวข้องและชุมชนท้องถิ่น',
+    'unit'                => 'แห่ง',
+    'sort_order'          => 5,
+]);
+
+// Sheet Inputs (Resources/Budget lines)
+$db->insert('sheet_inputs', [
+    'project_id'       => $p6Id,
+    'group_id'         => $g1_s2,
+    'resource'         => 'คณะสหเวชศาสตร์: ค่าเสื่อมครุภัณฑ์และงบดำเนินการ (Excel J46)',
+    'y0_raw'           => '=1300000/20+(400000/20)+(270000/20)+49000+9840+(480000/20)+(60000/10)+(97000/10)+(86600/5)+(200000/10)+(37000/10)+(63840/5)+(16300/5)+(8500/10)+315095+125400+45847+478800+24000+74597+84043+23663',
+    'y1_raw'           => '0',
+    'basis'            => 'คำนวณตามงบประมาณจริงและค่าเสื่อมราคา 6 เดือน',
+    'source'           => 'รายงานการเงินและพัสดุ คณะสหเวชศาสตร์',
+    'include_in_total' => 1,
+    'sort_order'       => 1,
+]);
+
+$db->insert('sheet_inputs', [
+    'project_id'       => $p6Id,
+    'group_id'         => $g1_s3,
+    'resource'         => 'จังหวัดพิษณุโลก: งบประมาณก่อสร้างอาคารธาราบำบัด (Excel J59)',
+    'y0_raw'           => '=63999000/20',
+    'y1_raw'           => '0',
+    'basis'            => 'งบก่อสร้าง 63,999,000 คิดค่าเสื่อมราคาอาคาร 20 ปี',
+    'source'           => 'งบประมาณกลุ่มจังหวัดภาคเหนือตอนล่าง 1',
+    'include_in_total' => 1,
+    'sort_order'       => 2,
+]);
+
+$db->insert('sheet_inputs', [
+    'project_id'       => $p6Id,
+    'group_id'         => $g1_s3,
+    'resource'         => 'มหาวิทยาลัยนเรศวร: ระบบสนับสนุนและงบสมทบ (Excel J63)',
+    'y0_raw'           => '=125400+45847+(5450000/10)+(620000/10)+824640',
+    'y1_raw'           => '0',
+    'basis'            => 'ค่าเสื่อมระบบสาธารณูปโภคและครุภัณฑ์สนับสนุนกลาง',
+    'source'           => 'กองอาคารสถานที่ มหาวิทยาลัยนเรศวร',
+    'include_in_total' => 1,
+    'sort_order'       => 3,
+]);
+
+// Sheet Outcomes (Value lines with adjustment %)
+$db->insert('sheet_outcomes', [
+    'project_id'       => $p6Id,
+    'group_id'         => $g1_s1_1,
+    'dimension'        => 'economic',
+    'beneficiary'      => 'ผู้ป่วยและผู้รับบริการ',
+    'outcome'          => 'รายรับจากการให้บริการกายภาพบำบัด (Excel S10)',
+    'quantity_text'    => '1,768 ครั้ง',
+    'indicator'        => 'สถิติการรับบริการคลินิกธาราบำบัด',
+    'valuation_method' => 'ค่าธรรมเนียมการบริการจริงที่เกิดขึ้น',
+    'y0_raw'           => '660760',
+    'y1_raw'           => null,
+    'source'           => 'ใบเสร็จรับเงินคณะสหเวชศาสตร์',
+    'adj_y0'           => 0.10,
+    'adj_y0_reason'    => 'Deadweight 10%',
+    'include_in_total' => 1,
+    'sort_order'       => 1,
+]);
+
+$db->insert('sheet_outcomes', [
+    'project_id'       => $p6Id,
+    'group_id'         => $g1_s1,
+    'dimension'        => 'social',
+    'beneficiary'      => 'นิสิตและคณะ',
+    'outcome'          => 'การประหยัดค่าใช้จ่ายการฝึกงานนิสิตกายภาพบำบัด (Excel S18)',
+    'quantity_text'    => 'นิสิตชั้นปีที่ 4',
+    'indicator'        => 'ค่าใช้จ่ายการส่งนิสิตไปฝึกงานต่างจังหวัดที่ประหยัดได้',
+    'valuation_method' => 'ค่าที่พักและเบี้ยเลี้ยงเดินทางเปรียบเทียบ',
+    'y0_raw'           => '80800',
+    'y1_raw'           => null,
+    'source'           => 'งบประมาณฝึกงานภาควิชากายภาพบำบัด',
+    'adj_y0'           => 0.05,
+    'adj_y0_reason'    => 'Deadweight 5%',
+    'include_in_total' => 1,
+    'sort_order'       => 2,
+]);
+
+$db->insert('sheet_outcomes', [
+    'project_id'       => $p6Id,
+    'group_id'         => $g1_s1,
+    'dimension'        => 'economic',
+    'beneficiary'      => 'ประชาชนและบุคลากร',
+    'outcome'          => 'รายรับการให้บริการศูนย์ส่งเสริมสุขภาพและฟิตเนส (Excel S38)',
+    'quantity_text'    => 'ผู้ใช้บริการรายเดือนและสมาชิก',
+    'indicator'        => 'ยอดการสมัครสมาชิกศูนย์ออกกำลังกาย',
+    'valuation_method' => 'อัตราค่าสมาชิกจริง',
+    'y0_raw'           => '113660',
+    'y1_raw'           => null,
+    'source'           => 'รายงานการเงินศูนย์ฟิตเนส',
+    'adj_y0'           => 0.10,
+    'adj_y0_reason'    => 'Deadweight 10%',
+    'include_in_total' => 1,
+    'sort_order'       => 3,
+]);
+
+$db->insert('sheet_outcomes', [
+    'project_id'       => $p6Id,
+    'group_id'         => $g1_s2,
+    'dimension'        => 'environmental',
+    'beneficiary'      => 'คณะสหเวชศาสตร์',
+    'outcome'          => 'การประหยัดค่าไฟฟ้าจากระบบโซลาร์เซลล์สระบำบัด (Excel S48)',
+    'quantity_text'    => '22,221 kWh',
+    'indicator'        => 'หน่วยไฟฟ้าที่ผลิตได้จากแผงโซลาร์เซลล์',
+    'valuation_method' => 'อัตราค่าไฟฟ้าฐาน กฟภ.',
+    'y0_raw'           => '85775',
+    'y1_raw'           => null,
+    'source'           => 'มิเตอร์ไฟฟ้าอาคารธาราบำบัด',
+    'adj_y0'           => 0.00,
+    'include_in_total' => 1,
+    'sort_order'       => 4,
+]);
+
+$db->insert('sheet_outcomes', [
+    'project_id'       => $p6Id,
+    'group_id'         => $g1_s2,
+    'dimension'        => 'environmental',
+    'beneficiary'      => 'สังคมและสิ่งแวดล้อม',
+    'outcome'          => 'การลดการปล่อยก๊าซเรือนกระจก (Excel S55)',
+    'quantity_text'    => '2.66 tCO2e',
+    'indicator'        => 'ปริมาณคาร์บอนที่หลีกเลี่ยงได้',
+    'valuation_method' => 'ราคาคาร์บอนเครดิต T-VER',
+    'y0_raw'           => '384',
+    'y1_raw'           => null,
+    'source'           => 'องค์การบริหารจัดการก๊าซเรือนกระจก (อบก.)',
+    'adj_y0'           => 0.00,
+    'include_in_total' => 1,
+    'sort_order'       => 5,
+]);
+
+$db->insert('sheet_outcomes', [
+    'project_id'       => $p6Id,
+    'group_id'         => $g1_s3,
+    'dimension'        => 'economic',
+    'beneficiary'      => 'มหาวิทยาลัยนเรศวร',
+    'outcome'          => 'รายรับจากการให้บริการคืนสู่มหาวิทยาลัย 9% (Excel S63)',
+    'quantity_text'    => '9% ของเงินรายได้',
+    'indicator'        => 'เงินนำส่งกองทุนพัฒนาศักยภาพมหาวิทยาลัย',
+    'valuation_method' => 'สูตร =(904840+123500+88120)*9%',
+    'y0_raw'           => '=(904840+123500+88120)*9%',
+    'y1_raw'           => null,
+    'source'           => 'ระเบียบการเงินรายได้มหาวิทยาลัยนเรศวร',
+    'adj_y0'           => 0.00,
+    'include_in_total' => 1,
+    'sort_order'       => 6,
+]);
+
+$db->insert('sheet_outcomes', [
+    'project_id'       => $p6Id,
+    'group_id'         => $g1_s3,
+    'dimension'        => 'environmental',
+    'beneficiary'      => 'สิ่งแวดล้อมรอบมหาวิทยาลัย',
+    'outcome'          => 'มูลค่าการบำบัดน้ำเสียและนำน้ำกลับมาหมุนเวียน (Excel S68)',
+    'quantity_text'    => 'ปริมาตรน้ำบำบัด',
+    'indicator'        => 'น้ำเสียที่ผ่านการบำบัดตามเกณฑ์มาตรฐาน',
+    'valuation_method' => 'ต้นทุนทดแทนการบำบัดน้ำเสีย',
+    'y0_raw'           => '1046.52',
+    'y1_raw'           => null,
+    'source'           => 'กองอาคารสถานที่และสิ่งแวดล้อม',
+    'adj_y0'           => 0.00,
+    'include_in_total' => 1,
+    'sort_order'       => 7,
+]);
+
+// Execute sheet engine calculation and persist run
+$sheetEngine = new SheetEngine();
+$sheetProjectRow = $db->one('SELECT * FROM projects WHERE id = ?', [$p6Id]);
+$sheetGroups = $db->all('SELECT * FROM sheet_groups WHERE project_id = ? ORDER BY sort_order, id', [$p6Id]);
+$sheetInputs = $db->all('SELECT * FROM sheet_inputs WHERE project_id = ? ORDER BY group_id, sort_order, id', [$p6Id]);
+$sheetOutcomes = $db->all('SELECT * FROM sheet_outcomes WHERE project_id = ? ORDER BY group_id, sort_order, id', [$p6Id]);
+$decSheet = function(array $rows): array {
+    foreach ($rows as &$r) {
+        $c = json_decode((string)($r['custom'] ?? '{}'), true);
+        $r['custom'] = is_array($c) ? $c : [];
+        if (array_key_exists('include_in_total', $r)) {
+            $r['include_in_total'] = (bool)$r['include_in_total'];
+        }
     }
+    return $rows;
+};
 
-    // Stakeholders
-    $stkStudents = $db->insert('stakeholders', [
-        'project_id' => $pId,
-        'name' => 'Students and learners',
-        'category' => 'Students and learners',
-        'role_in_project' => 'Primary Beneficiary',
-        'estimated_count' => 200,
-        'expected_positive' => 'Improved academic scores and progression',
-        'evidence_source' => 'Student Progress Records',
-    ]);
+$sheetSnapshot = [
+    'project' => [
+        'id'                => (int)$sheetProjectRow['id'],
+        'name'              => $sheetProjectRow['name'],
+        'currency'          => $sheetProjectRow['currency'],
+        'y0_label'          => $sheetProjectRow['y0_label'],
+        'y1_label'          => $sheetProjectRow['y1_label'],
+        'evaluation_type'   => $sheetProjectRow['evaluation_type'],
+        'assessment_months' => $sheetProjectRow['assessment_months'],
+        'adjustment_mode'   => $sheetProjectRow['sheet_adjustment_mode'] ?? 'deduct',
+    ],
+    'columns'  => [],
+    'groups'   => $decSheet($sheetGroups),
+    'inputs'   => $decSheet($sheetInputs),
+    'outcomes' => $decSheet($sheetOutcomes),
+];
 
-    $stkFamilies = $db->insert('stakeholders', [
-        'project_id' => $pId,
-        'name' => 'Beneficiary households',
-        'category' => 'Beneficiary households',
-        'role_in_project' => 'Supported Family',
-        'estimated_count' => 120,
-        'expected_positive' => 'Reduced household expenditure on private tuition',
-        'evidence_source' => 'Parent Survey FY2026',
-    ]);
+$sheetResult = $sheetEngine->calculate($sheetSnapshot);
+$sheetSnapJson = json_encode($sheetSnapshot, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
-    $stkUniv = $db->insert('stakeholders', [
-        'project_id' => $pId,
-        'name' => 'University & faculty',
-        'category' => 'Teachers and educational staff',
-        'role_in_project' => 'Delivery Institution',
-        'estimated_count' => 30,
-        'expected_positive' => 'Better student retention and teaching efficiency',
-        'evidence_source' => 'Institutional Retention Report',
-    ]);
+$sheetRunId = $db->insert('calculation_runs', [
+    'project_id'          => $p6Id,
+    'scenario_id'         => null,
+    'scenario_name'       => 'Sheet (Base)',
+    'methodology_version' => $sheetResult['methodology_version'],
+    'input_hash'          => hash('sha256', $sheetSnapJson),
+    'sroi_ratio'          => $sheetResult['sroi'],
+    'present_value'       => $sheetResult['totals']['outcome_adjusted']['total'],
+    'investment'          => $sheetResult['totals']['input']['total'],
+    'net_social_value'    => $sheetResult['net_value'],
+    'snapshot'            => $sheetSnapJson,
+    'result'              => json_encode($sheetResult, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+    'created_by'          => $ownerId,
+]);
 
-    // Outcomes
-    $o1 = $db->insert('outcomes', [
-        'project_id' => $pId,
-        'stakeholder_id' => $stkStudents,
-        'name' => 'Improved educational attainment and exam pass rates',
-        'activity' => 'Weekly mentoring and small-group tutoring sessions',
-        'output_description' => '500 tutoring hours delivered over academic year',
-        'indicator' => 'Secondary school standardized exam pass rate',
-        'baseline' => '55% passing baseline',
-        'observed_result' => '82% passing after intervention',
-        'quantity' => 150,
-        'proxy_value' => 4000.0,
-        'proxy_unit' => 'student / year',
-        'proxy_source' => 'National Education Improvement Benchmark',
-        'polarity' => 'positive',
-        'projection_model' => 'cohort',
-        'duration_years' => 5,
-        'evidence_quality' => 'measured',
-    ]);
+echo "  -> Plan #$p6Id calculated: Investment = ฿" . number_format($sheetResult['totals']['input']['total']) .
+     ", Outcomes = ฿" . number_format($sheetResult['totals']['outcome_adjusted']['total']) .
+     ", SROI = " . number_format((float)$sheetResult['sroi'], 4) . ":1\n";
 
-    $o2 = $db->insert('outcomes', [
-        'project_id' => $pId,
-        'stakeholder_id' => $stkFamilies,
-        'name' => 'Reduced household expenditure on commercial tutoring',
-        'activity' => 'Free campus tutoring provided',
-        'output_description' => '120 families supported with free sessions',
-        'indicator' => 'Average household tutoring spend',
-        'baseline' => '฿3,500 / month commercial tutor fees',
-        'observed_result' => '฿1,500 / month savings',
-        'quantity' => 40,
-        'proxy_value' => 2000.0,
-        'proxy_unit' => 'household / year',
-        'proxy_source' => 'National Education Household Survey 2026',
-        'polarity' => 'positive',
-        'projection_model' => 'cohort',
-        'duration_years' => 4,
-        'evidence_quality' => 'external',
-    ]);
+echo "\n========================================================\n";
+echo "Seeding Completed Successfully!\n";
+echo "Summary of Seeded SROI Plans:\n";
+$allSeeded = $db->all("
+    SELECT p.id, p.name, p.calc_method, 
+           CASE WHEN p.faculty_id IS NOT NULL THEN 'Faculty: ' || f.name 
+                WHEN p.department_id IS NOT NULL THEN 'Dept: ' || d.name 
+                ELSE 'Org Level' END AS direct_owner,
+           r.sroi_ratio, r.investment, r.present_value
+    FROM projects p
+    LEFT JOIN faculties f ON f.id = p.faculty_id
+    LEFT JOIN departments d ON d.id = p.department_id
+    LEFT JOIN calculation_runs r ON r.id = (
+        SELECT id FROM calculation_runs WHERE project_id = p.id ORDER BY id DESC LIMIT 1
+    )
+    WHERE p.organization_id = ?
+    ORDER BY p.id ASC
+", [$orgId]);
 
-    $o3 = $db->insert('outcomes', [
-        'project_id' => $pId,
-        'stakeholder_id' => $stkStudents,
-        'name' => 'Student commute transport fatigue and transit cost',
-        'activity' => 'Traveling to weekend tutoring center',
-        'output_description' => 'Commute across town',
-        'indicator' => 'Travel time and transit ticket expense',
-        'baseline' => 'No weekend travel',
-        'observed_result' => '2 hours commute each weekend',
-        'quantity' => 50,
-        'proxy_value' => 500.0,
-        'proxy_unit' => 'student / year',
-        'proxy_source' => 'Student Travel Log',
-        'polarity' => 'negative',
-        'projection_model' => 'cohort',
-        'duration_years' => 3,
-        'evidence_quality' => 'estimated',
-    ]);
-
-    // Adjustments
-    $db->insert('impact_adjustments', [
-        'outcome_id' => $o1,
-        'deadweight' => 0.20,
-        'attribution' => 0.10,
-        'displacement' => 0.00,
-        'drop_off' => 0.10,
-        'source' => 'Regional school control group comparison',
-        'justification' => '20% of students historically improve without tutoring; 10% attributable to school teachers.',
-    ]);
-
-    $db->insert('impact_adjustments', [
-        'outcome_id' => $o2,
-        'deadweight' => 0.15,
-        'attribution' => 0.20,
-        'displacement' => 0.00,
-        'drop_off' => 0.05,
-        'source' => 'Parent survey responses',
-        'justification' => '15% of families would have economized anyway; 20% attributable to self-study materials.',
-    ]);
-
-    $db->insert('impact_adjustments', [
-        'outcome_id' => $o3,
-        'deadweight' => 0.05,
-        'attribution' => 0.05,
-        'displacement' => 0.00,
-        'drop_off' => 0.10,
-        'source' => 'Student commute questionnaire',
-        'justification' => 'Minor displacement from alternative local weekend activities.',
-    ]);
-
-    // Scenarios (Conservative & Optimistic)
-    $db->insert('scenarios', [
-        'project_id' => $pId,
-        'name' => 'Base case',
-        'kind' => 'base',
-        'description' => 'Evidence-based central assumptions',
-        'is_base' => 1,
-        'assumptions' => json_encode(['global' => [], 'outcomes' => []]),
-    ]);
-
-    $db->insert('scenarios', [
-        'project_id' => $pId,
-        'name' => 'Conservative Case',
-        'kind' => 'conservative',
-        'description' => 'Lower beneficiary retention and higher deadweight deductions',
-        'is_base' => 0,
-        'assumptions' => json_encode([
-            'global' => ['discount_rate' => 0.05],
-            'outcomes' => [
-                $o1 => ['deadweight_delta' => 0.10, 'attribution_delta' => 0.05],
-            ]
-        ]),
-    ]);
-
-    $db->insert('scenarios', [
-        'project_id' => $pId,
-        'name' => 'Optimistic Policy Expansion',
-        'kind' => 'optimistic',
-        'description' => 'Extended multi-year benefit persistence and regional scaling',
-        'is_base' => 0,
-        'assumptions' => json_encode([
-            'global' => ['discount_rate' => 0.025],
-            'outcomes' => [
-                $o1 => ['quantity_multiplier' => 1.25],
-            ]
-        ]),
-    ]);
-
-    echo "Demo Project #$pId created with full PRD dataset.\n";
+foreach ($allSeeded as $row) {
+    echo sprintf(
+        " [#%d] %-60s | %-32s | Ratio: %-6s | Inv: %10s | PV: %10s\n",
+        $row['id'],
+        mb_substr($row['name'], 0, 58),
+        $row['direct_owner'],
+        $row['sroi_ratio'] !== null ? number_format((float)$row['sroi_ratio'], 2) : 'N/A',
+        $row['investment'] !== null ? number_format((float)$row['investment']) : 'N/A',
+        $row['present_value'] !== null ? number_format((float)$row['present_value']) : 'N/A'
+    );
 }
-
-// 5. Seed Reference Faculty and Departments from Excel workbooks
-$fac = $db->one('SELECT * FROM faculties WHERE name = ? AND organization_id = ?', ['คณะสหเวชศาสตร์', $org['id']]);
-if (!$fac) {
-    $facId = $db->insert('faculties', [
-        'organization_id' => $org['id'],
-        'name'            => 'คณะสหเวชศาสตร์',
-        'description'     => 'Faculty of Allied Health Sciences, Naresuan University',
-        'created_by'      => $ownerId,
-    ]);
-    echo "Faculty created: คณะสหเวชศาสตร์ (#$facId)\n";
-
-    // 5.1 Department of Physical Therapy
-    $deptId = $db->insert('departments', [
-        'faculty_id'  => $facId,
-        'name'        => 'ภาควิชากายภาพบำบัด',
-        'description' => 'Department of Physical Therapy',
-        'created_by'  => $ownerId,
-    ]);
-    echo "Department created: ภาควิชากายภาพบำบัด (#$deptId)\n";
-
-    // 5.2 Plan 1: Faculty-owned Eye Screening Project (วิเคราะห์ SROI โครงการตา68.xlsx)
-    $pEyeId = $db->insert('projects', [
-        'organization_id'       => $org['id'],
-        'faculty_id'            => $facId,
-        'department_id'         => null,
-        'name'                  => 'โครงการตรวจคัดกรองสายตาผู้สูงอายุ 2568',
-        'organization_name'     => 'คณะสหเวชศาสตร์ มหาวิทยาลัยนเรศวร',
-        'description'           => 'การประเมินผลตอบแทนทางสังคม (SROI) โครงการบริการวิชาการตรวจคัดกรองสายตาผู้สูงอายุ ประจำปีงบประมาณ 2568',
-        'category'              => 'Health and wellbeing',
-        'country'               => 'Thailand',
-        'evaluation_type'       => 'evaluative',
-        'currency'              => 'THB',
-        'analysis_period_years' => 1,
-        'assessment_months'     => 12,
-        'discount_rate'         => 0.0,
-        'discount_base_year'    => 0,
-        'investment_basis'      => 'nominal',
-        'include_in_kind'       => 1,
-        'status'                => 'ready',
-        'created_by'            => $ownerId,
-    ]);
-    $db->insert('scenarios', ['project_id' => $pEyeId, 'name' => 'Base case', 'kind' => 'base', 'is_base' => 1, 'assumptions' => '{}']);
-    $db->insert('project_costs', [
-        'project_id' => $pEyeId, 'category' => 'delivery', 'description' => 'เวชภัณฑ์และวัสดุตรวจสายตา', 'amount' => 37230,
-        'currency' => 'THB', 'year' => 0, 'is_cash' => 1, 'period_label' => 'Y0', 'evidence_source' => 'สรุปค่าใช้จ่ายจริงโครงการตา 68',
-    ]);
-    $sEye = $db->insert('stakeholders', [
-        'project_id' => $pEyeId, 'name' => 'ผู้สูงอายุและประชาชนในชุมชน', 'category' => 'Beneficiary households',
-        'stakeholder_group' => 'primary_beneficiary', 'group_code' => 'S1', 'estimated_count' => 120,
-    ]);
-    $oEye = $db->insert('outcomes', [
-        'project_id' => $pEyeId, 'stakeholder_id' => $sEye, 'name' => 'การป้องกันภาวะสูญเสียการมองเห็นและคุณภาพชีวิตที่ดีขึ้น',
-        'quantity' => 1, 'proxy_value' => 216500, 'proxy_unit' => 'โครงการ / ปี', 'evidence_quality' => 'measured',
-        'proxy_source' => 'รายงานวิเคราะห์ SROI โครงการตา 68', 'duration_years' => 1,
-    ]);
-    $db->insert('impact_adjustments', [
-        'outcome_id' => $oEye, 'deadweight' => 0.0, 'attribution' => 0.0, 'displacement' => 0.0, 'drop_off' => 0.0,
-    ]);
-
-    // 5.3 Plan 2: Department-owned Hydrotherapy Building Project (อาคารธาราบำบัด_SROI Data 18.4.67.xlsx)
-    $pHydroId = $db->insert('projects', [
-        'organization_id'       => $org['id'],
-        'faculty_id'            => null,
-        'department_id'         => $deptId,
-        'name'                  => 'โครงการบริการอาคารธาราบำบัด (ประเมิน 6 เดือน)',
-        'organization_name'     => 'ภาควิชากายภาพบำบัด คณะสหเวชศาสตร์',
-        'description'           => 'การประเมินผลตอบแทนทางสังคมจากการฟื้นฟูสมรรถภาพผู้ป่วยด้วยธาราบำบัด (รอบ 6 เดือน)',
-        'category'              => 'Health and wellbeing',
-        'country'               => 'Thailand',
-        'evaluation_type'       => 'evaluative',
-        'currency'              => 'THB',
-        'analysis_period_years' => 1,
-        'assessment_months'     => 6,
-        'discount_rate'         => 0.0,
-        'discount_base_year'    => 0,
-        'investment_basis'      => 'nominal',
-        'include_in_kind'       => 1,
-        'status'                => 'ready',
-        'created_by'            => $ownerId,
-    ]);
-    $db->insert('scenarios', ['project_id' => $pHydroId, 'name' => 'Base case', 'kind' => 'base', 'is_base' => 1, 'assumptions' => '{}']);
-    $db->insert('project_costs', [
-        'project_id' => $pHydroId, 'category' => 'capex', 'description' => 'ค่าเสื่อมราคาอาคาร อุปกรณ์ และค่าดำเนินการ', 'amount' => 2827766,
-        'currency' => 'THB', 'year' => 0, 'is_cash' => 1, 'period_label' => '6 months', 'evidence_source' => 'ทะเบียนสินทรัพย์และงบดำเนินการธาราบำบัด',
-    ]);
-    $sHydro = $db->insert('stakeholders', [
-        'project_id' => $pHydroId, 'name' => 'ผู้ป่วยและผู้รับบริการธาราบำบัด', 'category' => 'Beneficiary households',
-        'stakeholder_group' => 'primary_beneficiary', 'group_code' => 'S1', 'estimated_count' => 1768,
-    ]);
-    $oHydro = $db->insert('outcomes', [
-        'project_id' => $pHydroId, 'stakeholder_id' => $sHydro, 'name' => 'มูลค่าผลลัพธ์การฟื้นฟูสมรรถภาพและการประหยัดค่ารักษาพยาบาล',
-        'quantity' => 1, 'proxy_value' => 434167, 'proxy_unit' => 'รอบ 6 เดือน', 'evidence_quality' => 'measured',
-        'proxy_source' => 'สถิติการรับบริการอาคารธาราบำบัด', 'duration_years' => 1,
-    ]);
-    $db->insert('impact_adjustments', [
-        'outcome_id' => $oHydro, 'deadweight' => 0.0, 'attribution' => 0.0, 'displacement' => 0.0, 'drop_off' => 0.0,
-    ]);
-
-    echo "Reference plans seeded: Eye Project (#$pEyeId, Faculty-owned) and Hydrotherapy (#$pHydroId, Dept-owned).\n";
-}
-
-echo "Seeding completed successfully.\n";
+echo "========================================================\n";

@@ -475,7 +475,7 @@ function openOutcomeModal({ initialData = null, onSaved }) {
             </div>
 
             <div class="field">
-              <label class="field-label" for="ocRigor">${isTh ? 'ระดับความน่าเชื่อถือ' : 'Evidence Rigor'} ${optTag(isTh)}</label>
+              <label class="field-label" for="ocRigor">${isTh ? 'ระดับความน่าเชื่อถือ' : 'Evidence Rigor'} ${reqTag(isTh)}</label>
               <select id="ocRigor" name="evidence_quality" class="input">
                 <option value="measured" ${src?.evidence_quality === 'measured' ? 'selected' : ''}>Measured</option>
                 <option value="external" ${src?.evidence_quality === 'external' ? 'selected' : ''}>External</option>

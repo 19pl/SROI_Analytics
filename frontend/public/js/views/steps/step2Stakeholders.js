@@ -462,7 +462,7 @@ function openStakeholderModal({ initialData = null, defaultGroup = null, onSaved
         <div class="cluster cluster--space-between">
           <span class="field-label">
             ${isTh ? 'ประเภทกลุ่มตามมาตรฐาน SROI' : 'SROI Group Classification'}
-            ${optTag(isTh)}
+            ${reqTag(isTh)}
           </span>
           <span id="groupHintBadge" class="badge badge-planned">${group ? group.code : 'S1'}</span>
         </div>
