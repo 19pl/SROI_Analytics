@@ -7,9 +7,10 @@ import { api } from '../api.js';
 import { openModal, closeModal } from './modal.js';
 import { formatBaht } from '../utils/format.js';
 import { escapeHtml } from '../utils/html.js';
-import { t } from '../i18n.js';
+import { t, getLanguage } from '../i18n.js';
 
 export function openProxyLibraryModal({ onSelectProxy, orgId = null }) {
+  const isTh = getLanguage() !== 'en';
   let categories = [
     'All Categories',
     'Education',
@@ -47,6 +48,7 @@ export function openProxyLibraryModal({ onSelectProxy, orgId = null }) {
     title: t('proxy_lib_title', 'Financial Proxy Library'),
     body: modalHtml,
     size: 'lg',
+    stacked: true, // keep the outcome form open underneath, so the picked proxy fills it in
   });
 
   const listContainer = document.getElementById('proxyListContainer');
@@ -81,8 +83,10 @@ export function openProxyLibraryModal({ onSelectProxy, orgId = null }) {
         <div class="proxy-item" data-id="${p.id}">
           <div class="proxy-item-info">
             <span class="proxy-item-name">${escapeHtml(p.name)} <span class="badge badge-planned" style="font-size: 0.6875rem;">${escapeHtml(p.category)}</span></span>
-            <span class="proxy-item-source">${t('unit', 'Unit')}: ${escapeHtml(p.unit)} | Source: ${escapeHtml(p.source || 'Standard Reference')}</span>
+            <span class="proxy-item-source">${t('unit', 'Unit')}: ${escapeHtml(p.unit)} | ${isTh ? 'ที่มา' : 'Source'}: ${escapeHtml(p.source || 'Standard Reference')}${p.reference_year ? ` (${isTh ? 'ปี' : 'year'} ${escapeHtml(String(p.reference_year))})` : ''}${p.geography ? ` · ${escapeHtml(p.geography)}` : ''}</span>
             ${p.definition ? `<span class="muted" style="font-size: 0.75rem;">${escapeHtml(p.definition)}</span>` : ''}
+            ${p.limitations ? `<span class="muted" style="font-size: 0.75rem;"><b>${isTh ? 'ข้อจำกัด' : 'Limitations'}:</b> ${escapeHtml(p.limitations)}</span>` : ''}
+            ${/^https?:\/\//i.test(p.source_url || '') ? `<a class="proxy-item-link" href="${escapeHtml(p.source_url)}" target="_blank" rel="noopener noreferrer" style="font-size: 0.75rem;">${isTh ? 'เปิดแหล่งที่มา' : 'Open source'} ↗</a>` : ''}
           </div>
           <div style="text-align: right;">
             <div class="proxy-item-val">${p.currency} ${formatBaht(p.value)}</div>
@@ -105,6 +109,7 @@ export function openProxyLibraryModal({ onSelectProxy, orgId = null }) {
   categorySelect?.addEventListener('change', loadProxies);
 
   listContainer?.addEventListener('click', (e) => {
+    if (e.target.closest('a')) return; // opening the source link must not select the proxy
     const item = e.target.closest('.proxy-item');
     if (!item) return;
     const proxyId = Number(item.dataset.id);
@@ -183,6 +188,7 @@ export function openCustomProxyModal({ orgId, onCreated }) {
     title: t('modal_custom_proxy_title', 'Create Custom Financial Proxy'),
     body: formHtml,
     footer,
+    stacked: true,
   });
 
   document.getElementById('btnSaveCustomProxy')?.addEventListener('click', async () => {

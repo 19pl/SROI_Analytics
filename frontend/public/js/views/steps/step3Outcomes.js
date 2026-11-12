@@ -626,7 +626,14 @@ function openOutcomeModal({ initialData = null, onSaved }) {
             customProxyUnitInput.value = selectedProxy.unit;
           }
         }
-        if (ocProxySource) ocProxySource.value = selectedProxy.source;
+        if (ocProxySource) {
+          ocProxySource.value = selectedProxy.source + (selectedProxy.reference_year ? ` (${isTh ? 'ปี' : 'year'} ${selectedProxy.reference_year})` : '');
+        }
+        // Calculation-approach field: only pre-fill when empty, so anything the user typed is never overwritten.
+        const ocProxyRationaleEl = document.getElementById('ocProxyRationale');
+        if (ocProxyRationaleEl && !ocProxyRationaleEl.value.trim() && selectedProxy.definition) {
+          ocProxyRationaleEl.value = selectedProxy.definition;
+        }
         checkVisibilityAndValidity();
       },
     });

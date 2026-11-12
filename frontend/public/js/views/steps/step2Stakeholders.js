@@ -498,7 +498,7 @@ function openStakeholderModal({ initialData = null, defaultGroup = null, onSaved
         </div>
 
         <div class="field">
-          <label class="field-label" for="stkRole">${isTh ? 'กิจกรรม / ทรัพยากร (ไม่บังคับ)' : 'Activities / Resources (Optional)'}</label>
+          <label class="field-label" for="stkRole">${isTh ? 'บทบาทในโครงการ (ไม่บังคับ)' : 'Role in project (Optional)'}</label>
           <input class="input" id="stkRole" name="role_in_project" value="${escapeHtml(initialData?.role_in_project || '')}" placeholder="${isTh ? 'เช่น เข้ารับการตรวจคัดกรองสายตา, อบรมอาชีพ' : 'e.g. Receives screening, attends training'}" />
         </div>
 

@@ -4,8 +4,11 @@
 
 let activeModal = null;
 
-export function openModal({ title, body, footer = '', size = '', onClose = null }) {
-  closeModal();
+export function openModal({ title, body, footer = '', size = '', onClose = null, stacked = false }) {
+  // stacked: open ON TOP of the current modal instead of replacing it (e.g. the proxy library opened from the outcome form,
+  // so the form and everything typed in it survive while the user picks a proxy).
+  const previous = stacked ? activeModal : null;
+  if (!stacked) closeModal();
 
   const overlay = document.createElement('div');
   overlay.className = 'modal-overlay';
@@ -26,12 +29,13 @@ export function openModal({ title, body, footer = '', size = '', onClose = null 
   const doClose = () => {
     if (onClose) onClose();
     overlay.remove();
-    activeModal = null;
+    if (activeModal && activeModal.overlay === overlay) activeModal = previous;
     document.removeEventListener('keydown', handleKey);
   };
 
   const handleKey = (e) => {
-    if (e.key === 'Escape') doClose();
+    // Only the top-most modal reacts, so Escape closes one layer at a time.
+    if (e.key === 'Escape' && activeModal && activeModal.overlay === overlay) doClose();
   };
 
   // Only treat a click on the backdrop as "close" when the press STARTED on the backdrop too.

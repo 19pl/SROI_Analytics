@@ -24,79 +24,8 @@ if (!$org) {
     $org = $db->one('SELECT * FROM organizations WHERE id = ?', [$orgId]);
 }
 
-// 3. Seed Global Financial Proxies
-$proxies = [
-    [
-        'name' => 'Annual supplementary tutoring cost avoidance',
-        'category' => 'Education',
-        'unit' => 'household / year',
-        'currency' => 'THB',
-        'value' => 2000.0,
-        'source' => 'National Education Household Survey 2026',
-        'definition' => 'Average annual private tutoring fees saved by participating families.',
-    ],
-    [
-        'name' => 'High school completion incremental lifetime earning proxy',
-        'category' => 'Education',
-        'unit' => 'student / year',
-        'currency' => 'THB',
-        'value' => 15000.0,
-        'source' => 'Labor Market & Educational Attainment Study',
-        'definition' => 'Estimated annual wage uplift attributable to improved academic progression.',
-    ],
-    [
-        'name' => 'Value of community volunteer time',
-        'category' => 'Time savings',
-        'unit' => 'hour',
-        'currency' => 'THB',
-        'value' => 120.0,
-        'source' => 'Standard Social Value Volunteering Rate',
-        'definition' => 'Shadow wage replacement rate for non-specialist community volunteers.',
-    ],
-    [
-        'name' => 'Healthcare cost avoidance per treated outpatient',
-        'category' => 'Health and wellbeing',
-        'unit' => 'person / year',
-        'currency' => 'THB',
-        'value' => 4500.0,
-        'source' => 'Public Health Hospital Utilization Benchmark',
-        'definition' => 'Direct clinical outpatient treatment expenditure avoided.',
-    ],
-    [
-        'name' => 'Municipal waste diversion and paper recycling value',
-        'category' => 'Waste management',
-        'unit' => 'kg paper',
-        'currency' => 'THB',
-        'value' => 8.5,
-        'source' => 'Pollution Control Department Material Recovery Value',
-        'definition' => 'Monetized landfill diversion and raw material salvage value.',
-    ],
-    [
-        'name' => 'Unregulated informal debt reduction interest avoidance',
-        'category' => 'Poverty reduction',
-        'unit' => 'household / year',
-        'currency' => 'THB',
-        'value' => 12000.0,
-        'source' => 'Community Financial Wellness Survey',
-        'definition' => 'Compound predatory interest payments avoided per beneficiary household.',
-    ],
-];
-
-foreach ($proxies as $p) {
-    $exists = $db->one('SELECT id FROM financial_proxies WHERE name = ?', [$p['name']]);
-    if (!$exists) {
-        $db->insert('financial_proxies', [
-            'organization_id' => null,
-            'name' => $p['name'],
-            'category' => $p['category'],
-            'unit' => $p['unit'],
-            'currency' => $p['currency'],
-            'value' => $p['value'],
-            'source' => $p['source'],
-            'definition' => $p['definition'],
-        ]);
-    }
-}
+// 3. Global financial proxies are NOT seeded here. The library is loaded from a reviewed, sourced file by an administrator:
+//    php bin/load-proxies.php        (see README: "Thai financial-proxy library")
 
 // 4. Seed PRD Demo Project: University Tutoring Initiative
 $proj = $db->one('SELECT * FROM projects WHERE name = ? AND organization_id = ?', ['University Community Tutoring Initiative', $org['id']]);

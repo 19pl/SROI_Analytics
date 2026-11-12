@@ -133,3 +133,21 @@ Additive only (existing rows are untouched):
 
 - `project_costs.stakeholder_id` (nullable, `ON DELETE SET NULL`) — who provides an investment line (S2/S3/S4). `NULL` = not linked. The API validates that the stakeholder belongs to the same project. Deleting a stakeholder keeps its cost lines (they become unlinked), so no investment figure disappears silently. The calculation snapshot is unchanged: the link is for data entry and display only.
 - `stakeholders.count_unit` — unit of `estimated_count` (คน / คณะ / แห่ง …), the Excel "หน่วย" column.
+
+## Thai financial-proxy library
+
+The global library (`financial_proxies.organization_id IS NULL`) is read-only in the app. The Thai set (19 entries) is `database/proxies/th-2569.json`: each entry carries its value, unit, year, area, source, a link to the source and its limitations (an entry without a source and limitations is rejected by the loader).
+
+**New database:** `php bin/migrate.php` creates the library automatically (migration `010_thai_proxy_library.sql`). It is additive and idempotent: it only inserts a global entry if none with the same name exists, and never edits or deletes anything. `bin/seed.php` no longer creates any proxies.
+
+**Updating rates later, or an existing database:** edit the JSON, then
+
+```
+php bin/load-proxies.php --dry-run                 # validate and show what would be added/updated; writes nothing
+php bin/load-proxies.php                           # add new entries, update changed ones (matched by name among global entries)
+php bin/load-proxies.php --remove-demo             # ALSO delete the six unsourced demo entries older seeds created
+```
+
+- Re-running the loader is safe: unchanged entries are left alone. Nothing outside global proxy entries is touched.
+- `--remove-demo` is only needed on a database that was seeded before this change. Outcomes that used a demo entry keep their own `proxy_value` (`outcomes.proxy_id` becomes NULL). Back up `storage/sroi.sqlite` first.
+- Migration 010 is a snapshot of the JSON as researched in November 2026; after changing rates in the JSON, run the loader (it updates existing rows). Government rates change (minimum wage, electricity every 4 months, NHSO payment rates each fiscal year), so re-check each entry against its source before a report is issued.
