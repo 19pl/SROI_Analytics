@@ -17,7 +17,6 @@ import { renderStep3 } from './steps/step3Outcomes.js';
 import { renderStep4 } from './steps/step4Adjustments.js';
 import { renderStep5 } from './steps/step5Review.js';
 import { renderStep6 } from './steps/step6Dashboard.js';
-import { renderSheet } from './sheetView.js';
 import { t, getLanguage } from '../i18n.js';
 
 let isHelpOpen = false;
@@ -33,12 +32,6 @@ export function renderCalculator(root) {
   }
 
   const { project, costs, stakeholders, outcomes, review } = getState();
-
-  // Sheet-mode plans (Excel-style entry) have their own single-page view; wizard plans are unchanged.
-  if (project?.calc_method === 'sheet' && !isGuest()) {
-    renderSheet(root);
-    return;
-  }
 
   // A step opens only when every step before it is complete — also when it is typed into the URL.
   if (project && !isGuest() && stepNum > 1) {

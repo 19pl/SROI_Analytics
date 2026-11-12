@@ -616,7 +616,6 @@ export async function renderProjects(root) {
               title="${escapeHtml(full ? t('compare_max_hint', 'You can compare up to {n} plans').replace('{n}', MAX_COMPARE) : t('compare_select', 'Select to compare'))}"
             />
             <button type="button" class="plan-name" data-open-project="${p.id}">${escapeHtml(p.name)}</button>
-            ${p.calc_method === 'sheet' ? `<span class="badge badge-integrated">${t('sheet_badge', 'Sheet')}</span>` : ''}
           </div>
           ${p.category ? `<div class="muted-sm">${escapeHtml(p.category)}</div>` : ''}
         </td>
@@ -725,12 +724,7 @@ export async function renderProjects(root) {
 
   async function openProject(id) {
     await loadProject(id);
-    // Sheet-mode projects have their own single-page view; routing to
-    // '#/wizard' (without a step suffix) triggers renderCalculator which
-    // immediately hands off to renderSheet().  Wizard projects start at
-    // step-1 as before.
-    const proj = getState().project;
-    window.location.hash = proj?.calc_method === 'sheet' ? '#/wizard' : '#/wizard/step-1';
+    window.location.hash = '#/wizard/step-1';
   }
 
   async function patchProject(p, data, okKey, okFallback) {
@@ -933,7 +927,7 @@ export async function renderProjects(root) {
       faculties,
       onCreated: async (newP) => {
         await loadProject(newP.id);
-        window.location.hash = newP.calc_method === 'sheet' ? '#/wizard/step-1' : '#/wizard/step-0';
+        window.location.hash = '#/wizard/step-0';
       },
     });
   };
@@ -1047,9 +1041,6 @@ function openCompareModal(plans) {
 
           ${group(t('compare_group_setup', 'Plan setup'))}
           ${row(t('col_owner', 'Direct Owner'), (p) => escapeHtml(ownerText(p)))}
-          ${row(t('sheet_mode_label', 'Assessment Method'), (p) =>
-            p.calc_method === 'sheet' ? t('sheet_mode_sheet_title', 'Sheet Mode') : t('sheet_mode_wizard_title', 'Guided Assistant'),
-          )}
           ${row(t('field_eval_type', 'Evaluation Type'), (p) =>
             p.evaluation_type === 'forecast' ? t('eval_type_forecast_short', 'Forecast') : t('eval_type_evaluative_short', 'Evaluative'),
           )}
@@ -1099,26 +1090,6 @@ function openCreateProjectModal({ currentOrgId, faculties, onCreated }) {
 
       <!-- Step 1: Plan basics -->
       <div id="modalStep1" class="form-stack">
-        <div class="field">
-          <span class="field-label" id="methodLabel">${escapeHtml(t('sheet_mode_label', 'Assessment Method'))} ${reqTag()}</span>
-          <div class="method-grid" role="radiogroup" aria-labelledby="methodLabel">
-            <label class="method-card">
-              <input type="radio" class="sr-only" name="calc_method" value="wizard" checked />
-              <span class="method-card__body">
-                <strong>${t('sheet_mode_wizard_title', 'Guided Assistant')}</strong>
-                <span class="field-hint">${t('sheet_mode_wizard_desc', 'Step-by-step guidance, recommended for beginners')}</span>
-              </span>
-            </label>
-            <label class="method-card">
-              <input type="radio" class="sr-only" name="calc_method" value="sheet" />
-              <span class="method-card__body">
-                <strong>${t('sheet_mode_sheet_title', 'Sheet Mode')}</strong>
-                <span class="field-hint">${t('sheet_mode_sheet_desc', 'Spreadsheet-style entry for existing Excel models')}</span>
-              </span>
-            </label>
-          </div>
-        </div>
-
         <div class="field">
           <label class="field-label" for="planNameInput">${reqLabel('field_plan_name', 'Plan / Project Name')}</label>
           <input type="text" id="planNameInput" name="name" class="input" required maxlength="200" autocomplete="off" placeholder="${t('field_plan_name_placeholder', 'e.g. Community Skills Development Initiative 2025')}" />
@@ -1407,7 +1378,7 @@ function openCreateProjectModal({ currentOrgId, faculties, onCreated }) {
       faculty_id,
       department_id,
       assessment_months: form.assessment_months.value ? parseInt(form.assessment_months.value, 10) : null,
-      calc_method: form.calc_method.value,
+      calc_method: 'wizard',
       // Without this the plan starts with no investment basis, and Step 1 stays "incomplete" until Save is pressed.
       investment_basis: 'nominal',
     };

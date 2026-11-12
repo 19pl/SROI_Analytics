@@ -157,8 +157,7 @@ final class FacultyController
                 'SELECT sroi_ratio, present_value, investment, net_social_value, created_at
                  FROM calculation_runs
                  WHERE project_id = ?
-                   AND (scenario_id = (SELECT id FROM scenarios WHERE project_id = ? AND is_base = 1)
-                        OR methodology_version LIKE \'sheet-%\')
+                   AND (scenario_id = (SELECT id FROM scenarios WHERE project_id = ? AND is_base = 1))
                  ORDER BY id DESC LIMIT 1',
                 [(int)$plan['id'], (int)$plan['id']]
             );
