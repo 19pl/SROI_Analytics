@@ -14,7 +14,7 @@
 import { getState, addOutcome, updateOutcome, removeOutcome } from '../../store.js';
 import { openModal, closeModal, confirmModal } from '../../components/modal.js';
 import { openProxyLibraryModal } from '../../components/proxyModal.js';
-import { formatBaht } from '../../utils/format.js';
+import { formatBaht, displayUnit } from '../../utils/format.js';
 import { escapeHtml } from '../../utils/html.js';
 import { icons } from '../../components/icons.js';
 import { showToast } from '../../components/toast.js';
@@ -36,7 +36,7 @@ export const OUTCOME_PRESETS = [
   { id: 'time', th: 'ประหยัดเวลา / เพิ่มความสะดวกในการทำงาน', en: 'Time Saved & Daily Efficiency', polarity: 'positive', defaultProxy: 1500, unit: 'คน / ปี' },
   { id: 'env', th: 'สิ่งแวดล้อมดีขึ้น / ลดปริมาณขยะและมลพิษ', en: 'Environmental Quality & Waste Reduction', polarity: 'positive', defaultProxy: 1200, unit: 'ตัน / ปี' },
   { id: 'harm', th: 'มีภาระค่าใช้จ่ายหรือเวลาสูญเสียเพิ่มขึ้น (ผลกระทบทางลบ)', en: 'Increased Burden / Time Loss (Negative Impact)', polarity: 'negative', defaultProxy: 1000, unit: 'คน / ปี' },
-  { id: '__other__', th: 'อื่นๆ (ระบุเอง...)', en: 'Other (specify...)', polarity: 'positive', defaultProxy: null, unit: 'คน / ปี' },
+  { id: '__other__', th: 'อื่น ๆ (ระบุเอง...)', en: 'Other (specify...)', polarity: 'positive', defaultProxy: null, unit: 'คน / ปี' },
 ];
 
 export const PROXY_UNIT_SUGGESTIONS = [
@@ -199,7 +199,7 @@ export function renderStep3(container) {
                         <div class="form-row">
                           <div>
                             <span class="muted-sm">${t('col_outcome_proxy', 'ตัวแทนทางการเงิน (Proxy)')}:</span>
-                            <strong>${o.proxy_value !== null ? `${project.currency} ${formatBaht(o.proxy_value)} / ${escapeHtml(o.proxy_unit || '')}` : '-'}</strong>
+                            <strong>${o.proxy_value !== null ? `${project.currency} ${formatBaht(o.proxy_value)} / ${escapeHtml(displayUnit(o.proxy_unit))}` : '-'}</strong>
                             ${o.proxy_rationale ? `<div class="muted-sm">${isTh ? 'แนวทางการคำนวณ' : 'Calculation'}: ${escapeHtml(o.proxy_rationale)}</div>` : ''}
                             ${o.proxy_source ? `<div class="muted-sm">${escapeHtml(o.proxy_source)}</div>` : ''}
                           </div>
@@ -223,7 +223,7 @@ export function renderStep3(container) {
       ${wizardFooterHtml(3, {
         canProceed: outcomes.length > 0,
         nextLabel: isTh
-          ? 'บันทึกและไปต่อ: การปรับปรุงผลกระทบ (Step 4) →'
+          ? 'บันทึกและดำเนินการต่อ: การปรับปรุงผลกระทบ (Step 4) →'
           : 'Continue: Impact Adjustments (Step 4) →',
       })}
     </div>`;
@@ -319,7 +319,7 @@ function openOutcomeModal({ initialData = null, onSaved }) {
       <!-- Part 1: Who changes? -->
       <div class="field" id="ocPart1">
         <label class="field-label" for="ocStakeholderSelect">
-          1. ${isTh ? 'ใครคือผู้ที่เกิดการเปลี่ยนแปลง?' : 'Who experiences the change?'}
+          1. ${isTh ? 'ผู้ใดเป็นผู้ที่เกิดการเปลี่ยนแปลง?' : 'Who experiences the change?'}
           <span class="field-hint field-hint--primary">${isTh ? 'จำเป็น' : 'Required'}</span>
         </label>
         <select name="stakeholder_id" id="ocStakeholderSelect" class="input" required>
@@ -372,7 +372,7 @@ function openOutcomeModal({ initialData = null, onSaved }) {
               ${isTh ? 'จำนวนคนที่เกิดการเปลี่ยนแปลง' : 'Number of people affected'}
               <span class="field-hint field-hint--primary">${isTh ? 'จำเป็น' : 'Required'}</span>
             </label>
-            <input type="number" id="ocQuantity" name="quantity" min="0" step="1" class="input" value="${src?.quantity ?? startCount ?? ''}" placeholder="เช่น 120" />
+            <input type="number" id="ocQuantity" name="quantity" min="0" step="1" class="input" value="${src?.quantity ?? startCount ?? ''}" placeholder="${isTh ? 'เช่น 120' : 'e.g. 120'}" />
           </div>
 
           <div class="field">
@@ -425,7 +425,7 @@ function openOutcomeModal({ initialData = null, onSaved }) {
               <select id="ocProxyUnitSelect" class="input">
                 ${[...PROXY_UNIT_SUGGESTIONS, '__other__'].map((u) => `
                   <option value="${u}" ${(src?.proxy_unit === u || (!src?.proxy_unit && u === 'คน / ปี')) ? 'selected' : ''}>
-                    ${u === '__other__' ? (isTh ? 'อื่นๆ (ระบุ)' : 'Other (specify)') : u}
+                    ${u === '__other__' ? (isTh ? 'อื่น ๆ (ระบุ)' : 'Other (specify)') : displayUnit(u)}
                   </option>
                 `).join('')}
               </select>

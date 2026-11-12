@@ -111,7 +111,7 @@ export function renderStep5(container) {
               ${
                 isReady
                   ? isTh
-                    ? 'ข้อมูลที่จำเป็นทั้งหมดได้รับการตรวจสอบแล้ว คุณสามารถกดปุ่มคำนวณเพื่อดูแดชบอร์ดสรุปผล'
+                    ? 'ข้อมูลที่จำเป็นทั้งหมดได้รับการตรวจสอบแล้ว สามารถเลือกปุ่มคำนวณเพื่อดูแดชบอร์ดสรุปผลได้'
                     : 'All mandatory parameters are satisfied. You can proceed to view the calculation dashboard.'
                   : isTh
                     ? 'กรุณาแก้ไขรายการที่ยังไม่ครบถ้วนเพื่อให้ระบบสามารถคำนวณผลลัพธ์ได้อย่างถูกต้อง'

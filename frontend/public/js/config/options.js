@@ -10,14 +10,14 @@ export const PROJECT_CATEGORIES = [
   { value: 'Technology', th: 'เทคโนโลยีและนวัตกรรม', en: 'Technology' },
   { value: 'Agriculture', th: 'การเกษตรและความมั่นคงทางอาหาร', en: 'Agriculture' },
   { value: 'Environment', th: 'สิ่งแวดล้อมและพลังงาน', en: 'Environment' },
-  { value: 'Other', th: 'อื่นๆ (ระบุ)', en: 'Other (specify)' },
+  { value: 'Other', th: 'อื่น ๆ (ระบุ)', en: 'Other (specify)' },
 ];
 
 export const CURRENCIES = [
   { value: 'THB', th: 'THB (บาท)', en: 'THB (Thai Baht)' },
   { value: 'USD', th: 'USD (ดอลลาร์สหรัฐ)', en: 'USD (US Dollar)' },
   { value: 'EUR', th: 'EUR (ยูโร)', en: 'EUR (Euro)' },
-  { value: 'Other', th: 'อื่นๆ (ระบุ)', en: 'Other (specify)' },
+  { value: 'Other', th: 'อื่น ๆ (ระบุ)', en: 'Other (specify)' },
 ];
 
 export const PERIOD_MONTHS = [
@@ -38,7 +38,7 @@ export const ANALYSIS_YEARS = [
   { value: '8', th: '8 ปี', en: '8 Years' },
   { value: '9', th: '9 ปี', en: '9 Years' },
   { value: '10', th: '10 ปี', en: '10 Years' },
-  { value: 'Other', th: 'อื่นๆ (ระบุ)', en: 'Other (specify)' },
+  { value: 'Other', th: 'อื่น ๆ (ระบุ)', en: 'Other (specify)' },
 ];
 
 export const EVAL_TYPES = [

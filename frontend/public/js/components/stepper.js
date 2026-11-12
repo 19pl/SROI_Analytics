@@ -82,7 +82,7 @@ export function stepperHtml(currentStep = 1, completedSteps = [], maxStep = 6) {
     const stateText = isDone ? t('step_state_done', 'complete') : isPartial ? t('step_state_partial', 'incomplete') : '';
 
     const isLocked = step > maxStep && !isActive;
-    const lockedTitle = t('step_locked_hint', `Finish step ${Math.min(maxStep, 5)} first`);
+    const lockedTitle = t('step_locked_hint', 'Please complete step {n} first').replace('{n}', Math.min(maxStep, 5));
     const itemHtml = isLocked
       ? `<span class="step-item is-locked" role="link" aria-disabled="true" aria-label="${displayLabel} (${lockedTitle})" title="${lockedTitle}"><span class="step-num">${step}</span></span>`
       : `

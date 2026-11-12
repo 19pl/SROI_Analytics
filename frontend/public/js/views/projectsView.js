@@ -648,7 +648,7 @@ export async function renderProjects(root) {
         container.innerHTML = `
           <div class="empty-state">
             <h2 class="empty-state__title">${t('empty_projects_title', 'No plans yet')}</h2>
-            <p class="empty-state__text">${t('create_first_plan', 'Get started by creating your unit’s first SROI plan.')}</p>
+            <p class="empty-state__text">${t('create_first_plan', 'Begin by creating the first SROI plan for your unit.')}</p>
             <ol class="empty-steps">
               ${[1, 2, 3]
                 .map(

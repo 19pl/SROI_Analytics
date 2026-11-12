@@ -45,7 +45,7 @@ function outcomeRow(outcome) {
 
 const EMPTY_ROW = `<tr>
   <td colspan="${COLUMN_COUNT}" class="empty">
-    ยังไม่มีผลลัพธ์ กด “เพิ่มผลลัพธ์” เพื่อเริ่มคำนวณ
+    ยังไม่มีผลลัพธ์ เลือก “เพิ่มผลลัพธ์” เพื่อเริ่มคำนวณ
   </td>
 </tr>`;
 

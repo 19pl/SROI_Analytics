@@ -10,7 +10,7 @@
 
 import { getState, saveStakeholderWithInputs, removeStakeholder, removeCost } from '../../store.js';
 import { openModal, closeModal, confirmModal } from '../../components/modal.js';
-import { formatBaht } from '../../utils/format.js';
+import { formatBaht, displayUnit } from '../../utils/format.js';
 import { escapeHtml } from '../../utils/html.js';
 import { icons } from '../../components/icons.js';
 import { showToast } from '../../components/toast.js';
@@ -37,7 +37,7 @@ export const BENEFICIARY_PRESETS = [
   { id: 'operators', th: 'อาจารย์ / นักวิจัย / ทีมงานโครงการ', en: 'Project Team & Staff (S2)', group: 'project_operator', unit: 'คน' },
   { id: 'supporters', th: 'คณะ / ส่วนงานภายในมหาวิทยาลัย', en: 'Faculty / University Division (S3)', group: 'project_supporter', unit: 'คณะ' },
   { id: 'local_gov', th: 'องค์กรปกครองส่วนท้องถิ่น (อปท.) / รพ.สต.', en: 'Local Govt / Health Center (S4)', group: 'other_agency', unit: 'แห่ง' },
-  { id: '__other__', th: 'อื่นๆ (ระบุเอง...)', en: 'Other (specify...)', group: 'primary_beneficiary', unit: 'คน' },
+  { id: '__other__', th: 'อื่น ๆ (ระบุเอง...)', en: 'Other (specify...)', group: 'primary_beneficiary', unit: 'คน' },
 ];
 
 const CATEGORIES = [
@@ -82,7 +82,7 @@ export function renderStep2(container) {
         <div class="strong">${escapeHtml(s.name)}</div>
         ${s.role_in_project ? `<div class="muted-sm">${escapeHtml(s.role_in_project)}</div>` : ''}
       </td>
-      <td class="num">${s.estimated_count !== null && s.estimated_count !== undefined ? `${Number(s.estimated_count).toLocaleString()} <span class="muted-sm">${escapeHtml(s.count_unit || '')}</span>` : '<span class="muted-sm">–</span>'}</td>
+      <td class="num">${s.estimated_count !== null && s.estimated_count !== undefined ? `${Number(s.estimated_count).toLocaleString()} <span class="muted-sm">${escapeHtml(displayUnit(s.count_unit))}</span>` : '<span class="muted-sm">–</span>'}</td>
       <td class="num">${
         fundingCount(s.id)
           ? `${escapeHtml(project.currency)} ${formatBaht(fundingOf(s.id))} <span class="muted-sm">(${fundingCount(s.id)} ${isTh ? 'รายการ' : fundingCount(s.id) === 1 ? 'line' : 'lines'})</span>`
@@ -188,7 +188,7 @@ export function renderStep2(container) {
             ${isTh ? 'ขั้นตอนที่ 2: ระบุผู้มีส่วนได้ส่วนเสีย (Stakeholders)' : 'Step 2: Stakeholders'}
           </h1>
           <p class="page-head__sub">
-            ${isTh ? 'ระบุว่าใครได้รับผลประโยชน์ หรือใครเป็นผู้สนับสนุนโครงการของคุณ' : 'Identify primary beneficiaries and supporting partners.'}
+            ${isTh ? 'ระบุผู้ที่ได้รับผลประโยชน์และผู้ที่สนับสนุนโครงการ' : 'Identify primary beneficiaries and supporting partners.'}
           </p>
         </div>
         <div class="page-head__actions">
@@ -202,7 +202,7 @@ export function renderStep2(container) {
         costs.length
           ? `<div class="panel panel--soft">
               <div class="cluster cluster--space-between">
-                <strong>${isTh ? 'เงินที่ใช้ทำโครงการ (รวมจากทุกกลุ่มด้านล่าง)' : 'Money put into the project (from all groups below)'}</strong>
+                <strong>${isTh ? 'เงินลงทุนในโครงการ (รวมจากทุกกลุ่มด้านล่าง)' : 'Total investment in the project (from all groups below)'}</strong>
                 <span class="muted-sm">
                   ${isTh ? 'รวม' : 'Total'} <b>${cur} ${formatBaht(totalInvest)}</b>
                   ${inKindInvest > 0 ? `· ${isTh ? 'เงินสด' : 'Cash'} ${formatBaht(cashInvest)} · ${isTh ? 'ไม่ใช่เงินสด' : 'Non-cash'} ${formatBaht(inKindInvest)}` : ''}
@@ -217,8 +217,8 @@ export function renderStep2(container) {
       ${
         unlinked.length
           ? `<section class="panel">
-              <h2 class="panel__title">${isTh ? 'รายการเงินเก่าที่ยังไม่ระบุว่าใครให้' : 'Older money items with no provider yet'}</h2>
-              <p class="muted-sm">${isTh ? 'กดแก้ไขเพื่อเลือกผู้ให้ หรือลบทิ้ง' : 'Press Edit to choose who provides it, or delete it.'}</p>
+              <h2 class="panel__title">${isTh ? 'รายการเงินเดิมที่ยังไม่ระบุผู้ให้' : 'Earlier items with no provider specified'}</h2>
+              <p class="muted-sm">${isTh ? 'เลือก “แก้ไข” เพื่อระบุผู้ให้ หรือเลือก “ลบ” เพื่อลบรายการ' : 'Select Edit to specify the provider, or Delete to remove the item.'}</p>
               <div class="table-wrap">
                 <table class="table">
                   <tbody>
@@ -277,7 +277,7 @@ export function renderStep2(container) {
       ${wizardFooterHtml(2, {
         canProceed: stakeholders.length > 0,
         nextLabel: isTh
-          ? 'บันทึกและไปต่อ: ระบุผลลัพธ์ที่เกิดขึ้น (Step 3) →'
+          ? 'บันทึกและดำเนินการต่อ: ระบุผลลัพธ์ที่เกิดขึ้น (Step 3) →'
           : 'Continue: Outcomes & Changes (Step 3) →',
       })}
     </div>`;
@@ -435,7 +435,7 @@ function openStakeholderModal({ initialData = null, defaultGroup = null, onSaved
       <!-- Section 1: Choose Stakeholder -->
       <div class="field">
         <label class="field-label" for="presetSelect">
-          ${isTh ? '1. ใครคือผู้ได้รับผลประโยชน์หรือผู้เกี่ยวข้อง?' : '1. Who is the stakeholder?'}
+          ${isTh ? '1. ผู้ใดเป็นผู้ได้รับผลประโยชน์หรือผู้เกี่ยวข้อง?' : '1. Who is the stakeholder?'}
           <span class="field-hint field-hint--primary">${isTh ? 'จำเป็น' : 'Required'}</span>
         </label>
         <select id="presetSelect" class="input">
@@ -487,7 +487,7 @@ function openStakeholderModal({ initialData = null, defaultGroup = null, onSaved
             <select id="unitPresetSelect" class="input">
               ${[...UNIT_SUGGESTIONS, '__other__'].map((u) => `
                 <option value="${u}" ${(initialData?.count_unit === u || (!initialData?.count_unit && u === 'คน')) ? 'selected' : ''}>
-                  ${u === '__other__' ? (isTh ? 'อื่นๆ (ระบุ)' : 'Other (specify)') : u}
+                  ${u === '__other__' ? (isTh ? 'อื่น ๆ (ระบุ)' : 'Other (specify)') : displayUnit(u)}
                 </option>
               `).join('')}
             </select>
@@ -642,7 +642,7 @@ function openStakeholderModal({ initialData = null, defaultGroup = null, onSaved
     const showYear = (Number(project.analysis_period_years) || 1) > 1 || rows.some((r) => Number(r.year) > 0);
     rowsBox.innerHTML = rows.length
       ? rows.map((r, i) => fundingRowHtml(r, i, project, showYear)).join('')
-      : `<div class="in-fund-empty">${isTh ? 'ยังไม่มีรายการ — กด “เพิ่มรายการ” ด้านล่าง' : 'No items yet — press “Add item” below.'}</div>`;
+      : `<div class="in-fund-empty">${isTh ? 'ยังไม่มีรายการ — เลือก “เพิ่มรายการ” ด้านล่าง' : 'No items yet — select “Add item” below.'}</div>`;
     updateFundTotal();
     rowsBox.querySelectorAll('.in-fund-row').forEach((div) => {
       const k = div.dataset.key;

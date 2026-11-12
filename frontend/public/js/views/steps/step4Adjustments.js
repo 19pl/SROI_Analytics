@@ -235,7 +235,7 @@ export function renderStep4(container) {
       ${wizardFooterHtml(4, {
         canProceed: true,
         nextLabel: isTh
-          ? 'บันทึกและไปต่อ: ตรวจสอบความถูกต้องและคำนวณ (Step 5) →'
+          ? 'บันทึกและดำเนินการต่อ: ตรวจสอบความถูกต้องและคำนวณ (Step 5) →'
           : 'Continue: Review & Readiness (Step 5) →',
       })}
     </div>
@@ -311,7 +311,7 @@ export function renderStep4(container) {
     tpl.innerHTML = wizardFooterHtml(4, {
       canProceed: true,
       nextLabel: isTh
-        ? 'บันทึกและไปต่อ: ตรวจสอบความถูกต้องและคำนวณ (Step 5) →'
+        ? 'บันทึกและดำเนินการต่อ: ตรวจสอบความถูกต้องและคำนวณ (Step 5) →'
         : 'Continue: Review & Readiness (Step 5) →',
     }).trim();
     const newFooter = tpl.content.firstElementChild;
@@ -470,7 +470,7 @@ function openYearProjectionsModal({ project, outcome, onSaved }) {
             <thead>
               <tr>
                 <th>${t('year', 'ปี')}</th>
-                <th>${t('col_quantity', 'จำนวนเฉพาะปีนั้น (Override)')}</th>
+                <th>${t('col_qty_override', 'Quantity for this year (override)')}</th>
                 <th>${t('field_dropoff', 'Drop-off เฉพาะปีนั้น (%)')}</th>
               </tr>
             </thead>

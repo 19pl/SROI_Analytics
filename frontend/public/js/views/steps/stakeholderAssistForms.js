@@ -58,7 +58,7 @@ export function s2SectionHtml({ initialData: d, isTh }) {
       placeholder: L(c.placeholders.name),
       maxlength: 200,
       chipsLabel: isTh
-        ? 'ตัวอย่างชื่อ (แตะเพื่อเติม แก้ไขได้)'
+        ? 'ตัวอย่างชื่อ (เลือกเพื่อเติมข้อความ และสามารถแก้ไขได้)'
         : 'Examples (tap to fill, editable)',
     })}
     ${fieldHtml({
@@ -104,7 +104,7 @@ export function s2SectionHtml({ initialData: d, isTh }) {
       placeholder: L(c.placeholders.role),
       maxlength: 500,
       chipsLabel: isTh
-        ? 'บทบาทที่พบบ่อย (แตะเพื่อเพิ่ม / แตะอีกครั้งเพื่อเอาออก)'
+        ? 'บทบาทที่พบบ่อย (เลือกเพื่อเพิ่ม / เลือกอีกครั้งเพื่อนำออก)'
         : 'Common roles (tap to add / tap again to remove)',
     })}
     ${fieldHtml({
@@ -280,7 +280,7 @@ export function s3SectionHtml({ initialData: d, isTh }) {
       placeholder: L(c.placeholders.name),
       maxlength: 200,
       chipsLabel: isTh
-        ? 'ตัวอย่างชื่อ (แตะเพื่อเติม แก้ไขได้)'
+        ? 'ตัวอย่างชื่อ (เลือกเพื่อเติมข้อความ และสามารถแก้ไขได้)'
         : 'Examples (tap to fill, editable)',
     })}
     ${selectWithOtherHtml({
@@ -330,7 +330,7 @@ export function s3SectionHtml({ initialData: d, isTh }) {
       placeholder: L(c.placeholders.description),
       maxlength: 2000,
       chipsLabel: isTh
-        ? 'เงื่อนไขที่พบบ่อย (แตะเพื่อเพิ่ม / แตะอีกครั้งเพื่อเอาออก)'
+        ? 'เงื่อนไขที่พบบ่อย (เลือกเพื่อเพิ่ม / เลือกอีกครั้งเพื่อนำออก)'
         : 'Common conditions (tap to add / remove)',
     })}`;
 }
@@ -472,7 +472,7 @@ export function s4SectionHtml({ initialData: d, isTh }) {
       placeholder: L(c.placeholders.name),
       maxlength: 200,
       chipsLabel: isTh
-        ? 'ตัวอย่างชื่อ (แตะเพื่อเติม แก้ไขได้)'
+        ? 'ตัวอย่างชื่อ (เลือกเพื่อเติมข้อความ และสามารถแก้ไขได้)'
         : 'Examples (tap to fill, editable)',
     })}
     ${selectWithOtherHtml({
@@ -518,7 +518,7 @@ export function s4SectionHtml({ initialData: d, isTh }) {
       placeholder: L(c.placeholders.role),
       maxlength: 500,
       chipsLabel: isTh
-        ? 'บทบาทที่พบบ่อย (แตะเพื่อเพิ่ม / แตะอีกครั้งเพื่อเอาออก)'
+        ? 'บทบาทที่พบบ่อย (เลือกเพื่อเพิ่ม / เลือกอีกครั้งเพื่อนำออก)'
         : 'Common roles (tap to add / tap again to remove)',
     })}
     ${fieldHtml({

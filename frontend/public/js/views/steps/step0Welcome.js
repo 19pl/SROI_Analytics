@@ -28,7 +28,7 @@ export function renderStep0(container) {
           <p class="page-head__sub">
             ${
               isTh
-                ? 'ระบบประเมินผลตอบแทนทางสังคม เพื่อแปลงคุณค่าที่เกิดขึ้นต่อชุมชนและสังคมให้เป็นมูลค่าเทียบเคียงตัวเงิน ระบบจะช่วยแนะนำคุณทีละขั้นตอน และบันทึกข้อมูลให้อัตโนมัติทุกช่วงเวลา'
+                ? 'ระบบประเมินผลตอบแทนทางสังคม เพื่อแปลงคุณค่าที่เกิดขึ้นต่อชุมชนและสังคมให้เป็นมูลค่าเทียบเคียงตัวเงิน ระบบจะแนะนำการดำเนินการทีละขั้นตอน และบันทึกข้อมูลให้อัตโนมัติทุกช่วงเวลา'
                 : 'A standardized framework to measure and account for the broader social and economic value created by university initiatives. This guided assistant leads you through each step and auto-saves your progress.'
             }
           </p>
@@ -58,7 +58,7 @@ export function renderStep0(container) {
               <strong>2. ${isTh ? 'เปรียบเทียบกับงบประมาณลงทุน' : 'Compares value to investment'}:</strong>
               ${
                 isTh
-                  ? 'แสดงในรูปอัตราส่วน เช่น 2.50:1 หมายถึง ทุกๆ 1 บาทที่ลงทุน สร้างคุณค่าทางสังคมคืนสู่ชุมชน 2.50 บาท'
+                  ? 'แสดงในรูปอัตราส่วน เช่น 2.50:1 หมายถึง ทุก ๆ 1 บาทที่ลงทุน สร้างคุณค่าทางสังคมคืนสู่ชุมชน 2.50 บาท'
                   : 'Expressed as a ratio (e.g. 2.50:1), meaning every ฿1 invested creates ฿2.50 in social value.'
               }
             </p>

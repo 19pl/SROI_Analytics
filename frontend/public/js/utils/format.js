@@ -1,3 +1,5 @@
+import { getLanguage } from '../i18n.js';
+
 const baht = new Intl.NumberFormat('th-TH', {
   style: 'currency',
   currency: 'THB',
@@ -28,3 +30,28 @@ export const formatCurrency = (value, currency = 'THB') =>
     currency,
     maximumFractionDigits: 0,
   }).format(Number(value) || 0);
+
+/**
+ * Preset measurement units are stored as Thai text. Show them in the active language
+ * (custom units typed by the user are shown exactly as entered).
+ */
+const UNIT_EN = {
+  'คน': 'person',
+  'คน / ปี': 'person / year',
+  'คน / เดือน': 'person / month',
+  'ครัวเรือน': 'household',
+  'ครัวเรือน / ปี': 'household / year',
+  'คณะ': 'faculty',
+  'ภาควิชา': 'department',
+  'แห่ง': 'site',
+  'แห่ง / ปี': 'site / year',
+  'หน่วยงาน': 'agency',
+  'กลุ่ม': 'group',
+  'ตัน / ปี': 'tonne / year',
+};
+const UNIT_TH = Object.fromEntries(Object.entries(UNIT_EN).map(([th, en]) => [en, th]));
+
+export function displayUnit(unit) {
+  const u = String(unit ?? '');
+  return getLanguage() === 'en' ? (UNIT_EN[u] ?? u) : (UNIT_TH[u] ?? u);
+}

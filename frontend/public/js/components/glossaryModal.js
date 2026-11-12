@@ -13,7 +13,7 @@ export const GLOSSARY_TERMS = [
     th_title: 'ผู้มีส่วนได้ส่วนเสีย (Stakeholder)',
     en_title: 'Stakeholder',
     th_desc:
-      'บุคคล กลุ่มคน ชุมชน หรือองค์กรที่ได้รับผลกระทบ มีส่วนร่วม หรือเกิดการเปลี่ยนแปลงขึ้นเพราะโครงการของคุณ เช่น นิสิต, อาจารย์, ชุมชนรอบมหาวิทยาลัย, หรือหน่วยงานภาครัฐ',
+      'บุคคล กลุ่มคน ชุมชน หรือองค์กรที่ได้รับผลกระทบ มีส่วนร่วม หรือเกิดการเปลี่ยนแปลงขึ้นเพราะโครงการ เช่น นิสิต, อาจารย์, ชุมชนรอบมหาวิทยาลัย, หรือหน่วยงานภาครัฐ',
     en_desc:
       'People, groups, or organizations that experience change or affect the initiative (e.g. students, community members, staff, government agencies).',
     example_th: 'นิสิตที่เข้าอบรม, ผู้สูงอายุที่มารับบริการตรวจสายตา, ภาควิชาที่จัดโครงการ',
@@ -49,7 +49,7 @@ export const GLOSSARY_TERMS = [
     th_title: 'ผลที่น่าจะเกิดขึ้นอยู่แล้ว (Deadweight)',
     en_title: 'Deadweight',
     th_desc:
-      'สัดส่วนของการเปลี่ยนแปลงที่น่าจะเกิดขึ้นอยู่แล้วตามธรรมชาติ แม้ว่าจะไม่มีโครงการของคุณก็ตาม เพื่อไม่ให้โครงการอ้างผลงานเกินจริง',
+      'สัดส่วนของการเปลี่ยนแปลงที่น่าจะเกิดขึ้นอยู่แล้วตามธรรมชาติ แม้ว่าจะไม่มีโครงการก็ตาม เพื่อไม่ให้โครงการอ้างผลงานเกินจริง',
     en_desc:
       'The proportion of total outcome change that would have happened anyway without the project.',
     example_th:
@@ -62,7 +62,7 @@ export const GLOSSARY_TERMS = [
     th_title: 'ผลจากผู้อื่นหรือปัจจัยร่วม (Attribution)',
     en_title: 'Attribution',
     th_desc:
-      'สัดส่วนของผลลัพธ์ที่เกิดจากการช่วยเหลือหรือการดำเนินงานของหน่วยงานอื่น ไม่ได้เกิดจากโครงการของคุณเพียงลำพัง',
+      'สัดส่วนของผลลัพธ์ที่เกิดจากการช่วยเหลือหรือการดำเนินงานของหน่วยงานอื่น ไม่ได้เกิดจากโครงการเพียงลำพัง',
     en_desc:
       'The proportion of the outcome that was created through the contribution of other people or partner agencies.',
     example_th:
@@ -87,7 +87,7 @@ export const GLOSSARY_TERMS = [
     term: 'Drop-off',
     th_title: 'การลดทอนของผลลัพธ์ในแต่ละปี (Drop-off)',
     en_title: 'Drop-off',
-    th_desc: 'อัตราที่ผลกระทบของโครงการค่อยๆ เลือนหายไปหรือลดลงตามกาลเวลาในแต่ละปีที่ผ่านไป',
+    th_desc: 'อัตราที่ผลกระทบของโครงการค่อย ๆ เลือนหายไปหรือลดลงตามกาลเวลาในแต่ละปีที่ผ่านไป',
     en_desc:
       'The rate at which an outcome effect naturally deteriorates or fades in subsequent years.',
     example_th:
@@ -111,7 +111,7 @@ export const GLOSSARY_TERMS = [
     th_title: 'อัตราส่วนผลตอบแทนทางสังคม (SROI Ratio)',
     en_title: 'SROI Ratio',
     th_desc:
-      'ตัวเลขอัตราส่วนที่แสดงว่าเงินลงทุนทุกๆ 1 บาทในโครงการนี้ ก่อให้เกิดมูลค่าทางสังคมเทียบเท่ากี่บาท (สูตร: มูลค่าปัจจุบันสุทธิของผลประโยชน์รวม ÷ เงินลงทุนรวม)',
+      'ตัวเลขอัตราส่วนที่แสดงว่าเงินลงทุนทุก ๆ 1 บาทในโครงการนี้ ก่อให้เกิดมูลค่าทางสังคมเทียบเท่ากี่บาท (สูตร: มูลค่าปัจจุบันสุทธิของผลประโยชน์รวม ÷ เงินลงทุนรวม)',
     en_desc:
       'The ratio comparing total present value of social impact against total investment inputs.',
     example_th:

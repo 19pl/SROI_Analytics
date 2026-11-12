@@ -2,6 +2,7 @@ import { card } from '../components/ui.js';
 import { icons } from '../components/icons.js';
 import { getAboutData } from '../data/aboutContent.js';
 import { escapeHtml } from '../utils/html.js';
+import { t } from '../i18n.js';
 
 const heroSection = (data) => `
   <section class="about-hero">
@@ -24,8 +25,8 @@ const keyIdeasSection = (data) => `
 `;
 
 const tableOfContents = (data) => `
-  <nav class="about-toc" aria-label="Methodology sections">
-    <span class="muted-sm uppercase strong about-toc-title">เนื้อหา / Contents:</span>
+  <nav class="about-toc" aria-label="${escapeHtml(t('aria_methodology', 'Methodology sections'))}">
+    <span class="muted-sm uppercase strong about-toc-title">${escapeHtml(t('about_toc', 'Contents:'))}</span>
     <a href="#sec-questions">${escapeHtml(data.qCardTitle)}</a>
     <a href="#sec-ratio">${escapeHtml(data.readCardTitle)}</a>
     <a href="#sec-steps">${escapeHtml(data.stepsCardTitle)}</a>

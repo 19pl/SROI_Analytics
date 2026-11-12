@@ -98,7 +98,8 @@ function updateControls() {
   if (langLabelEl) {
     langLabelEl.textContent = currentLang.toUpperCase();
     if (btnLang) {
-      btnLang.title = currentLang === 'th' ? 'Switch to English' : 'เปลี่ยนเป็นภาษาไทย';
+      btnLang.title = t('lang_switch', 'Switch language');
+      btnLang.setAttribute('aria-label', t('lang_switch', 'Switch language'));
     }
   }
 
@@ -107,6 +108,15 @@ function updateControls() {
   if (toggleSidebarBtn) {
     toggleSidebarBtn.setAttribute('aria-label', t('toggle_sidebar', 'Toggle menu'));
   }
+
+  // Static shell text from index.html (document title, brand subtitle, menu label)
+  document.documentElement.setAttribute('lang', currentLang);
+  document.title = t('app_title', 'SROI Analytics');
+  const brandSub = document.querySelector('.brand-sub');
+  if (brandSub) brandSub.textContent = t('institution_nu', 'Naresuan University');
+  const navLabelEl = $('navLabel');
+  if (navLabelEl) navLabelEl.textContent = t('nav_menu_label', 'Menu');
+  if (btnTheme) btnTheme.setAttribute('aria-label', t('theme_switch', 'Switch theme'));
 }
 
 function updateHeader() {
@@ -224,6 +234,7 @@ async function init() {
 
   // Listen to language changes: re-render nav, header, and current page
   subscribeLanguage(() => {
+    updateControls();
     renderNav();
     updateHeader();
     navigate();

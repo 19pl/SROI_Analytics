@@ -38,7 +38,7 @@ export function completedSteps(review) {
 /* ───────── Step gating: a step opens only when every step before it is complete ───────── */
 
 const ISSUE_TH = [
-  ['Add at least one investment item.', 'เพิ่มรายการเงินที่ใช้อย่างน้อย 1 รายการ'],
+  ['Add at least one investment item.', 'เพิ่มรายการเงินลงทุนอย่างน้อย 1 รายการ'],
   ['Set the analysis period.', 'กรอกระยะเวลาวิเคราะห์ (ปี)'],
   ['Choose how investment is compared with present-value outcomes.', 'เลือกวิธีเปรียบเทียบเงินลงทุนกับผลลัพธ์ (ในส่วนตั้งค่าขั้นสูง)'],
   ['Identify at least one stakeholder group.', 'เพิ่มกลุ่มผู้มีส่วนได้เสียอย่างน้อย 1 กลุ่ม'],
@@ -94,6 +94,6 @@ export function nextGate(state, step, isTh = true) {
   const issues = stepIssues(state, step, isTh);
   if (!issues.length) return { blocked: false, message: '' };
   const more = issues.length > 1 ? (isTh ? ` (และอีก ${issues.length - 1} ข้อ)` : ` (and ${issues.length - 1} more)`) : '';
-  const lead = isTh ? `ยังไปต่อไม่ได้ — ขั้นที่ ${step} ยังไม่ครบ: ` : `Can't continue yet — step ${step} is incomplete: `;
+  const lead = isTh ? `ยังไม่สามารถดำเนินการต่อได้ — ขั้นที่ ${step} ยังไม่ครบ: ` : `Unable to continue — step ${step} is incomplete: `;
   return { blocked: true, message: `${lead}${issues[0]}${more}`, issues };
 }

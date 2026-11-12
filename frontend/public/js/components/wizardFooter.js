@@ -34,7 +34,7 @@ export function wizardFooterHtml(currentStep = 1, options = {}) {
   // The next step stays locked until this step is complete (the rule lives in utils/readiness.js).
   const gate = currentStep >= 1 && currentStep <= 5 ? nextGate(getState(), currentStep, isTh) : { blocked: false, message: '' };
   const canProceed = options.canProceed !== false && !gate.blocked;
-  const gateMsg = gate.message || (isTh ? 'กรอกข้อมูลที่จำเป็นของขั้นนี้ให้ครบก่อนไปต่อ' : 'Complete the required inputs of this step first');
+  const gateMsg = gate.message || (isTh ? 'กรอกข้อมูลที่จำเป็นของขั้นนี้ให้ครบถ้วนก่อนดำเนินการต่อ' : 'Complete the required inputs of this step first');
 
   let prevStep = null;
   let nextStep = null;

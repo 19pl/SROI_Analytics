@@ -382,7 +382,7 @@ export async function renderOrg(root) {
         { label: t('btn_rename', 'Rename'), onSelect: () => openOrgEntityModal({ type: 'faculty', mode: 'edit', id: Number(faculty.id), currentName: faculty.name, currentDescription: faculty.description || '' }) },
         ...(canDeleteStructure() ? [{ label: t('btn_delete', 'Delete'), danger: true, separatorBefore: true, onSelect: () => openOrgConfirm({
           title: `${t('delete_faculty_title', 'ลบคณะ')} ${escapeHtml(faculty.name)}`,
-          message: `${t('delete_faculty_confirm_prefix', 'คุณกำลังลบคณะ')} <strong>${escapeHtml(faculty.name)}</strong><br>${faculty.departments.length} ${t('departments_short', 'ภาควิชา')} · ${faculty.departments.reduce((n,d) => n + countPlansForDepartment(d.id), countPlansForFaculty(faculty.id))} ${t('plans', 'แผนงาน')}<br>${t('delete_blocked_explanation', 'ระบบจะไม่ลบข้อมูลแผนงานโดยอัตโนมัติ หากยังมีแผนงานที่ใช้งานอยู่จะไม่อนุญาตให้ลบ')}`,
+          message: `${t('delete_faculty_confirm_prefix', 'ท่านกำลังลบคณะ')} <strong>${escapeHtml(faculty.name)}</strong><br>${faculty.departments.length} ${t('departments_short', 'ภาควิชา')} · ${faculty.departments.reduce((n,d) => n + countPlansForDepartment(d.id), countPlansForFaculty(faculty.id))} ${t('plans', 'แผนงาน')}<br>${t('delete_blocked_explanation', 'ระบบจะไม่ลบข้อมูลแผนงานโดยอัตโนมัติ หากยังมีแผนงานที่ใช้งานอยู่จะไม่อนุญาตให้ลบ')}`,
           confirmText: t('btn_delete', 'ลบ'),
           onConfirm: async () => { await api.deleteFaculty(Number(faculty.id)); allFaculties = allFaculties.filter((item) => Number(item.id) !== Number(faculty.id)); updateOrgStats(); refreshFacultyTree(); showToast(t('deleted_faculty', 'ลบคณะสำเร็จ'), 'success'); },
         }) }] : []),
@@ -396,7 +396,7 @@ export async function renderOrg(root) {
         { label: t('btn_rename', 'Rename'), onSelect: () => openOrgEntityModal({ type: 'department', mode: 'edit', id: departmentId, currentName: department.name, currentDescription: department.description || '' }) },
         ...(canDeleteStructure() ? [{ label: t('btn_delete', 'Delete'), danger: true, separatorBefore: true, onSelect: () => openOrgConfirm({
           title: `${t('delete_department_title', 'ลบภาควิชา')} ${escapeHtml(department.name)}`,
-          message: `${t('delete_department_confirm_prefix', 'คุณกำลังลบภาควิชา')} <strong>${escapeHtml(department.name)}</strong><br>${countPlansForDepartment(departmentId)} ${t('plans', 'แผนงาน')}<br>${t('delete_blocked_explanation', 'ระบบจะไม่ลบข้อมูลแผนงานโดยอัตโนมัติ หากยังมีแผนงานที่ใช้งานอยู่จะไม่อนุญาตให้ลบ')}`,
+          message: `${t('delete_department_confirm_prefix', 'ท่านกำลังลบภาควิชา')} <strong>${escapeHtml(department.name)}</strong><br>${countPlansForDepartment(departmentId)} ${t('plans', 'แผนงาน')}<br>${t('delete_blocked_explanation', 'ระบบจะไม่ลบข้อมูลแผนงานโดยอัตโนมัติ หากยังมีแผนงานที่ใช้งานอยู่จะไม่อนุญาตให้ลบ')}`,
           confirmText: t('btn_delete', 'ลบ'),
           onConfirm: async () => { await api.deleteDepartment(departmentId); allFaculties = allFaculties.map((faculty) => ({ ...faculty, departments: (faculty.departments || []).filter((item) => Number(item.id) !== departmentId) })); updateOrgStats(); refreshFacultyTree(); showToast(t('deleted_dept', 'ลบภาควิชาสำเร็จ'), 'success'); },
         }) }] : []),
@@ -436,8 +436,8 @@ export async function renderOrg(root) {
       : t('field_dept_desc', 'Description / Department Code');
 
     const namePlaceholder = isFac
-      ? 'e.g. คณะสหเวชศาสตร์ / Faculty of Allied Health Sciences'
-      : 'e.g. ภาควิชากายภาพบำบัด / Department of Physical Therapy';
+      ? t('ph_fac_name', 'e.g. Faculty of Allied Health Sciences')
+      : t('ph_dept_name', 'e.g. Department of Physical Therapy');
 
     const descPlaceholder = isFac
       ? t('ph_fac_desc', 'Brief description or faculty unit code (optional)')
@@ -681,7 +681,7 @@ export async function renderOrg(root) {
   function roleLabel(role) { return ({ owner: t('role_owner_th','เจ้าของ'), editor: t('role_editor_th','ผู้แก้ไข'), viewer: t('role_viewer_th','ผู้ดู') })[role] || role; }
   function localizeOrgError(error) {
     const message = error?.message || '';
-    if (error?.status === 403) return t('permission_denied','คุณไม่มีสิทธิ์ดำเนินการนี้');
+    if (error?.status === 403) return t('permission_denied','ท่านไม่มีสิทธิ์ดำเนินการนี้');
     if (error?.status === 409) return message.toLowerCase().includes('owner') ? t('last_owner_warning','องค์กรต้องมีเจ้าของอย่างน้อยหนึ่งคน') : t('org_conflict','ไม่สามารถดำเนินการได้ เนื่องจากยังมีข้อมูลที่เกี่ยวข้อง');
     if (error?.status === 422) return t('org_validation_error','ข้อมูลไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง');
     return message || t('org_operation_failed','ดำเนินการไม่สำเร็จ กรุณาลองอีกครั้ง');

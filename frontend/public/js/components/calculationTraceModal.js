@@ -34,7 +34,7 @@ export function openCalculationTraceModal({ metricType, project, result, outcome
               ${isTh ? '1. สูตรการคำนวณหลัก (Core Formula)' : '1. Core Formula'}
             </div>
             <div class="trace-formula">
-              SROI Ratio = มูลค่าปัจจุบันของผลประโยชน์ทางสังคมสุทธิ (PV) ÷ เงินลงทุนรวม (Total Investment)
+              ${isTh ? 'อัตราส่วน SROI = มูลค่าปัจจุบันของผลประโยชน์ทางสังคมสุทธิ (PV) ÷ เงินลงทุนรวม (Total Investment)' : 'SROI Ratio = Net Present Value of Social Benefits (PV) ÷ Total Investment'}
             </div>
             <div class="muted-sm">
               ${isTh ? 'คำนวณจากมูลค่าปัจจุบันสุทธิที่หักลบ Deadweight, Attribution และคิดลดแล้ว หารด้วยงบประมาณเงินลงทุนทั้งหมด' : 'Monetized present value of net societal benefits divided by total investment.'}
@@ -132,7 +132,7 @@ export function openCalculationTraceModal({ metricType, project, result, outcome
               ${isTh ? 'สูตรการคำนวณมูลค่าปัจจุบัน (Present Value Formula)' : 'Present Value Formula'}
             </div>
             <div class="trace-formula">
-              PV = Σ [ มูลค่าสุทธิรายปี ÷ (1 + r)^t ]
+              ${isTh ? 'PV = Σ [ มูลค่าสุทธิรายปี ÷ (1 + r)^t ]' : 'PV = Σ [ Annual Net Value ÷ (1 + r)^t ]'}
             </div>
             <p class="muted" class="muted-sm">
               ${isTh ? `คำนวณโดยนำมูลค่าผลลัพธ์สุทธิแต่ละปีมาคิดลดด้วยอัตรา ${discountRate}% ต่อปี เพื่อปรับมูลค่าในอนาคตให้เป็นมูลค่าเงิน ณ ปัจจุบัน` : `Discounted at ${discountRate}% annually to adjust future value to present terms.`}
@@ -197,18 +197,18 @@ export function openCalculationTraceModal({ metricType, project, result, outcome
             <div class="muted-sm">
               ${isTh ? 'จำนวนผู้รับผล' : 'Beneficiaries'}: <strong>${Number(qty).toLocaleString()}</strong> × ${isTh ? 'ตัวแทนทางการเงิน' : 'Financial Proxy'}: <strong>${currency} ${formatBaht(proxy)}</strong> = <strong class="primary-text">${currency} ${formatBaht(gross)}/ปี</strong>
             </div>
-            ${o.proxy_source ? `<div class="muted" class="trace-subtext muted-sm">แหล่งอ้างอิงตัวแทนทางการเงิน: ${escapeHtml(o.proxy_source)}</div>` : ''}
+            ${o.proxy_source ? `<div class="muted" class="trace-subtext muted-sm">${isTh ? 'แหล่งอ้างอิงตัวแทนทางการเงิน' : 'Financial proxy source'}: ${escapeHtml(o.proxy_source)}</div>` : ''}
           </div>
 
           <div class="panel panel--soft">
             <div class="trace-card-title">${isTh ? 'ขั้นตอนที่ 2: การหักลบผลกระทบส่วนเกิน (Impact Deductions)' : 'Step 2: Impact Deductions'}</div>
             <ul class="trace-list muted-sm">
-              <li>Deadweight (เกิดอยู่แล้ว): <strong>${(dw * 100).toFixed(1)}%</strong></li>
-              <li>Attribution (หน่วยงานอื่นมีส่วนร่วม): <strong>${(at * 100).toFixed(1)}%</strong></li>
-              <li>Displacement (ย้ายปัญหา): <strong>${(dp * 100).toFixed(1)}%</strong></li>
+              <li>${isTh ? 'Deadweight (สิ่งที่เกิดขึ้นอยู่แล้ว)' : 'Deadweight (would have occurred anyway)'}: <strong>${(dw * 100).toFixed(1)}%</strong></li>
+              <li>${isTh ? 'Attribution (ผลจากหน่วยงานอื่น)' : 'Attribution (contribution by other parties)'}: <strong>${(at * 100).toFixed(1)}%</strong></li>
+              <li>${isTh ? 'Displacement (ผลกระทบที่ย้ายไปยังกลุ่มอื่น)' : 'Displacement (impact displaced to other groups)'}: <strong>${(dp * 100).toFixed(1)}%</strong></li>
             </ul>
             <div class="trace-formula">
-              สัดส่วนผลประโยชน์สุทธิที่อ้างสิทธิ์ได้ = (1 - ${(dw).toFixed(2)}) × (1 - ${(at).toFixed(2)}) × (1 - ${(dp).toFixed(2)}) = ${(retained * 100).toFixed(1)}%
+              ${isTh ? 'สัดส่วนผลประโยชน์สุทธิที่อ้างสิทธิ์ได้' : 'Net attributable share'} = (1 - ${(dw).toFixed(2)}) × (1 - ${(at).toFixed(2)}) × (1 - ${(dp).toFixed(2)}) = ${(retained * 100).toFixed(1)}%
             </div>
           </div>
 

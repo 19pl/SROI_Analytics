@@ -95,7 +95,7 @@ const HELP_CONTENT = {
     0: {
       title: 'Overview & Preparation',
       body: `
-        <p>Welcome to NU SROI Analytics assessment platform.</p>
+        <p>Welcome to SROI Analytics assessment platform.</p>
         <p><strong>What is SROI?</strong> A framework for measuring societal value generated per ฿1 of resources invested.</p>
         <p><strong>3 Things to Prepare:</strong></p>
         <ul>

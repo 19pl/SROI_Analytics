@@ -721,7 +721,7 @@ export const S4_ASSIST = {
       en: 'Coordination & referral',
       legacy: ['การประสานงานและส่งต่อกลุ่มเป้าหมาย', 'การประสานงานและส่งต่อ'],
       tip: T(
-        'ระบุว่าส่งต่อกลุ่มเป้าหมายไปที่ใด หรือรับต่อจากใคร',
+        'ระบุว่าส่งต่อกลุ่มเป้าหมายไปที่ใด หรือรับต่อจากผู้ใด',
         'Say where target-group members are referred to or from.',
       ),
     },

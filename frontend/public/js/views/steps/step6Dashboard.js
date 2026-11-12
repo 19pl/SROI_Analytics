@@ -258,7 +258,7 @@ export function renderStep6(container) {
               <p class="muted-sm">
                 ${
                   isTh
-                    ? 'เปรียบเทียบอัตราส่วน SROI และมูลค่าผลกระทบภายใต้สมมติฐานทางเลือกต่างๆ'
+                    ? 'เปรียบเทียบอัตราส่วน SROI และมูลค่าผลกระทบภายใต้สมมติฐานทางเลือกต่าง ๆ'
                     : 'Compare SROI ratios and net social returns across policy scenarios.'
                 }
               </p>
@@ -615,14 +615,14 @@ function openExportReportModal({ project, activeScenarioId }) {
           ${row({
             tag: 'LINK',
             title: L('ลิงก์แชร์ (อ่านอย่างเดียว)', 'Share link (read-only)'),
-            desc: L('ใครก็ตามที่มีลิงก์เปิดดูรายงานได้ ไม่ต้องเข้าสู่ระบบ ใช้ได้ 30 วัน', 'Anyone with the link can view the report without signing in. Valid for 30 days.'),
+            desc: L('ผู้ที่ได้รับลิงก์สามารถเปิดดูรายงานได้โดยไม่ต้องเข้าสู่ระบบ ลิงก์มีอายุ 30 วัน', 'Anyone who receives the link can view the report without signing in. The link is valid for 30 days.'),
             extra: '<div id="shareLinkContainer" hidden></div>',
             action: `<button type="button" class="btn btn-secondary btn-compact" id="btnShareLink">${L('สร้างลิงก์', 'Create link')}</button>`,
           })}
         </ul>
 
         <details class="exp-more">
-          <summary>${L('ตัวเลือกอื่นๆ', 'More options')}</summary>
+          <summary>${L('ตัวเลือกอื่น ๆ', 'More options')}</summary>
           <div class="exp-more__body">
             <span class="muted-sm">${L('ไฟล์ PDF พื้นฐานจากเซิร์ฟเวอร์ รองรับเฉพาะตัวอักษรละติน (ภาษาไทยจะไม่แสดง)', 'Basic server-made PDF file. Latin characters only; Thai text will not show.')}</span>
             <button type="button" class="btn btn-secondary btn-compact" id="btnDownloadPdf">${L('ดาวน์โหลด PDF พื้นฐาน', 'Download basic PDF')}</button>

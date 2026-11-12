@@ -31,7 +31,7 @@ const brandHtml = () => `
     </div>
     <div>
       <div class="auth-brand-name">${t('institution_nu', 'มหาวิทยาลัยนเรศวร (Naresuan University)')}</div>
-      <div class="muted-sm">NU SROI Analytics</div>
+      <div class="muted-sm">SROI Analytics</div>
     </div>
   </div>`;
 

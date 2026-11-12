@@ -202,7 +202,7 @@ export function bindSelectWithOther({ select, other, tip, options, isTh, initial
     value() {
       const id = select.value;
       if (!id) return null;
-      if (id === OTHER_ID) return other.value.trim() || (isTh ? 'อื่นๆ' : 'Other');
+      if (id === OTHER_ID) return other.value.trim() || (isTh ? 'อื่น ๆ' : 'Other');
       if (!touched && init.id === id && String(initialRaw ?? '').trim())
         return String(initialRaw).trim();
       return pickText(optOf(id), isTh);

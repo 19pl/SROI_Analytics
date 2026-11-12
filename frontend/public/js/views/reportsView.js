@@ -320,7 +320,7 @@ export async function renderReports(root) {
       box.innerHTML = `
         <div class="empty-state">
           <p class="empty-state__title">${isTh ? 'ไม่พบประวัติการคำนวณ' : 'No calculation history found'}</p>
-          <p class="empty-state__text">${isTh ? 'กดปุ่มบันทึกผลคำนวณในหน้าแดชบอร์ดเพื่อสร้างประวัติรอบแรก' : 'Save calculation runs from the Step 6 Dashboard.'}</p>
+          <p class="empty-state__text">${isTh ? 'เลือก “บันทึกประวัติผลคำนวณ” ในหน้าแดชบอร์ดเพื่อสร้างประวัติการคำนวณครั้งแรก' : 'Save calculation runs from the Step 6 Dashboard.'}</p>
         </div>
       `;
       if (pag) pag.hidden = true;
