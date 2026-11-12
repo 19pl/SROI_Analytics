@@ -157,7 +157,7 @@ export function renderStep2(container) {
             <p class="muted-sm">${escapeHtml(isTh ? info.th_desc : info.en_desc)}</p>
           </div>
           <div class="page-head__actions">
-            ${total ? `<span class="muted-sm">${t('in_funding_total', 'เงินสนับสนุนรวม')}: <b>${escapeHtml(project.currency)} ${formatBaht(total)}</b></span>` : ''}
+            ${total ? `<span class="muted-sm">${t('in_funding_total', 'เงินสนับสนุนรวม')}: <b>${formatBaht(total)}</b></span>` : ''}
           </div>
         </div>
         <div class="table-wrap">
@@ -205,7 +205,7 @@ export function renderStep2(container) {
               <div class="cluster cluster--space-between">
                 <strong>${isTh ? 'เงินลงทุนในโครงการ (รวมจากทุกกลุ่มด้านล่าง)' : 'Total investment in the project (from all groups below)'}</strong>
                 <span class="muted-sm">
-                  ${isTh ? 'รวม' : 'Total'} <b>${cur} ${formatBaht(totalInvest)}</b>
+                  ${isTh ? 'รวม' : 'Total'} <b>${formatBaht(totalInvest)}</b>
                   ${inKindInvest > 0 ? `· ${isTh ? 'เงินสด' : 'Cash'} ${formatBaht(cashInvest)} · ${isTh ? 'ไม่ใช่เงินสด' : 'Non-cash'} ${formatBaht(inKindInvest)}` : ''}
                 </span>
               </div>
@@ -227,7 +227,7 @@ export function renderStep2(container) {
                       .map(
                         (c) => `<tr>
                       <td><div class="strong">${escapeHtml(c.description)}</div></td>
-                      <td class="num strong">${cur} ${formatBaht(Number(c.amount) * Number(c.exchange_rate || 1))}</td>
+                      <td class="num strong">${formatBaht(Number(c.amount) * Number(c.exchange_rate || 1))}</td>
                       <td>
                         <div class="row-actions">
                           <button type="button" class="btn-icon" data-edit-cost="${c.id}" title="${t('edit', 'Edit')}" aria-label="${t('edit', 'Edit')}">

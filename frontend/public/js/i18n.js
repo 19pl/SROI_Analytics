@@ -12,6 +12,7 @@ const listeners = new Set();
 export const translations = {
   th: {
     // Navigation
+    nav_dashboard: 'แดชบอร์ดภาพรวม',
     nav_projects: 'โครงการ',
     nav_calculator: 'คำนวณ SROI',
     nav_org: 'คณะและภาควิชา',
@@ -802,6 +803,7 @@ export const translations = {
 
   en: {
     // Navigation
+    nav_dashboard: 'Dashboard',
     nav_projects: 'Projects',
     nav_calculator: 'SROI Assessment',
     nav_org: 'Faculties & Departments',

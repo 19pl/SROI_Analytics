@@ -4,6 +4,7 @@ declare(strict_types=1);
 use App\Controllers\AuthController;
 use App\Controllers\CalculationController;
 use App\Controllers\CostController;
+use App\Controllers\DashboardController;
 use App\Controllers\DepartmentController;
 use App\Controllers\EvidenceController;
 use App\Controllers\FacultyController;
@@ -31,6 +32,7 @@ return function (Router $r, App $app): void {
     $evidence = new EvidenceController($app);
     $proxies = new ProxyController($app);
     $reports = new ReportController($app);
+    $dashboard = new DashboardController($app);
     $faculties   = new FacultyController($app);
     $departments = new DepartmentController($app);
 
@@ -43,6 +45,7 @@ return function (Router $r, App $app): void {
     // account
     $r->add('POST', '/auth/logout', [$auth, 'logout']);
     $r->add('GET', '/auth/me', [$auth, 'me']);
+    $r->add('GET', '/dashboard', [$dashboard, 'index']);
 
     // organisations, members, proxy library
     $r->add('GET', '/organizations', [$orgs, 'index']);

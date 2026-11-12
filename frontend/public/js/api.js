@@ -314,6 +314,15 @@ export const api = {
   deleteEvidence: (projectId, id) =>
     request(`/projects/${projectId}/evidence/${id}`, { method: 'DELETE' }),
 
+  // Organization Dashboard
+  getOrgDashboard: (params = {}) => {
+    const q = new URLSearchParams();
+    if (params.fiscal_year) q.set('fiscal_year', params.fiscal_year);
+    if (params.faculty_id) q.set('faculty_id', params.faculty_id);
+    const qs = q.toString() ? `?${q.toString()}` : '';
+    return request(`/dashboard${qs}`);
+  },
+
   // Calculation & Review (Step 5 & 6)
   getReview: (projectId) => request(`/projects/${projectId}/review`),
   getDashboard: (projectId, scenarioId = null) => {

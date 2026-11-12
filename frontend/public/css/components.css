@@ -1663,3 +1663,70 @@ a.btn:hover,
   font-family: var(--font-mono, monospace);
   white-space: nowrap;
 }
+
+/* Dashboard Modern Analytics Layout */
+.dashboard-grid-2col {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--sp-md);
+}
+
+@media (max-width: 900px) {
+  .dashboard-grid-2col {
+    grid-template-columns: 1fr;
+  }
+}
+
+.strategic-tiles-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--sp-md);
+}
+
+@media (max-width: 900px) {
+  .strategic-tiles-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 500px) {
+  .strategic-tiles-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.strategic-tile {
+  background: var(--surface);
+  border: 1px solid var(--outline);
+  border-radius: var(--radius-md);
+  padding: var(--sp-md);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transition: transform 150ms ease, box-shadow 150ms ease;
+}
+
+.strategic-tile:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+}
+
+.strategic-tile__label {
+  font-size: 0.75rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+
+.strategic-tile__value {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--on-background);
+}
+
+.strategic-tile__sub {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+

@@ -22,6 +22,9 @@ const navItemHtml = ({ path, labelKey, label, icon }, index) => {
 
 function findRoute(hash) {
   const basePath = hash.split('?')[0];
+  if (!basePath || basePath === '#' || basePath === '#/') {
+    return routes.find((r) => r.path === '#/dashboard') || routes[0];
+  }
   if (basePath === '#/wizard' || basePath.startsWith('#/wizard/') || basePath === '#/calculator') {
     return routes.find((r) => r.path === '#/wizard/step-0') || routes[0];
   }

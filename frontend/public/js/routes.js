@@ -1,4 +1,5 @@
 import { icons } from './components/icons.js';
+import { renderDashboard } from './views/dashboardView.js';
 import { renderAbout } from './views/aboutView.js';
 import { renderCalculator } from './views/calculatorView.js';
 import { renderProjects } from './views/projectsView.js';
@@ -8,6 +9,13 @@ import { renderOrg } from './views/orgView.js';
 import { renderFacultyReport } from './views/facultyReportView.js';
 
 export const routes = [
+  {
+    path: '#/dashboard',
+    labelKey: 'nav_dashboard',
+    label: 'Dashboard',
+    icon: icons.dashboard,
+    render: renderDashboard,
+  },
   {
     path: '#/projects',
     labelKey: 'nav_projects',
