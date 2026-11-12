@@ -7,6 +7,7 @@ import { openModal, closeModal } from './modal.js';
 import { showToast } from './toast.js';
 import { escapeHtml } from '../utils/html.js';
 import { t, getLanguage } from '../i18n.js';
+import { reqTag, optTag } from '../utils/fieldTags.js';
 import { addScenario } from '../store.js';
 
 export function openScenarioModal({ onSave, existing = null } = {}) {
@@ -34,7 +35,7 @@ export function openScenarioModal({ onSave, existing = null } = {}) {
   const modalHtml = `
     <form id="sharedScenarioForm" class="form-stack">
       <div class="field">
-        <label class="field-label">${t('col_scenario', 'ชื่อสถานการณ์')} <span class="field-hint field-hint--primary">${isTh ? 'จำเป็น' : 'Required'}</span></label>
+        <label class="field-label">${t('col_scenario', 'ชื่อสถานการณ์')} ${reqTag(isTh)}</label>
         <input
           type="text"
           name="name"
@@ -47,7 +48,7 @@ export function openScenarioModal({ onSave, existing = null } = {}) {
 
       <div class="form-row">
         <div class="field">
-          <label class="field-label">${t('col_eval_type', 'ประเภทสถานการณ์')} <span class="field-hint field-hint--primary">${isTh ? 'จำเป็น' : 'Required'}</span></label>
+          <label class="field-label">${t('col_eval_type', 'ประเภทสถานการณ์')} ${reqTag(isTh)}</label>
           <select name="kind" class="input" required>
             <option value="conservative" ${existingKind === 'conservative' ? 'selected' : ''}>
               ${isTh ? 'สถานการณ์แบบระมัดระวัง (Conservative)' : 'Conservative Scenario'}
@@ -62,7 +63,7 @@ export function openScenarioModal({ onSave, existing = null } = {}) {
         </div>
 
         <div class="field">
-          <label class="field-label">${isTh ? 'อัตราคิดลด' : 'Discount Rate Option'}</label>
+          <span class="field-label">${isTh ? 'อัตราคิดลด' : 'Discount Rate Option'} ${optTag(isTh)}</span>
           <label class="cluster stack-xs" style="margin-top: 8px;">
             <input type="checkbox" id="chkCustomDiscount" ${hasCustomRate ? 'checked' : ''} />
             <span>${isTh ? 'ใช้อัตราคิดลดเฉพาะสถานการณ์นี้' : 'Use a custom discount rate'}</span>
@@ -71,7 +72,7 @@ export function openScenarioModal({ onSave, existing = null } = {}) {
       </div>
 
       <div class="field" id="customDiscountWrap" ${hasCustomRate ? '' : 'hidden'}>
-        <label class="field-label">${isTh ? 'อัตราคิดลดเฉพาะสถานการณ์นี้ (%)' : 'Global Discount Rate Override (%)'}</label>
+        <label class="field-label">${isTh ? 'อัตราคิดลดเฉพาะสถานการณ์นี้ (%)' : 'Global Discount Rate Override (%)'} ${optTag(isTh)}</label>
         <div class="pct-wrap">
           <input
             type="number"
@@ -89,7 +90,7 @@ export function openScenarioModal({ onSave, existing = null } = {}) {
       </div>
 
       <div class="field">
-        <label class="field-label">${t('description', 'คำอธิบายและสมมติฐาน')}</label>
+        <label class="field-label">${t('description', 'คำอธิบายและสมมติฐาน')} ${optTag(isTh)}</label>
         <textarea
           name="description"
           class="input"

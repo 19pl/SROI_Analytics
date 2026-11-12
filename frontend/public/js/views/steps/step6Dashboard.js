@@ -17,6 +17,7 @@ import { escapeHtml } from '../../utils/html.js';
 import { icons } from '../../components/icons.js';
 import { api, API_BASE } from '../../api.js';
 import { t, getLanguage } from '../../i18n.js';
+import { reqTag, optTag } from '../../utils/fieldTags.js';
 import { wizardFooterHtml, attachWizardFooterEvents } from '../../components/wizardFooter.js';
 import { openCalculationTraceModal } from '../../components/calculationTraceModal.js';
 import { showToast } from '../../components/toast.js';
@@ -557,11 +558,11 @@ function openExportReportModal({ project, activeScenarioId }) {
 
         <form id="reportGenForm" class="form-stack">
           <div class="field">
-            <label class="field-label" for="expTitle">${t('col_report_title', 'ชื่อรายงาน')} <span class="field-hint field-hint--primary">${L('จำเป็น', 'Required')}</span></label>
+            <label class="field-label" for="expTitle">${t('col_report_title', 'ชื่อรายงาน')} ${reqTag(isTh)}</label>
             <input type="text" id="expTitle" name="title" class="input" value="${escapeHtml(project.name)} — ${L('รายงานผลการประเมินความคุ้มค่าทางสังคม (SROI)', 'SROI Social Impact Assessment Report')}" required />
           </div>
           <div class="field">
-            <label class="field-label" for="expType">${t('col_eval_type', 'ประเภทรายงาน')}</label>
+            <label class="field-label" for="expType">${t('col_eval_type', 'ประเภทรายงาน')} ${optTag(isTh)}</label>
             <select id="expType" name="type" class="input">
               <option value="detailed" selected>${L('รายงานฉบับสมบูรณ์ (ครบทุกขั้นตอน)', 'Detailed report (full audit trail)')}</option>
               <option value="executive">${L('รายงานสรุปสำหรับผู้บริหาร', 'Executive summary (key metrics & findings)')}</option>
@@ -596,7 +597,7 @@ function openExportReportModal({ project, activeScenarioId }) {
             tag: 'CSV',
             title: L('ข้อมูลสำหรับ Excel (CSV)', 'Spreadsheet data (CSV)'),
             desc: L('เลือกตารางข้อมูลที่ต้องการดาวน์โหลด', 'Choose which data table to download.'),
-            extra: `<label class="exp-select"><span class="sr-only">${L('ตารางข้อมูล', 'Data table')}</span>
+            extra: `<label class="exp-select"><span class="field-label">${L('ตารางข้อมูล', 'Data table')} ${reqTag(isTh)}</span>
               <select id="csvDataset" class="input">${CSV_DATASETS.map(([v, label]) => `<option value="${v}">${escapeHtml(label)}</option>`).join('')}</select></label>`,
             action: `<button type="button" class="btn btn-secondary btn-compact" id="btnDownloadCsv">${L('ดาวน์โหลด', 'Download')}</button>`,
           })}

@@ -32,6 +32,7 @@ import {
   stakeholderOptionsHtml,
 } from '../../utils/stakeholderGroups.js';
 import { t, getLanguage } from '../../i18n.js';
+import { reqTag, optTag } from '../../utils/fieldTags.js';
 import { nextGate } from '../../utils/readiness.js';
 import { wizardFooterHtml, attachWizardFooterEvents } from '../../components/wizardFooter.js';
 
@@ -112,8 +113,8 @@ export function renderStep1(container) {
       <span class="s1-owner-lock muted" title="${L('ระบุไว้แล้วขณะสร้างโครงการ จึงไม่จำเป็นต้องกรอกซ้ำ', 'Specified when the plan was created, so no further entry is required')}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline-block;vertical-align:middle;margin-right:3px;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>${L('เลือกไว้แล้วตอนสร้างโครงการ', 'Set when the plan was created')}</span>
     </div>`;
 
-  const req = `<span class="s1-tag s1-tag-req">${L('จำเป็น', 'Required')}</span>`;
-  const opt = `<span class="s1-tag">${L('ไม่บังคับ', 'Optional')}</span>`;
+  const req = reqTag(isTh);
+  const opt = optTag(isTh);
 
   container.innerHTML = `
     <div class="stack s1" style="gap: var(--sp-xl);">
@@ -166,25 +167,25 @@ export function renderStep1(container) {
             </p>
             <div class="form-grid">
               <div class="field">
-                <label class="field-label">${L('ติดตามผลกี่ปี', 'Years of impact to count')} ${req}</label>
+                <label class="field-label" for="s1HorizonSelect">${L('ติดตามผลกี่ปี', 'Years of impact to count')} ${req}</label>
                 <select id="s1HorizonSelect" class="input">
                   ${[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((y) => `<option value="${y}" ${horizon === y ? 'selected' : ''}>${y} ${L('ปี', y === 1 ? 'year' : 'years')}</option>`).join('')}
                   <option value="Other" ${horizon > 10 ? 'selected' : ''}>${L('อื่น ๆ (ระบุ)', 'Other (specify)')}</option>
                 </select>
                 <div id="s1HorizonCustomWrap" style="margin-top: var(--sp-xs); ${horizon > 10 ? '' : 'display: none;'}">
-                  <input type="number" name="analysis_period_years" min="1" max="100" class="input" value="${horizon}" placeholder="1–100" />
+                  <input type="number" name="analysis_period_years" min="1" max="100" class="input" value="${horizon}" placeholder="1–100" aria-label="${L('ระบุจำนวนปี (1–100)', 'Specify years (1–100)')}" />
                 </div>
                 <span class="muted s1-hint">${L('โครงการทั่วไปนิยม 1–3 ปี', 'Most projects use 1–3 years')}</span>
               </div>
               <div class="field">
-                <label class="field-label">${L('ประเมินในช่วงใดของโครงการ', 'When is the evaluation being conducted?')}</label>
+                <label class="field-label">${L('ประเมินในช่วงใดของโครงการ', 'When is the evaluation being conducted?')} ${req}</label>
                 <select name="evaluation_type" class="input">
                   <option value="evaluative" ${project.evaluation_type === 'evaluative' ? 'selected' : ''}>${L('หลังโครงการเสร็จ (ใช้ผลจริง)', 'After the project (real results)')}</option>
                   <option value="forecast" ${project.evaluation_type === 'forecast' ? 'selected' : ''}>${L('ก่อนเริ่มโครงการ (คาดการณ์)', 'Before the project (forecast)')}</option>
                 </select>
               </div>
               <div class="field">
-                <label class="field-label">${L('ช่วงเวลาที่ประเมิน', 'Period covered')}</label>
+                <label class="field-label">${L('ช่วงเวลาที่ประเมิน', 'Period covered')} ${opt}</label>
                 <select name="assessment_months" class="input">
                   <option value="" ${!project.assessment_months ? 'selected' : ''}>${L('เต็มปี (12 เดือน)', 'Full year (12 months)')}</option>
                   <option value="6" ${project.assessment_months === 6 ? 'selected' : ''}>${L('6 เดือน', '6 months')}</option>
@@ -193,7 +194,7 @@ export function renderStep1(container) {
                 </select>
               </div>
               <div class="field">
-                <label class="field-label">${L('สกุลเงิน', 'Currency')}</label>
+                <label class="field-label" for="s1CurrencySelect">${L('สกุลเงิน', 'Currency')} ${req}</label>
                 <select id="s1CurrencySelect" class="input">
                   <option value="THB" ${cur === 'THB' ? 'selected' : ''}>THB</option>
                   <option value="USD" ${cur === 'USD' ? 'selected' : ''}>USD</option>
@@ -201,7 +202,7 @@ export function renderStep1(container) {
                   <option value="Other" ${!['THB', 'USD', 'EUR'].includes(cur) ? 'selected' : ''}>${L('อื่น ๆ (ระบุ)', 'Other (specify)')}</option>
                 </select>
                 <div id="s1CurrencyCustomWrap" style="margin-top: var(--sp-xs); ${!['THB', 'USD', 'EUR'].includes(cur) ? '' : 'display: none;'}">
-                  <input type="text" name="currency" class="input" value="${escapeHtml(cur)}" maxlength="3" placeholder="GBP" />
+                  <input type="text" name="currency" class="input" value="${escapeHtml(cur)}" maxlength="3" placeholder="GBP" aria-label="${L('ระบุสกุลเงิน (3 ตัวอักษร)', 'Specify currency (3 letters)')}" />
                 </div>
               </div>
             </div>
@@ -210,30 +211,30 @@ export function renderStep1(container) {
               <summary>${L('การตั้งค่าทางการเงินขั้นสูง (ผู้เชี่ยวชาญ)', 'Advanced finance settings (experts)')}</summary>
               <div class="form-grid" style="margin-top: var(--sp-md);">
                 <div class="field">
-                  <label class="field-label">${L('อัตราคิดลดต่อปี (%)', 'Discount rate per year (%)')}</label>
+                  <label class="field-label">${L('อัตราคิดลดต่อปี (%)', 'Discount rate per year (%)')} ${opt}</label>
                   <input type="number" name="discount_rate" step="0.1" min="0" max="100" class="input" value="${project.discount_rate !== null && project.discount_rate !== undefined ? (project.discount_rate * 100).toFixed(1) : '0.0'}" />
                   <span class="muted s1-hint">${L('แนะนำ 0% สำหรับ 1 ปี หรือ 3% ตามเกณฑ์ธนาคารแห่งประเทศไทย', 'Suggested: 0% for 1 year, or 3% for longer')}</span>
                 </div>
                 <div class="field">
-                  <label class="field-label">${L('ชนิดอัตราคิดลด', 'Discount rate basis')}</label>
+                  <label class="field-label">${L('ชนิดอัตราคิดลด', 'Discount rate basis')} ${opt}</label>
                   <select name="discount_rate_basis" class="input">
                     <option value="real" ${project.discount_rate_basis === 'real' ? 'selected' : ''}>${L('Real (หักเงินเฟ้อแล้ว)', 'Real (inflation removed)')}</option>
                     <option value="nominal" ${project.discount_rate_basis === 'nominal' ? 'selected' : ''}>${L('Nominal (ตามอัตราตลาด)', 'Nominal (market rate)')}</option>
                   </select>
                 </div>
                 <div class="field">
-                  <label class="field-label">${L('แหล่งอ้างอิงอัตราคิดลด', 'Where the rate comes from')}</label>
+                  <label class="field-label">${L('แหล่งอ้างอิงอัตราคิดลด', 'Where the rate comes from')} ${opt}</label>
                   <input type="text" name="discount_rate_source" class="input" value="${escapeHtml(project.discount_rate_source || '')}" placeholder="${L('เช่น ธนาคารแห่งประเทศไทย', 'e.g. Bank of Thailand')}" />
                 </div>
                 <div class="field">
-                  <label class="field-label">${L('มูลค่าเงินลงทุนคิดแบบ', 'Value investment as')}</label>
+                  <label class="field-label">${L('มูลค่าเงินลงทุนคิดแบบ', 'Value investment as')} ${opt}</label>
                   <select name="investment_basis" class="input">
                     <option value="nominal" ${project.investment_basis === 'nominal' ? 'selected' : ''}>${L('ยอดเงินจริง', 'Actual amount')}</option>
                     <option value="present_value" ${project.investment_basis === 'present_value' ? 'selected' : ''}>${L('มูลค่าปัจจุบัน (คิดลด)', 'Present value (discounted)')}</option>
                   </select>
                 </div>
                 <div class="field">
-                  <label class="field-label">${L('นับรวมแรงอาสาและของบริจาคในเงินลงทุนหรือไม่', 'Include volunteer time and donated items?')}</label>
+                  <label class="field-label">${L('นับรวมแรงอาสาและของบริจาคในเงินลงทุนหรือไม่', 'Include volunteer time and donated items?')} ${opt}</label>
                   <select name="include_in_kind" class="input">
                     <option value="1" ${project.include_in_kind ? 'selected' : ''}>${L('นับรวม', 'Yes, include')}</option>
                     <option value="0" ${!project.include_in_kind ? 'selected' : ''}>${L('ไม่นับ (เฉพาะเงินสดจริง)', 'No (cash only)')}</option>
@@ -527,12 +528,12 @@ export function openAddCostModal({ project, initialData = null, prefill = null, 
   const formHtml = `
     <form id="addCostForm" class="stack" style="gap: var(--sp-lg);" autocomplete="off" novalidate>
       <div class="field">
-        <label class="field-label" for="cDesc">${L('ใช้ไปกับอะไร', 'What was the purpose of the expense?')} <span class="s1-tag s1-tag-req">${L('จำเป็น', 'Required')}</span></label>
+        <label class="field-label" for="cDesc">${L('ใช้ไปกับอะไร', 'What was the purpose of the expense?')} ${reqTag(isTh)}</label>
         <input id="cDesc" type="text" name="description" class="input" value="${escapeHtml(v('description'))}" placeholder="${L('เช่น ค่าวิทยากรและเวชภัณฑ์ตรวจสายตา', 'e.g. Speaker fees and eye-test supplies')}" />
       </div>
 
       <div class="field">
-        <span class="field-label">${L('เป็นเงินสดหรือไม่', 'Is this a cash contribution?')}</span>
+        <span class="field-label">${L('เป็นเงินสดหรือไม่', 'Is this a cash contribution?')} ${reqTag(isTh)}</span>
         <div class="s1-kind">
           <label class="s1-kind-opt ${isCash ? 'is-on' : ''}">
             <input type="radio" name="kind" value="1" ${isCash ? 'checked' : ''} />
@@ -546,12 +547,12 @@ export function openAddCostModal({ project, initialData = null, prefill = null, 
       </div>
 
       <div class="field">
-        <label class="field-label" for="cAmt"><span id="cAmtLabel">${isCash ? L('จำนวนเงิน', 'Amount') : L('มูลค่าโดยประมาณ', 'Estimated value')}</span> (${curr}) <span class="s1-tag s1-tag-req">${L('จำเป็น', 'Required')}</span></label>
+        <label class="field-label" for="cAmt"><span id="cAmtLabel">${isCash ? L('จำนวนเงิน', 'Amount') : L('มูลค่าโดยประมาณ', 'Estimated value')}</span> (${curr}) ${reqTag(isTh)}</label>
         <input id="cAmt" type="text" inputmode="decimal" name="amount" class="input" value="${escapeHtml(initialAmount)}" placeholder="${L('เช่น 15000', 'e.g. 15000')}" />
       </div>
 
       <div class="field">
-        <label class="field-label" for="cDetail">${L('รายละเอียด', 'Details')} <span class="s1-tag">${L('ไม่บังคับ', 'Optional')}</span></label>
+        <label class="field-label" for="cDetail">${L('รายละเอียด', 'Details')} ${optTag(isTh)}</label>
         <textarea id="cDetail" name="detail" class="input" rows="3" maxlength="2000" placeholder="${L('เช่น วิทยากร 2 คน × 3 วัน × 2,500 บาท', 'e.g. 2 speakers × 3 days × 2,500 baht')}">${escapeHtml(initialDetail)}</textarea>
       </div>
 
@@ -559,7 +560,7 @@ export function openAddCostModal({ project, initialData = null, prefill = null, 
         <summary>${L('รายละเอียดเพิ่มเติม (ไม่บังคับ)', 'More details (optional)')}</summary>
         <div class="stack" style="gap: var(--sp-md); margin-top: var(--sp-md);">
           <div class="field">
-            <label class="field-label">${L('ผู้ให้การสนับสนุน', 'Who provided the funds or support?')}</label>
+            <label class="field-label">${L('ผู้ให้การสนับสนุน', 'Who provided the funds or support?')} ${optTag(isTh)}</label>
             <select name="stakeholder_id" class="input">
               <option value="">${L('— ไม่ระบุ —', '— not specified —')}</option>
               ${stakeholderOptionsHtml(stakeholders, v('stakeholder_id', ''), escapeHtml)}
@@ -568,32 +569,32 @@ export function openAddCostModal({ project, initialData = null, prefill = null, 
             <span class="muted s1-hint">${L('ระบุแล้วจะแสดงในขั้นที่ 2 ให้อัตโนมัติ', 'It will show up in Step 2 automatically')}</span>
           </div>
           <div class="in-grid" id="newFunderBox" hidden>
-            <label class="field in-w6"><span class="field-label">${L('ชื่อผู้ให้ทุนใหม่', 'New funder name')}</span>
+            <label class="field in-w6"><span class="field-label">${L('ชื่อผู้ให้ทุนใหม่', 'New funder name')} ${reqTag(isTh)}</span>
               <input class="input" name="new_name" placeholder="${L('เช่น เทศบาลตำบล, สสส.', 'e.g. Local municipality')}" /></label>
-            <label class="field in-w6"><span class="field-label">${L('กลุ่ม', 'Group')}</span>
+            <label class="field in-w6"><span class="field-label">${L('กลุ่ม', 'Group')} ${reqTag(isTh)}</span>
               <select class="input" name="new_group">${funderGroups.map((g) => `<option value="${g.key}" ${g.key === 'project_supporter' ? 'selected' : ''}>${escapeHtml(groupLabel(g))}</option>`).join('')}</select></label>
           </div>
 
           <div class="form-grid">
             <div class="field">
-              <label class="field-label">${L('หมวดค่าใช้จ่าย', 'Category')}</label>
+              <label class="field-label">${L('หมวดค่าใช้จ่าย', 'Category')} ${optTag(isTh)}</label>
               <select name="category" class="input">
                 ${categories.map(([k, l]) => `<option value="${k}" ${v('category', isCash ? 'opex' : 'in_kind') === k ? 'selected' : ''}>${l}</option>`).join('')}
               </select>
             </div>
             <div class="field">
-              <label class="field-label">${L('จ่ายในปีที่', 'Which year was it spent?')}</label>
+              <label class="field-label">${L('จ่ายในปีที่', 'Which year was it spent?')} ${optTag(isTh)}</label>
               <input type="number" name="year" min="0" max="${project.analysis_period_years || 5}" class="input" value="${v('year', 0)}" />
               <span class="muted s1-hint">${L('0 = ปีที่เริ่มโครงการ', '0 = the year the project starts')}</span>
             </div>
           </div>
           <div class="form-grid">
             <div class="field">
-              <label class="field-label">${L('หลักฐานอ้างอิง', 'Evidence')}</label>
+              <label class="field-label">${L('หลักฐานอ้างอิง', 'Evidence')} ${optTag(isTh)}</label>
               <input type="text" name="evidence_source" class="input" value="${escapeHtml(v('evidence_source'))}" placeholder="${L('เช่น ใบเสร็จรับเงิน, สรุปงบประมาณ', 'e.g. receipts, budget summary')}" />
             </div>
             <div class="field">
-              <label class="field-label">${L('ป้ายกำกับช่วงเวลา', 'Period label')}</label>
+              <label class="field-label">${L('ป้ายกำกับช่วงเวลา', 'Period label')} ${optTag(isTh)}</label>
               <input type="text" name="period_label" class="input" value="${escapeHtml(v('period_label'))}" placeholder="${L('เช่น 6 เดือนแรก', 'e.g. first 6 months')}" />
             </div>
           </div>

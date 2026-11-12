@@ -23,6 +23,7 @@ import {
   parseAmount,
 } from '../../utils/stakeholderGroups.js';
 import { t, getLanguage } from '../../i18n.js';
+import { reqTag, optTag } from '../../utils/fieldTags.js';
 import { wizardFooterHtml, attachWizardFooterEvents } from '../../components/wizardFooter.js';
 import { openAddCostModal } from './step1Project.js';
 
@@ -365,11 +366,11 @@ function fundingRowHtml(row, idx, project, showYear) {
       </div>
       <div class="in-fund-grid ${showYear ? 'has-year' : ''}">
         <label class="field in-f-desc">
-          <span class="field-label">${isTh ? 'ระบุทรัพยากรที่ใช้' : 'Resource used'}</span>
+          <span class="field-label">${isTh ? 'ระบุทรัพยากรที่ใช้' : 'Resource used'} ${reqTag(isTh)}</span>
           <input class="input" name="desc" value="${escapeHtml(row.description || '')}" placeholder="${isTh ? 'เช่น งบประมาณจากคณะ, ค่าเดินทาง' : 'e.g. Budget from faculty'}" />
         </label>
         <label class="field in-f-amt">
-          <span class="field-label">${isTh ? 'มูลค่าที่ใช้ในปีดำเนินงาน (Y0) (บาทต่อปี)' : `Value used in the operating year (Y0) (${cur} per year)`}</span>
+          <span class="field-label">${isTh ? 'มูลค่าที่ใช้ในปีดำเนินงาน (Y0) (บาทต่อปี)' : `Value used in the operating year (Y0) (${cur} per year)`} ${reqTag(isTh)}</span>
           <span class="in-f-affix">
             <input class="input" name="amount" type="text" inputmode="decimal" autocomplete="off" value="${row.amount ?? ''}" placeholder="0" />
             <span class="in-f-affix__unit">${isTh && cur === 'THB' ? 'บาท' : cur}</span>
@@ -378,13 +379,13 @@ function fundingRowHtml(row, idx, project, showYear) {
         ${
           showYear
             ? `<label class="field in-f-year">
-          <span class="field-label">${isTh ? 'จ่ายในปีที่' : 'Paid in'}</span>
+          <span class="field-label">${isTh ? 'จ่ายในปีที่' : 'Paid in'} ${optTag(isTh)}</span>
           <select class="input" name="year">${Array.from({ length: maxYear + 1 }, (_, y) => `<option value="${y}" ${y === (Number(row.year) || 0) ? 'selected' : ''}>${yearLabel(y)}</option>`).join('')}</select>
         </label>`
             : ''
         }
         <label class="field in-f-src">
-          <span class="field-label">${isTh ? 'ระบุแนวทางการคำนวณและแหล่งที่มา' : 'How it was calculated and the source'}</span>
+          <span class="field-label">${isTh ? 'ระบุแนวทางการคำนวณและแหล่งที่มา' : 'How it was calculated and the source'} ${optTag(isTh)}</span>
           <input class="input" name="source" value="${escapeHtml(row.evidence_source || '')}" placeholder="${isTh ? 'เช่น สรุปงบประมาณจริง' : 'How calculated / source'}" />
         </label>
       </div>
@@ -436,7 +437,7 @@ function openStakeholderModal({ initialData = null, defaultGroup = null, onSaved
       <div class="field">
         <label class="field-label" for="presetSelect">
           ${isTh ? '1. ผู้ใดเป็นผู้ได้รับผลประโยชน์หรือผู้เกี่ยวข้อง?' : '1. Who is the stakeholder?'}
-          <span class="field-hint field-hint--primary">${isTh ? 'จำเป็น' : 'Required'}</span>
+          ${reqTag(isTh)}
         </label>
         <select id="presetSelect" class="input">
           <option value="">${isTh ? '— เลือกผู้มีส่วนได้ส่วนเสีย —' : '— Select a stakeholder —'}</option>
@@ -451,7 +452,7 @@ function openStakeholderModal({ initialData = null, defaultGroup = null, onSaved
       <div id="customNameRow" class="field" ${initialPresetVal === '__other__' ? '' : 'hidden'}>
         <label class="field-label" for="customNameInput">
           ${isTh ? 'ระบุชื่อผู้มีส่วนได้ส่วนเสีย' : 'Specify Stakeholder Name'}
-          <span class="field-hint field-hint--primary">${isTh ? 'จำเป็น' : 'Required'}</span>
+          ${reqTag(isTh)}
         </label>
         <input type="text" id="customNameInput" name="name" class="input" value="${escapeHtml(initialData?.name || '')}" placeholder="${isTh ? 'เช่น ผู้ดูแลผู้ป่วยติดเตียง, ชมรมจิตอาสา...' : 'e.g. Caregivers, Volunteer club...'}" />
       </div>
@@ -461,6 +462,7 @@ function openStakeholderModal({ initialData = null, defaultGroup = null, onSaved
         <div class="cluster cluster--space-between">
           <span class="field-label">
             ${isTh ? 'ประเภทกลุ่มตามมาตรฐาน SROI' : 'SROI Group Classification'}
+            ${optTag(isTh)}
           </span>
           <span id="groupHintBadge" class="badge badge-planned">${group ? group.code : 'S1'}</span>
         </div>
@@ -478,12 +480,13 @@ function openStakeholderModal({ initialData = null, defaultGroup = null, onSaved
           <div class="field">
             <label class="field-label" for="stkEstimatedCount">
               ${isTh ? '2. จำนวนประชากรที่ได้รับผลกระทบ' : '2. Population Size'}
+              ${optTag(isTh)}
             </label>
             <input class="input" id="stkEstimatedCount" name="estimated_count" type="number" min="0" step="1" value="${initialData?.estimated_count ?? ''}" placeholder="${isTh ? 'เช่น 120' : 'e.g. 120'}" />
           </div>
 
           <div class="field">
-            <label class="field-label" for="unitPresetSelect">${isTh ? 'หน่วยนับ' : 'Unit'}</label>
+            <label class="field-label" for="unitPresetSelect">${isTh ? 'หน่วยนับ' : 'Unit'} ${optTag(isTh)}</label>
             <select id="unitPresetSelect" class="input">
               ${[...UNIT_SUGGESTIONS, '__other__'].map((u) => `
                 <option value="${u}" ${(initialData?.count_unit === u || (!initialData?.count_unit && u === 'คน')) ? 'selected' : ''}>
@@ -492,13 +495,13 @@ function openStakeholderModal({ initialData = null, defaultGroup = null, onSaved
               `).join('')}
             </select>
             <div id="customUnitRow" class="stack-xs" ${initialData?.count_unit && !UNIT_SUGGESTIONS.includes(initialData.count_unit) ? '' : 'hidden'}>
-              <input class="input" name="count_unit" id="customUnitInput" value="${escapeHtml(initialData?.count_unit || 'คน')}" placeholder="${isTh ? 'ระบุหน่วยนับ' : 'Specify unit'}" />
+              <input class="input" name="count_unit" id="customUnitInput" value="${escapeHtml(initialData?.count_unit || 'คน')}" placeholder="${isTh ? 'ระบุหน่วยนับ' : 'Specify unit'}" aria-label="${isTh ? 'ระบุหน่วยนับ' : 'Specify unit'}" />
             </div>
           </div>
         </div>
 
         <div class="field">
-          <label class="field-label" for="stkRole">${isTh ? 'บทบาทในโครงการ (ไม่บังคับ)' : 'Role in project (Optional)'}</label>
+          <label class="field-label" for="stkRole">${isTh ? 'บทบาทในโครงการ' : 'Role in project'} ${optTag(isTh)}</label>
           <input class="input" id="stkRole" name="role_in_project" value="${escapeHtml(initialData?.role_in_project || '')}" placeholder="${isTh ? 'เช่น เข้ารับการตรวจคัดกรองสายตา, อบรมอาชีพ' : 'e.g. Receives screening, attends training'}" />
         </div>
 

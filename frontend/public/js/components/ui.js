@@ -3,6 +3,7 @@
 // ส่วนข้อความที่มาจากผู้ใช้ต้องผ่าน escapeHtml ก่อนเสมอ
 import { STATUS_LABEL } from '../data/mockProjects.js';
 import { escapeHtml } from '../utils/html.js';
+import { reqTag, optTag } from '../utils/fieldTags.js';
 
 /** ป้ายสถานะ — `status` ต้องตรงกับคลาส .badge-<status> ใน components.css */
 export const badge = (status, label) =>
@@ -20,9 +21,9 @@ export function card({ title = '', description = '', action = '', body = '', cls
 }
 
 /** ช่องกรอกตัวเลข — `key` ผูกกับ data-field เพื่อให้ตัวจัดการ input หา state ได้ */
-export function numberField({ key, label, value, suffix = '', min = 0, max = 1e12, step = 1 }) {
+export function numberField({ key, label, value, suffix = '', min = 0, max = 1e12, step = 1, required = true }) {
   return `<label class="field">
-    <span class="field-label">${label}</span>
+    <span class="field-label">${label} ${required ? reqTag() : optTag()}</span>
     <span class="field-control">
       <input class="input" type="number" inputmode="decimal" data-field="${key}"
         value="${value}" min="${min}" max="${max}" step="${step}" />
@@ -31,8 +32,8 @@ export function numberField({ key, label, value, suffix = '', min = 0, max = 1e1
   </label>`;
 }
 
-export const textField = ({ key, label, value }) =>
+export const textField = ({ key, label, value, required = true }) =>
   `<label class="field">
-    <span class="field-label">${label}</span>
+    <span class="field-label">${label} ${required ? reqTag() : optTag()}</span>
     <input class="input" data-field="${key}" value="${escapeHtml(value)}" />
   </label>`;

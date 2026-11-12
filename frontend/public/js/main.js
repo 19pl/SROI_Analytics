@@ -7,6 +7,7 @@ import { escapeHtml } from './utils/html.js';
 import { t, getLanguage, setLanguage, subscribeLanguage } from './i18n.js';
 import { getTheme, setTheme, toggleTheme, subscribeTheme, initTheme } from './theme.js';
 import { initAutogrow } from './utils/autogrow.js';
+import { initFieldTags } from './utils/fieldTags.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -210,6 +211,7 @@ async function onAuthChange(user) {
 async function init() {
   initTheme();
   initAutogrow();
+  initFieldTags();
   renderNav();
   updateControls();
 

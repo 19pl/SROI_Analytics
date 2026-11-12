@@ -26,6 +26,7 @@ import {
 } from '../../components/smartAssist.js';
 import { parseAmount } from '../../utils/stakeholderGroups.js';
 import { escapeHtml as esc } from '../../utils/html.js';
+import { optTag } from '../../utils/fieldTags.js';
 
 const eg = (isTh, list) => `${isTh ? 'เช่น ' : 'e.g. '}${list.slice(0, 2).join(', ')}`;
 const countAttrs = 'min="0" max="2000000000" step="1"';
@@ -86,7 +87,7 @@ export function s2SectionHtml({ initialData: d, isTh }) {
         placeholder: L(c.placeholders.count),
       })}
       <div class="field">
-        <label class="field-label" for="s2CountUnit">${isTh ? 'หน่วยนับ' : 'Unit'}<span class="smart-opt">${isTh ? '(ไม่บังคับ)' : '(optional)'}</span></label>
+        <label class="field-label" for="s2CountUnit">${isTh ? 'หน่วยนับ' : 'Unit'} ${optTag(isTh)}</label>
         <div class="smart-hint" id="s2CountUnitHint">${isTh ? 'ค่าเริ่มต้นคือ คน เปลี่ยนได้' : 'Defaults to people; change if needed.'}</div>
         <input list="s2UnitSuggestions" class="input" id="s2CountUnit" name="count_unit_s2" maxlength="50" aria-describedby="s2CountUnitHint"
           value="${esc(d?.count_unit || '')}" placeholder="${esc(L(c.placeholders.unit))}" />
@@ -501,7 +502,7 @@ export function s4SectionHtml({ initialData: d, isTh }) {
         placeholder: L(c.placeholders.count),
       })}
       <div class="field">
-        <label class="field-label" for="s4CountUnit">${isTh ? 'หน่วยนับ' : 'Unit'}<span class="smart-opt">${isTh ? '(ไม่บังคับ)' : '(optional)'}</span></label>
+        <label class="field-label" for="s4CountUnit">${isTh ? 'หน่วยนับ' : 'Unit'} ${optTag(isTh)}</label>
         <div class="smart-hint" id="s4CountUnitHint">${isTh ? 'เปลี่ยนตามประเภทหน่วยงาน แก้ไขได้' : 'Follows the agency type; editable.'}</div>
         <input list="s4UnitSuggestions" class="input" id="s4CountUnit" name="count_unit_s4" maxlength="50" aria-describedby="s4CountUnitHint"
           value="${esc(d?.count_unit || '')}" placeholder="${esc(L(c.placeholders.unit))}" />

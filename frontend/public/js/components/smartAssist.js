@@ -11,6 +11,7 @@
 
 import { escapeHtml as esc } from '../utils/html.js';
 import { showToast } from './toast.js';
+import { reqTag, optTag } from '../utils/fieldTags.js';
 
 export const OTHER_ID = '__other__';
 
@@ -30,11 +31,7 @@ const norm = (s) =>
 /* ───────────────────────────── markup builders ───────────────────────────── */
 
 export function labelHtml({ forId, label, required, isTh }) {
-  const mark = required
-    ? ' <span class="field-hint field-hint--primary" title="' +
-      (isTh ? 'จำเป็นต้องกรอก' : 'Required') +
-      '">*</span>'
-    : `<span class="smart-opt">${isTh ? '(ไม่บังคับ)' : '(optional)'}</span>`;
+  const mark = ' ' + (required ? reqTag(isTh) : optTag(isTh));
   return `<label class="field-label" for="${forId}">${esc(label)}${mark}</label>`;
 }
 

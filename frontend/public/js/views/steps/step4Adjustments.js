@@ -16,6 +16,7 @@ import { icons } from '../../components/icons.js';
 import { showToast } from '../../components/toast.js';
 import { api } from '../../api.js';
 import { t, getLanguage } from '../../i18n.js';
+import { reqTag, optTag } from '../../utils/fieldTags.js';
 import { wizardFooterHtml, attachWizardFooterEvents } from '../../components/wizardFooter.js';
 
 const FIELDS = ['deadweight', 'attribution', 'displacement', 'drop_off'];
@@ -92,7 +93,7 @@ export function renderStep4(container) {
           <div class="form-row">
             <!-- 1. Deadweight -->
             <div class="field">
-              <label class="field-label">${t('field_deadweight', 'Deadweight %')}</label>
+              <label class="field-label">${t('field_deadweight', 'Deadweight %')} ${reqTag(isTh)}</label>
               <p class="field-hint field-hint--compact">
                 ${isTh ? 'การเปลี่ยนแปลงที่น่าจะเกิดขึ้นอยู่แล้วแม้ไม่มีโครงการ' : 'Change that would have happened anyway without project'}
               </p>
@@ -104,7 +105,7 @@ export function renderStep4(container) {
 
             <!-- 2. Attribution -->
             <div class="field">
-              <label class="field-label">${t('field_attribution', 'Attribution %')}</label>
+              <label class="field-label">${t('field_attribution', 'Attribution %')} ${reqTag(isTh)}</label>
               <p class="field-hint field-hint--compact">
                 ${isTh ? 'สัดส่วนผลลัพธ์ที่เกิดจากหน่วยงานอื่นหรือภาคีร่วม' : 'Share of change caused by other partners / factors'}
               </p>
@@ -118,7 +119,7 @@ export function renderStep4(container) {
           <div class="form-row">
             <!-- 3. Displacement -->
             <div class="field">
-              <label class="field-label">${t('field_displacement', 'Displacement %')}</label>
+              <label class="field-label">${t('field_displacement', 'Displacement %')} ${reqTag(isTh)}</label>
               <p class="field-hint field-hint--compact">
                 ${isTh ? 'ผลกระทบที่ไปลดทอนประโยชน์หรือย้ายปัญหาไปสู่กลุ่มอื่น' : 'Displaced problems or harm created for other groups'}
               </p>
@@ -130,7 +131,7 @@ export function renderStep4(container) {
 
             <!-- 4. Drop-off -->
             <div class="field">
-              <label class="field-label">${t('field_dropoff', 'Drop-off % ต่อปี')}</label>
+              <label class="field-label">${t('field_dropoff', 'Drop-off % ต่อปี')} ${optTag(isTh)}</label>
               <p class="field-hint field-hint--compact">
                 ${isTh ? 'อัตราการลดทอนของผลประโยชน์ในแต่ละปีถัดไป' : 'Annual rate at which the outcome effect fades'}
               </p>
@@ -143,10 +144,10 @@ export function renderStep4(container) {
 
           <!-- Justification box (Reason + Source) -->
           <div class="field">
-            <label class="field-label">${t('col_justification', 'คำอธิบายเหตุผลและแหล่งอ้างอิง (Justification & Source)')}</label>
+            <label class="field-label">${t('col_justification', 'คำอธิบายเหตุผลและแหล่งอ้างอิง (Justification & Source)')} ${optTag(isTh)}</label>
             <div class="form-row">
-              <input class="input adj-in adj-text" type="text" data-f="justification" value="${escapeHtml(adj.justification || '')}" placeholder="${isTh ? 'เหตุผลในการกำหนด %' : 'Reason / Rationale'}" />
-              <input class="input adj-in adj-text" type="text" data-f="source" value="${escapeHtml(adj.source || '')}" placeholder="${isTh ? 'แหล่งอ้างอิง / ข้อมูลสำรวจ' : 'Citation / Source'}" />
+              <input class="input adj-in adj-text" type="text" data-f="justification" value="${escapeHtml(adj.justification || '')}" placeholder="${isTh ? 'เหตุผลในการกำหนด %' : 'Reason / Rationale'}" aria-label="${isTh ? 'เหตุผลในการกำหนด %' : 'Reason / Rationale'}" />
+              <input class="input adj-in adj-text" type="text" data-f="source" value="${escapeHtml(adj.source || '')}" placeholder="${isTh ? 'แหล่งอ้างอิง / ข้อมูลสำรวจ' : 'Citation / Source'}" aria-label="${isTh ? 'แหล่งอ้างอิง / ข้อมูลสำรวจ' : 'Citation / Source'}" />
             </div>
           </div>
 
@@ -449,10 +450,10 @@ function openYearProjectionsModal({ project, outcome, onSaved }) {
       <tr>
         <td class="strong">${t('year', 'ปีที่')} ${y}</td>
         <td>
-          <input type="number" step="1" min="0" class="input input-cell" name="qty_${y}" placeholder="${isTh ? 'ค่าเริ่มต้น' : 'Default'} (${outcome.quantity})" />
+          <input type="number" step="1" min="0" class="input input-cell" name="qty_${y}" aria-label="${t('year', 'ปีที่')} ${y}: ${t('col_qty_override', 'Quantity')}" placeholder="${isTh ? 'ค่าเริ่มต้น' : 'Default'} (${outcome.quantity})" />
         </td>
         <td>
-          <input type="number" step="0.5" min="0" max="100" class="input input-cell" name="dropoff_${y}" placeholder="${isTh ? 'ค่าเริ่มต้น %' : 'Default %'}" />
+          <input type="number" step="0.5" min="0" max="100" class="input input-cell" name="dropoff_${y}" aria-label="${t('year', 'ปีที่')} ${y}: ${t('field_dropoff', 'Drop-off')}" placeholder="${isTh ? 'ค่าเริ่มต้น %' : 'Default %'}" />
         </td>
       </tr>
     `);
@@ -470,8 +471,8 @@ function openYearProjectionsModal({ project, outcome, onSaved }) {
             <thead>
               <tr>
                 <th>${t('year', 'ปี')}</th>
-                <th>${t('col_qty_override', 'Quantity for this year (override)')}</th>
-                <th>${t('field_dropoff', 'Drop-off เฉพาะปีนั้น (%)')}</th>
+                <th>${t('col_qty_override', 'Quantity for this year (override)')} ${optTag(isTh)}</th>
+                <th>${t('field_dropoff', 'Drop-off เฉพาะปีนั้น (%)')} ${optTag(isTh)}</th>
               </tr>
             </thead>
             <tbody>

@@ -12,6 +12,7 @@ import { icons } from '../components/icons.js';
 import { showToast } from '../components/toast.js';
 import { escapeHtml } from '../utils/html.js';
 import { t, getLanguage } from '../i18n.js';
+import { reqTag, optTag } from '../utils/fieldTags.js';
 import { isGuest, renderGuestPage } from '../components/guestNotice.js';
 import { formatCurrency } from '../utils/format.js';
 
@@ -90,9 +91,11 @@ const statusPill = (status) => {
   return `<span class="status ${s ? s.cls : 'status--neutral'}">${statusLabel(status)}</span>`;
 };
 
-/** "required" label: strips any "*" already inside the translation, then adds exactly one. */
-const reqLabel = (key, fallback) =>
-  `${escapeHtml(String(t(key, fallback)).replace(/\s*\*+\s*$/, ''))}<span class="req" aria-hidden="true">*</span>`;
+/** label text + the shared "Required" tag (any "*" already inside the translation is stripped). */
+const cleanLabel = (key, fallback) => escapeHtml(String(t(key, fallback)).replace(/\s*\*+\s*$/, ''));
+const reqLabel = (key, fallback) => `${cleanLabel(key, fallback)} ${reqTag()}`;
+/** label text + the shared "Optional" tag. */
+const optLabel = (key, fallback) => `${cleanLabel(key, fallback)} ${optTag()}`;
 
 /** "3 days ago" in the active language; '' when the date is missing. */
 function timeAgo(iso) {
@@ -1092,7 +1095,7 @@ function openCreateProjectModal({ currentOrgId, faculties, onCreated }) {
       <!-- Step 1: Plan basics -->
       <div id="modalStep1" class="form-stack">
         <div class="field">
-          <span class="field-label" id="methodLabel">${escapeHtml(t('sheet_mode_label', 'Assessment Method'))}</span>
+          <span class="field-label" id="methodLabel">${escapeHtml(t('sheet_mode_label', 'Assessment Method'))} ${reqTag()}</span>
           <div class="method-grid" role="radiogroup" aria-labelledby="methodLabel">
             <label class="method-card">
               <input type="radio" class="sr-only" name="calc_method" value="wizard" checked />
@@ -1144,7 +1147,7 @@ function openCreateProjectModal({ currentOrgId, faculties, onCreated }) {
       <!-- Step 2: Evaluation -->
       <div id="modalStep2" class="form-stack" hidden>
         <div class="field">
-          <label class="field-label" for="modalEvalTypeSelect">${t('field_eval_type', 'Evaluation Type')}</label>
+          <label class="field-label" for="modalEvalTypeSelect">${reqLabel('field_eval_type', 'Evaluation Type')}</label>
           <select id="modalEvalTypeSelect" name="evaluation_type" class="input">
             <option value="evaluative" selected>${t('eval_type_evaluative', 'Evaluative (Ex-post actuals)')}</option>
             <option value="forecast">${t('eval_type_forecast', 'Forecast (Ex-ante prospective)')}</option>
@@ -1153,7 +1156,7 @@ function openCreateProjectModal({ currentOrgId, faculties, onCreated }) {
         </div>
 
         <div class="field">
-          <label class="field-label" for="modalScopeSelect">${t('field_assessment_scope', 'Assessment Period')}</label>
+          <label class="field-label" for="modalScopeSelect">${optLabel('field_assessment_scope', 'Assessment Period')}</label>
           <select id="modalScopeSelect" name="assessment_months" class="input">
             <option value="">${t('scope_full_year', 'Full Year (12 months / standard)')}</option>
             <option value="6">${t('scope_6_months', '6 Months (Interim)')}</option>
@@ -1177,7 +1180,7 @@ function openCreateProjectModal({ currentOrgId, faculties, onCreated }) {
       <!-- Step 3: Optional details -->
       <div id="modalStep3" class="form-stack" hidden>
         <div class="field">
-          <label class="field-label" for="modalCategorySelect">${t('field_category', 'Project Category')}</label>
+          <label class="field-label" for="modalCategorySelect">${optLabel('field_category', 'Project Category')}</label>
           <select id="modalCategorySelect" class="input">
             <option value="">${t('select_category', '— Select Category —')}</option>
             <option value="Education">${t('cat_education', 'Education')}</option>
@@ -1194,7 +1197,7 @@ function openCreateProjectModal({ currentOrgId, faculties, onCreated }) {
         </div>
 
         <div class="field">
-          <label class="field-label" for="modalDesc">${t('field_plan_desc', 'Project Description / Objectives')}</label>
+          <label class="field-label" for="modalDesc">${optLabel('field_plan_desc', 'Project Description / Objectives')}</label>
           <textarea id="modalDesc" name="description" class="input" rows="2" placeholder="${t('field_plan_desc_placeholder', 'Brief summary of plan objectives')}"></textarea>
         </div>
 
@@ -1202,7 +1205,7 @@ function openCreateProjectModal({ currentOrgId, faculties, onCreated }) {
           <summary class="disclosure__summary">${t('advanced_settings', 'Advanced Settings')}</summary>
           <div class="form-stack">
             <div class="field">
-              <label class="field-label" for="modalCurrencySelect">${t('field_currency', 'Currency')}</label>
+              <label class="field-label" for="modalCurrencySelect">${reqLabel('field_currency', 'Currency')}</label>
               <select id="modalCurrencySelect" class="input">
                 <option value="THB" selected>${t('cur_thb', 'THB (Thai Baht)')}</option>
                 <option value="USD">${t('cur_usd', 'USD (US Dollar)')}</option>
@@ -1215,7 +1218,7 @@ function openCreateProjectModal({ currentOrgId, faculties, onCreated }) {
             </div>
 
             <div class="field">
-              <label class="field-label" for="modalDiscountRate">${t('field_discount_rate', 'Annual Discount Rate (%)').replace(/\s*\*+\s*$/, '')}</label>
+              <label class="field-label" for="modalDiscountRate">${optLabel('field_discount_rate', 'Annual Discount Rate (%)')}</label>
               <input type="number" id="modalDiscountRate" name="discount_rate" min="0" max="100" step="0.1" class="input" value="0.0" />
             </div>
           </div>

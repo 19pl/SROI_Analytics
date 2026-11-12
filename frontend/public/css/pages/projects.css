@@ -160,7 +160,6 @@ th.num .th-sort { flex-direction: row-reverse; }
 .mini-steps li.is-done::before, .mini-steps li.is-active::before { background: var(--ink-2, #0f172a); }
 .mini-steps li.is-active { color: var(--on-background); }
 
-.req { color: var(--negative-fg); margin-left: 2px; }
 .field-label--left { text-align: left; }
 .modal-body .field-label { text-align: left; }
 

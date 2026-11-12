@@ -197,3 +197,70 @@
   .toast { animation: none; }
   .toast.is-leaving, .disclosure__summary::after { transition: none; }
 }
+/* ---------- Field tags: Required / Optional / Done (see js/utils/fieldTags.js) ---------- */
+.ftag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 8px;
+  padding: 1px 8px 1px 6px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-pill);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  line-height: 1.5;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  vertical-align: 1px;
+  transition:
+    background 0.15s var(--ease),
+    color 0.15s var(--ease),
+    border-color 0.15s var(--ease);
+}
+.ftag__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  flex: none;
+}
+.ftag__icon {
+  flex: none;
+}
+
+/* must be filled in */
+.ftag--req[data-state='todo'] {
+  background: var(--warning-bg);
+  border-color: var(--warning);
+  color: var(--warning-fg);
+}
+/* may stay blank */
+.ftag--opt[data-state='todo'] {
+  background: transparent;
+  border-color: var(--outline-strong);
+  border-style: dashed;
+  color: var(--muted);
+  font-weight: 600;
+}
+.ftag--opt[data-state='todo'] .ftag__dot {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px currentColor;
+}
+/* has a value: good to go */
+.ftag[data-state='done'] {
+  background: var(--positive-bg);
+  border-color: var(--positive);
+  border-style: solid;
+  color: var(--positive-fg);
+}
+.ftag-note {
+  margin-left: 6px;
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--muted);
+}
+@media (prefers-reduced-motion: reduce) {
+  .ftag {
+    transition: none;
+  }
+}

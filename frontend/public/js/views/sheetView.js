@@ -18,6 +18,7 @@ import { getState } from '../store.js';
 import { escapeHtml as esc } from '../utils/html.js';
 import { openModal, closeModal, confirmModal } from '../components/modal.js';
 import { t } from '../i18n.js';
+import { reqTag, optTag } from '../utils/fieldTags.js';
 import { icons } from '../components/icons.js';
 
 // ---- built-in columns (the union of the two workbooks) ----------------------------------------------------------
@@ -264,22 +265,22 @@ export async function renderSheet(root) {
           <summary class="disclosure__summary"><span class="set-title">${icons.settings} ${t('sheet_scope', 'Assessment settings')}</span><span class="set-sum muted-sm" id="scopeSummary">${esc(scopeSummaryText(p))}</span></summary>
           <p class="field-hint" class="field-hint--scope">${t('sheet_scope_desc', 'Configure baseline and evaluation parameters, assessment period, and evaluation methodology')}</p>
           <div class="sheet-scope-grid">
-            <div class="field"><span class="field-label">${t('sheet_y0', 'Baseline year')}</span>
+            <div class="field"><span class="field-label">${t('sheet_y0', 'Baseline year')} ${optTag()}</span>
               <input class="input" data-scope="y0_label" value="${esc(p.y0_label || '')}" placeholder="${t('sheet_y0_ph', 'e.g. 2566 / 2023')}" ${dis} />
               <p class="field-hint">${t('sheet_y0_hint', 'Initial baseline conditions prior to project intervention')}</p></div>
-            <div class="field"><span class="field-label">${t('sheet_y1', 'Evaluation year')}</span>
+            <div class="field"><span class="field-label">${t('sheet_y1', 'Evaluation year')} ${optTag()}</span>
               <input class="input" data-scope="y1_label" value="${esc(p.y1_label || '')}" placeholder="${t('sheet_y1_ph', 'e.g. 2567 / 2024')}" ${dis} />
               <p class="field-hint">${t('sheet_y1_hint', 'Measurement period evaluating cumulative changes and impacts')}</p></div>
-            <label class="field"><span class="field-label">${t('sheet_eval_type', 'Evaluation type')}</span>
+            <label class="field"><span class="field-label">${t('sheet_eval_type', 'Evaluation type')} ${reqTag()}</span>
               <select class="input" data-scope="evaluation_type" ${dis}>
                 <option value="evaluative" ${p.evaluation_type === 'evaluative' ? 'selected' : ''}>${t('eval_type_evaluative', 'Evaluative')}</option>
                 <option value="forecast" ${p.evaluation_type === 'forecast' ? 'selected' : ''}>${t('eval_type_forecast', 'Forecast')}</option>
               </select></label>
-            <label class="field"><span class="field-label">${t('sheet_months', 'Period')}</span>
+            <label class="field"><span class="field-label">${t('sheet_months', 'Period')} ${optTag()}</span>
               <select class="input" data-scope="assessment_months" ${dis}>
                 ${months.map(([v, l]) => `<option value="${v}" ${String(p.assessment_months ?? '') === v ? 'selected' : ''}>${l}</option>`).join('')}
               </select></label>
-            <label class="field"><span class="field-label">${t('sheet_adj_mode', 'Adjustment')}</span>
+            <label class="field"><span class="field-label">${t('sheet_adj_mode', 'Adjustment')} ${reqTag()}</span>
               <select class="input" data-scope="sheet_adjustment_mode" ${dis}>
                 <option value="deduct" ${p.adjustment_mode === 'deduct' ? 'selected' : ''}>${t('sheet_adj_deduct', '')}</option>
                 <option value="retain" ${p.adjustment_mode === 'retain' ? 'selected' : ''}>${t('sheet_adj_retain', '')}</option>
@@ -858,15 +859,15 @@ export async function renderSheet(root) {
     const body = `
       <form id="subForm" class="stack" style="gap: var(--sp-md);">
         <p class="muted" style="margin:0;">${t('sheet_sub_modal_desc', '')} <b>${esc(code)}</b> · ${esc(parent.code || '')} ${esc(parent.name)}</p>
-        <div class="field"><label class="field-label">${t('sheet_stk_name', 'Stakeholder name')} *</label>
+        <div class="field"><label class="field-label">${t('sheet_stk_name', 'Stakeholder name')} ${reqTag()}</label>
           <input class="input" name="name" required maxlength="300" placeholder="${esc(t(`sheet_stk_ph_${parent.group_type || 'other_agency'}`, ''))}" autocomplete="off" /></div>
         <div class="form-grid">
-          <div class="field"><label class="field-label">${t('sheet_col_population', 'Population')}</label>
+          <div class="field"><label class="field-label">${t('sheet_col_population', 'Population')} ${optTag()}</label>
             <input class="input" name="population_raw" inputmode="decimal" autocomplete="off" /></div>
-          <div class="field"><label class="field-label">${t('sheet_col_unit', 'Unit')}</label>
+          <div class="field"><label class="field-label">${t('sheet_col_unit', 'Unit')} ${optTag()}</label>
             <input class="input" name="unit" maxlength="50" autocomplete="off" /></div>
         </div>
-        <div class="field"><label class="field-label">${t('sheet_col_activity', 'Activity / resource')}</label>
+        <div class="field"><label class="field-label">${t('sheet_col_activity', 'Activity / resource')} ${optTag()}</label>
           <textarea class="input" name="activity" rows="2" maxlength="2000"></textarea></div>
         <p class="muted" style="margin:0; font-size:0.75rem;">${t('sheet_stk_modal_foot', '')}</p>
         <div id="subErr" class="alert alert-danger" style="display:none;"></div>
@@ -953,24 +954,24 @@ export async function renderSheet(root) {
     const canCount = b === 'input' || b === 'outcome';
     const body = `
       <form id="sheetColForm" class="stack" style="gap: var(--sp-md);">
-        <div class="field"><label class="field-label">${t('sheet_col_label', 'Topic name')} *</label>
+        <div class="field"><label class="field-label">${t('sheet_col_label', 'Topic name')} ${reqTag()}</label>
           <input class="input" name="label" required maxlength="100" value="${esc(existing?.label || '')}" /></div>
         <div class="form-grid">
-          <div class="field"><label class="field-label">${t('sheet_col_type', 'Data type')}</label>
+          <div class="field"><label class="field-label">${t('sheet_col_type', 'Data type')} ${reqTag()}</label>
             <select class="input" name="data_type">${types.map(([v, k]) => `<option value="${v}" ${existing?.data_type === v ? 'selected' : ''}>${t(k, v)}</option>`).join('')}</select></div>
           ${
             canCount
-              ? `<div class="field" id="countsWrap" ${existing?.data_type === 'number' || existing?.data_type === 'percent' ? '' : 'hidden'}><label class="field-label">${t('sheet_col_counts', 'Use in the calculation?')}</label>
+              ? `<div class="field" id="countsWrap" ${existing?.data_type === 'number' || existing?.data_type === 'percent' ? '' : 'hidden'}><label class="field-label">${t('sheet_col_counts', 'Use in the calculation?')} ${optTag()}</label>
             <select class="input" name="counts_toward">
               <option value="none" ${existing?.counts_toward === 'none' || !existing ? 'selected' : ''}>${t('sheet_col_counts_none', 'No calculation use')}</option>
               <option value="${b}" ${existing && existing.counts_toward !== 'none' ? 'selected' : ''}>${t(b === 'input' ? 'sheet_col_counts_input' : 'sheet_col_counts_outcome', 'Direct factor')}</option>
             </select></div>
-          <div class="field" id="countInWrap" ${(existing?.data_type === 'number' || existing?.data_type === 'percent') && existing?.counts_toward !== 'none' ? '' : 'hidden'}><label class="field-label">${t('sheet_col_count_in', 'Counts in year')}</label>
+          <div class="field" id="countInWrap" ${(existing?.data_type === 'number' || existing?.data_type === 'percent') && existing?.counts_toward !== 'none' ? '' : 'hidden'}><label class="field-label">${t('sheet_col_count_in', 'Counts in year')} ${optTag()}</label>
             <select class="input" name="count_in"><option value="y0" ${existing?.count_in !== 'y1' ? 'selected' : ''}>${t('baseline_year', 'Baseline year')}</option><option value="y1" ${existing?.count_in === 'y1' ? 'selected' : ''}>${t('evaluation_year', 'Evaluation year')}</option></select></div>`
               : ''
           }
         </div>
-        <div class="field" id="optionsWrap" ${existing?.data_type === 'select' ? '' : 'hidden'}><label class="field-label">${t('sheet_col_options', 'Choices (one per line)')}</label>
+        <div class="field" id="optionsWrap" ${existing?.data_type === 'select' ? '' : 'hidden'}><label class="field-label">${t('sheet_col_options', 'Choices (one per line)')} ${reqTag()}</label>
           <textarea class="input" name="options" rows="4">${esc((existing?.options || []).join('\n'))}</textarea></div>
         <p class="muted" style="font-size:0.75rem;">${t('sheet_formula_hint', '')}</p>
         <div id="sheetColError" class="alert alert-danger" style="display:none;"></div>

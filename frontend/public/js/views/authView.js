@@ -8,6 +8,7 @@ import { api, setSession, getCurrentUser, consumeSessionExpired, userWithRole } 
 import { escapeHtml } from '../utils/html.js';
 import { getLanguage, setLanguage, t } from '../i18n.js';
 import { icons } from '../components/icons.js';
+import { reqTag } from '../utils/fieldTags.js';
 
 /** Where to go after signing in: the page the guest came from (#/login?next=...), or the projects page. */
 function nextHash() {
@@ -66,7 +67,7 @@ export function renderLogin(root) {
         <form id="authLoginForm" class="form-stack" novalidate>
           <div class="field">
             <label class="field-label" for="authEmail">
-              ${t('field_email', 'Institutional Email (@nu.ac.th)')} <span class="field-hint field-hint--primary">${isTh ? 'จำเป็น' : 'Required'}</span>
+              ${t('field_email', 'Institutional Email (@nu.ac.th)')} ${reqTag(isTh)}
             </label>
             <input
               id="authEmail"
@@ -82,7 +83,7 @@ export function renderLogin(root) {
 
           <div class="field">
             <label class="field-label" for="authPassword">
-              ${t('field_password', 'Password')} <span class="field-hint field-hint--primary">${isTh ? 'จำเป็น' : 'Required'}</span>
+              ${t('field_password', 'Password')} ${reqTag(isTh)}
             </label>
             <div class="password-field">
               <input

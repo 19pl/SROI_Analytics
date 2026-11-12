@@ -8,6 +8,7 @@ import { openModal, closeModal } from './modal.js';
 import { formatBaht } from '../utils/format.js';
 import { escapeHtml } from '../utils/html.js';
 import { t, getLanguage } from '../i18n.js';
+import { reqTag, optTag } from '../utils/fieldTags.js';
 
 export function openProxyLibraryModal({ onSelectProxy, orgId = null }) {
   const isTh = getLanguage() !== 'en';
@@ -134,14 +135,15 @@ export function openProxyLibraryModal({ onSelectProxy, orgId = null }) {
 }
 
 export function openCustomProxyModal({ orgId, onCreated }) {
+  const isTh = getLanguage() !== 'en';
   const formHtml = `
     <form id="customProxyForm" class="stack" style="gap: var(--sp-md);">
       <div class="field">
-        <label class="field-label">${t('field_proxy_name', 'Proxy Name')} *</label>
+        <label class="field-label">${t('field_proxy_name', 'Proxy Name')} ${reqTag(isTh)}</label>
         <input type="text" name="name" class="input" required placeholder="e.g. Reduction in supplementary tutoring fees" />
       </div>
       <div class="field">
-        <label class="field-label">${t('field_proxy_category', 'Category')} *</label>
+        <label class="field-label">${t('field_proxy_category', 'Category')} ${reqTag(isTh)}</label>
         <select name="category" class="input" required>
           <option value="Education">Education</option>
           <option value="Employment and income">Employment and income</option>
@@ -155,24 +157,24 @@ export function openCustomProxyModal({ orgId, onCreated }) {
       </div>
       <div class="form-grid">
         <div class="field">
-          <label class="field-label">${t('field_proxy_value', 'Monetary Value')} *</label>
+          <label class="field-label">${t('field_proxy_value', 'Monetary Value')} ${reqTag(isTh)}</label>
           <input type="number" name="value" step="0.01" min="0" class="input" required placeholder="2000" />
         </div>
         <div class="field">
-          <label class="field-label">${t('field_proxy_unit', 'Unit of Measure')} *</label>
+          <label class="field-label">${t('field_proxy_unit', 'Unit of Measure')} ${reqTag(isTh)}</label>
           <input type="text" name="unit" class="input" required placeholder="${t('field_proxy_unit_ph', 'e.g. THB/person/year')}" />
         </div>
         <div class="field">
-          <label class="field-label">${t('field_currency', 'Currency')}</label>
+          <label class="field-label">${t('field_currency', 'Currency')} ${reqTag(isTh)}</label>
           <input type="text" name="currency" class="input" value="THB" maxlength="3" required />
         </div>
       </div>
       <div class="field">
-        <label class="field-label">${t('field_proxy_source', 'Evidence Source / Citation')} *</label>
+        <label class="field-label">${t('field_proxy_source', 'Evidence Source / Citation')} ${reqTag(isTh)}</label>
         <input type="text" name="source" class="input" required placeholder="e.g. National Educational Survey, 2026" />
       </div>
       <div class="field">
-        <label class="field-label">${t('field_proxy_def', 'Definition / Limitations')}</label>
+        <label class="field-label">${t('field_proxy_def', 'Definition / Limitations')} ${optTag(isTh)}</label>
         <textarea name="definition" class="input" rows="2" placeholder="Explain what this monetary figure represents and its limits"></textarea>
       </div>
       <div id="customProxyError" style="display: none;" class="alert alert-danger"></div>

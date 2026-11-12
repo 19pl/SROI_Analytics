@@ -2,7 +2,8 @@ import { api, getCurrentUser } from '../api.js';
 import { openModal, closeModal } from '../components/modal.js';
 import { escapeHtml } from '../utils/html.js';
 import { icons } from '../components/icons.js';
-import { t } from '../i18n.js';
+import { t, getLanguage } from '../i18n.js';
+import { reqTag, optTag } from '../utils/fieldTags.js';
 import { isGuest, renderGuestPage } from '../components/guestNotice.js';
 import { showToast } from '../components/toast.js';
 
@@ -428,8 +429,8 @@ export async function renderOrg(root) {
     }
 
     const nameLabel = isFac
-      ? t('field_fac_name', 'Faculty Name *')
-      : t('field_dept_name', 'Department Name *');
+      ? t('field_fac_name', 'Faculty Name')
+      : t('field_dept_name', 'Department Name');
 
     const descLabel = isFac
       ? t('field_fac_desc', 'English name / code')
@@ -452,11 +453,11 @@ export async function renderOrg(root) {
       body: `
         <form id="orgEntityForm" class="form-stack">
           <div class="field">
-            <label class="field-label">${nameLabel}</label>
+            <label class="field-label">${nameLabel} ${reqTag(getLanguage() !== 'en')}</label>
             <input type="text" name="name" class="input" required value="${escapeHtml(currentName)}" placeholder="${escapeHtml(namePlaceholder)}" />
           </div>
           <div class="field">
-            <label class="field-label">${descLabel}</label>
+            <label class="field-label">${descLabel} ${optTag(getLanguage() !== 'en')}</label>
             <textarea name="description" class="input" rows="2" placeholder="${escapeHtml(descPlaceholder)}">${escapeHtml(currentDescription)}</textarea>
           </div>
           <div id="orgEntityError" class="field-error" hidden></div>
@@ -554,10 +555,10 @@ export async function renderOrg(root) {
       title: t('modal_add_member_title', 'เพิ่มสมาชิกในองค์กร'),
       body: `
         <form id="addMemberForm" class="form-stack">
-          <div class="field"><label class="field-label" for="memberEmail">${t('field_user_email', 'อีเมลผู้ใช้งาน *')}</label>
+          <div class="field"><label class="field-label" for="memberEmail">${t('field_user_email', 'อีเมลผู้ใช้งาน')} ${reqTag(getLanguage() !== 'en')}</label>
             <input id="memberEmail" type="email" name="email" class="input" required maxlength="254" placeholder="colleague@nu.ac.th" />
             <p class="field-hint">${t('email_nu_hint', 'ใช้อีเมลมหาวิทยาลัยที่ลงท้ายด้วย @nu.ac.th')}</p></div>
-          <fieldset class="field org-role-options"><legend class="field-label">${t('field_role', 'บทบาท *')}</legend>
+          <fieldset class="field org-role-options"><legend class="field-label">${t('field_role', 'บทบาท')} ${reqTag(getLanguage() !== 'en')}</legend>
             ${[['owner','role_owner_th','role_owner_desc'],['editor','role_editor_th','role_editor_desc'],['viewer','role_viewer_th','role_viewer_desc']].map(([v,n,d]) => `<label class="org-role-card"><input type="radio" name="role" value="${v}" ${v==='editor'?'checked':''}/><span class="org-role-card__content"><strong>${t(n,n==='role_owner_th'?'เจ้าของ':n==='role_editor_th'?'ผู้แก้ไข':'ผู้ดู')}</strong><small>${t(d,d)}</small></span></label>`).join('')}
           </fieldset>
           <div id="addMemberError" class="field-error" role="alert" hidden></div>

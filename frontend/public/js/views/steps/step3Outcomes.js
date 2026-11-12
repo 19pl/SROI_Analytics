@@ -25,6 +25,7 @@ import {
   stakeholderOptionsHtml,
 } from '../../utils/stakeholderGroups.js';
 import { t, getLanguage } from '../../i18n.js';
+import { reqTag, optTag } from '../../utils/fieldTags.js';
 import { wizardFooterHtml, attachWizardFooterEvents } from '../../components/wizardFooter.js';
 
 let lastStakeholderId = null;
@@ -320,7 +321,7 @@ function openOutcomeModal({ initialData = null, onSaved }) {
       <div class="field" id="ocPart1">
         <label class="field-label" for="ocStakeholderSelect">
           1. ${isTh ? 'ผู้ใดเป็นผู้ที่เกิดการเปลี่ยนแปลง?' : 'Who experiences the change?'}
-          <span class="field-hint field-hint--primary">${isTh ? 'จำเป็น' : 'Required'}</span>
+          ${reqTag(isTh)}
         </label>
         <select name="stakeholder_id" id="ocStakeholderSelect" class="input" required>
           <option value="">${isTh ? '— เลือกผู้มีส่วนได้ส่วนเสีย —' : '— Select a stakeholder —'}</option>
@@ -334,7 +335,7 @@ function openOutcomeModal({ initialData = null, onSaved }) {
           <div class="field">
             <label class="field-label" for="ocPresetSelect">
               2. ${isTh ? 'การเปลี่ยนแปลงที่เกิดขึ้นคืออะไร?' : 'What is the change / outcome?'}
-              <span class="field-hint field-hint--primary">${isTh ? 'จำเป็น' : 'Required'}</span>
+              ${reqTag(isTh)}
             </label>
             <select id="ocPresetSelect" class="input">
               <option value="">${isTh ? '— เลือกประเภทผลลัพธ์ —' : '— Select outcome preset —'}</option>
@@ -349,7 +350,7 @@ function openOutcomeModal({ initialData = null, onSaved }) {
           <div class="field">
             <label class="field-label" for="ocPolaritySelect">
               ${isTh ? 'ลักษณะผลลัพธ์' : 'Polarity'}
-              <span class="field-hint field-hint--primary">${isTh ? 'จำเป็น' : 'Required'}</span>
+              ${reqTag(isTh)}
             </label>
             <select name="polarity" id="ocPolaritySelect" class="input">
               <option value="positive" ${src?.polarity !== 'negative' ? 'selected' : ''}>${isTh ? '+ ผลเชิงบวก (Positive Benefit)' : '+ Positive Benefit'}</option>
@@ -361,7 +362,7 @@ function openOutcomeModal({ initialData = null, onSaved }) {
         <div id="customOutcomeRow" class="field" ${initialPresetVal === '__other__' ? '' : 'hidden'}>
           <label class="field-label" for="customOutcomeInput">
             ${isTh ? 'ระบุชื่อผลลัพธ์ที่เกิดขึ้น' : 'Specify Outcome Name'}
-            <span class="field-hint field-hint--primary">${isTh ? 'จำเป็น' : 'Required'}</span>
+            ${reqTag(isTh)}
           </label>
           <input type="text" id="customOutcomeInput" name="name" class="input" value="${escapeHtml(src?.name || '')}" placeholder="${isTh ? 'เช่น ผู้สูงอายุเดินได้คล่องตัวขึ้น ลดการพึ่งพาผู้อื่น...' : 'e.g. Prevented vision loss...'}" />
         </div>
@@ -370,13 +371,13 @@ function openOutcomeModal({ initialData = null, onSaved }) {
           <div class="field">
             <label class="field-label" for="ocQuantity">
               ${isTh ? 'จำนวนคนที่เกิดการเปลี่ยนแปลง' : 'Number of people affected'}
-              <span class="field-hint field-hint--primary">${isTh ? 'จำเป็น' : 'Required'}</span>
+              ${reqTag(isTh)}
             </label>
             <input type="number" id="ocQuantity" name="quantity" min="0" step="1" class="input" value="${src?.quantity ?? startCount ?? ''}" placeholder="${isTh ? 'เช่น 120' : 'e.g. 120'}" />
           </div>
 
           <div class="field">
-            <label class="field-label" for="ocActivity">${isTh ? 'กลุ่มบริการหรือกิจกรรม (ไม่บังคับ)' : 'Service Line (Optional)'}</label>
+            <label class="field-label" for="ocActivity">${isTh ? 'กลุ่มบริการหรือกิจกรรม' : 'Service Line'} ${optTag(isTh)}</label>
             <input type="text" id="ocActivity" name="activity" class="input" value="${escapeHtml(src?.activity || '')}" placeholder="${isTh ? 'เช่น ตรวจคัดกรองสุขภาพ, อบรมอาชีพ' : 'e.g. Health screening'}" />
           </div>
         </div>
@@ -387,7 +388,7 @@ function openOutcomeModal({ initialData = null, onSaved }) {
         <div class="field">
           <label class="field-label" for="ocIndicator">
             3. ${isTh ? 'วัดผลได้อย่างไร? (ตัวชี้วัด / Indicator)' : 'How do we measure it? (Indicator)'}
-            <span class="field-hint field-hint--primary">${isTh ? 'จำเป็น' : 'Required'}</span>
+            ${reqTag(isTh)}
           </label>
           <input type="text" id="ocIndicator" name="indicator" class="input" value="${escapeHtml(src?.indicator || '')}" placeholder="${isTh ? 'เช่น แบบประเมินทักษะ, จำนวนผู้ที่ผ่านเกณฑ์, ผลตรวจสายตา' : 'e.g. Skill assessment score, screening test result'}" />
         </div>
@@ -415,13 +416,13 @@ function openOutcomeModal({ initialData = null, onSaved }) {
             <div class="field">
               <label class="field-label" for="ocProxyValue">
                 ${isTh ? 'มูลค่าต่อหน่วย' : 'Value per unit'} (${escapeHtml(project.currency)})
-                <span class="field-hint field-hint--primary">${isTh ? 'จำเป็น' : 'Required'}</span>
+                ${reqTag(isTh)}
               </label>
               <input type="number" id="ocProxyValue" name="proxy_value" min="0" step="0.01" class="input" value="${src?.proxy_value ?? ''}" placeholder="2500" />
             </div>
 
             <div class="field">
-              <label class="field-label" for="ocProxyUnitSelect">${isTh ? 'หน่วยนับ' : 'Unit'}</label>
+              <label class="field-label" for="ocProxyUnitSelect">${isTh ? 'หน่วยนับ' : 'Unit'} ${reqTag(isTh)}</label>
               <select id="ocProxyUnitSelect" class="input">
                 ${[...PROXY_UNIT_SUGGESTIONS, '__other__'].map((u) => `
                   <option value="${u}" ${(src?.proxy_unit === u || (!src?.proxy_unit && u === 'คน / ปี')) ? 'selected' : ''}>
@@ -430,7 +431,7 @@ function openOutcomeModal({ initialData = null, onSaved }) {
                 `).join('')}
               </select>
               <div id="customProxyUnitRow" class="stack-xs" ${src?.proxy_unit && !PROXY_UNIT_SUGGESTIONS.includes(src.proxy_unit) ? '' : 'hidden'}>
-                <input class="input" name="proxy_unit" id="customProxyUnitInput" value="${escapeHtml(src?.proxy_unit || (isTh ? 'คน / ปี' : 'person / year'))}" placeholder="${isTh ? 'ระบุหน่วยนับ' : 'Specify unit'}" />
+                <input class="input" name="proxy_unit" id="customProxyUnitInput" value="${escapeHtml(src?.proxy_unit || (isTh ? 'คน / ปี' : 'person / year'))}" placeholder="${isTh ? 'ระบุหน่วยนับ' : 'Specify unit'}" aria-label="${isTh ? 'ระบุหน่วยนับ' : 'Specify unit'}" />
               </div>
             </div>
           </div>
@@ -438,6 +439,7 @@ function openOutcomeModal({ initialData = null, onSaved }) {
           <div class="field">
             <label class="field-label" for="ocProxyRationale">
               ${isTh ? 'แนวทางการคำนวณมูลค่า' : 'How the value was calculated'}
+              ${optTag(isTh)}
             </label>
             <input type="text" id="ocProxyRationale" name="proxy_rationale" class="input" maxlength="2000" value="${escapeHtml(src?.proxy_rationale || '')}" placeholder="${isTh ? 'เช่น ค่ารักษาเฉลี่ยต่อครั้ง × จำนวนครั้งที่ลดลงต่อปี' : 'e.g. average cost per visit × visits avoided per year'}" />
           </div>
@@ -445,7 +447,7 @@ function openOutcomeModal({ initialData = null, onSaved }) {
           <div class="field">
             <label class="field-label" for="ocProxySource">
               ${isTh ? 'แหล่งที่มาของมูลค่าอ้างอิง' : 'Source / Citation'}
-              <span class="field-hint field-hint--primary">${isTh ? 'จำเป็น' : 'Required'}</span>
+              ${reqTag(isTh)}
             </label>
             <input type="text" id="ocProxySource" name="proxy_source" class="input" value="${escapeHtml(src?.proxy_source || '')}" placeholder="${isTh ? 'เช่น อัตราค่าบริการ รพ.มหาวิทยาลัยนเรศวร, รายงาน SROI' : 'e.g. University hospital fee schedule, research citation'}" />
           </div>
@@ -459,11 +461,11 @@ function openOutcomeModal({ initialData = null, onSaved }) {
           <div class="form-stack">
             <div class="form-row">
               <div class="field">
-                <label class="field-label" for="ocDuration">${isTh ? 'คงอยู่กี่ปี? (Duration)' : 'Duration (Years)'}</label>
+                <label class="field-label" for="ocDuration">${isTh ? 'คงอยู่กี่ปี? (Duration)' : 'Duration (Years)'} ${optTag(isTh)}</label>
                 <input type="number" id="ocDuration" name="duration_years" min="1" max="${period}" class="input" value="${src?.duration_years || 1}" />
               </div>
               <div class="field">
-                <label class="field-label" for="ocModel">${isTh ? 'รูปแบบความคงอยู่' : 'Model'}</label>
+                <label class="field-label" for="ocModel">${isTh ? 'รูปแบบความคงอยู่' : 'Model'} ${optTag(isTh)}</label>
                 <select id="ocModel" name="projection_model" class="input">
                   <option value="cohort" ${src?.projection_model === 'cohort' ? 'selected' : ''}>Single Cohort</option>
                   <option value="recurring_cohorts" ${src?.projection_model === 'recurring_cohorts' ? 'selected' : ''}>Recurring Cohorts</option>
@@ -473,7 +475,7 @@ function openOutcomeModal({ initialData = null, onSaved }) {
             </div>
 
             <div class="field">
-              <label class="field-label" for="ocRigor">${isTh ? 'ระดับความน่าเชื่อถือ' : 'Evidence Rigor'}</label>
+              <label class="field-label" for="ocRigor">${isTh ? 'ระดับความน่าเชื่อถือ' : 'Evidence Rigor'} ${optTag(isTh)}</label>
               <select id="ocRigor" name="evidence_quality" class="input">
                 <option value="measured" ${src?.evidence_quality === 'measured' ? 'selected' : ''}>Measured</option>
                 <option value="external" ${src?.evidence_quality === 'external' ? 'selected' : ''}>External</option>
@@ -708,11 +710,11 @@ function openEvidenceModal({ project, outcome }) {
       <form id="addEvidenceForm" class="panel panel--soft form-stack">
         <div class="form-row">
           <div class="field">
-            <label class="field-label">${t('name', 'ชื่อเอกสาร / หลักฐาน')} <span class="field-hint field-hint--primary">${isTh ? 'จำเป็น' : 'Required'}</span></label>
+            <label class="field-label">${t('name', 'ชื่อเอกสาร / หลักฐาน')} ${reqTag(isTh)}</label>
             <input type="text" name="title" class="input" required placeholder="${isTh ? 'เช่น แบบประเมินความพึงพอใจและทักษะ 2568' : 'e.g. Survey Results 2026'}" />
           </div>
           <div class="field">
-            <label class="field-label">${isTh ? 'ประเภทหลักฐาน' : 'Kind'}</label>
+            <label class="field-label">${isTh ? 'ประเภทหลักฐาน' : 'Kind'} ${reqTag(isTh)}</label>
             <select name="kind" class="input">
               <option value="survey">${isTh ? 'ผลสำรวจ / แบบสอบถาม (Survey)' : 'Survey Findings'}</option>
               <option value="citation">${isTh ? 'รายงานวิจัย / วารสารวิชาการ (Citation)' : 'Academic / Research Citation'}</option>
@@ -722,11 +724,11 @@ function openEvidenceModal({ project, outcome }) {
           </div>
         </div>
         <div class="field">
-          <label class="field-label">${isTh ? 'ลิงก์ / การอ้างอิงเอกสาร' : 'Reference / URL'}</label>
+          <label class="field-label">${isTh ? 'ลิงก์ / การอ้างอิงเอกสาร' : 'Reference / URL'} ${optTag(isTh)}</label>
           <input type="text" name="reference" class="input" placeholder="e.g. https://journal.org/paper-123 or DOI" />
         </div>
         <div class="field">
-          <label class="field-label">${t('description', 'คำอธิบายเพิ่มเติม')}</label>
+          <label class="field-label">${t('description', 'คำอธิบายเพิ่มเติม')} ${optTag(isTh)}</label>
           <textarea name="description" class="input" rows="2" placeholder="${isTh ? 'ระบุข้อค้นพบที่สำคัญ' : 'Key findings'}"></textarea>
         </div>
         <div class="cluster cluster--end">
