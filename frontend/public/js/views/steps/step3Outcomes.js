@@ -316,6 +316,8 @@ function openOutcomeModal({ initialData = null, onSaved }) {
     return !!g && g !== 'primary_beneficiary';
   };
 
+  const hasMoneyValue = !!src && src.proxy_value !== null && src.proxy_value !== undefined;
+
   const matchedPreset = src
     ? OUTCOME_PRESETS.find((p) => p.th === src.name || p.en === src.name)
     : null;
@@ -420,10 +422,11 @@ function openOutcomeModal({ initialData = null, onSaved }) {
 
           <!-- S2-S4 (operators, supporters, other agencies) normally have outcomes but no money value: optional, off by default -->
           <div id="ocValueToggleRow" class="oc-value-toggle" ${isOptionalGroup(src?.stakeholder_id || startStk) ? '' : 'hidden'}>
-            <label class="oc-value-toggle__label">
-              <input type="checkbox" id="ocValueToggle" ${src && src.proxy_value !== null && src.proxy_value !== undefined ? 'checked' : ''} />
-              <span>${isTh ? 'ใส่มูลค่าทางการเงินของผลลัพธ์นี้ (ไม่บังคับ)' : 'Add a money value for this outcome (optional)'}</span>
-            </label>
+            <div class="disclosure">
+              <button type="button" class="disclosure__summary oc-value-toggle__btn" id="ocValueToggle" aria-expanded="${hasMoneyValue ? 'true' : 'false'}" aria-controls="ocProxyFields">
+                <span>${isTh ? 'ใส่มูลค่าทางการเงินของผลลัพธ์นี้ (ไม่บังคับ)' : 'Add a money value for this outcome (optional)'}</span>
+              </button>
+            </div>
             <p id="ocValueOffNote" class="field-hint">${isTh ? 'ถ้าไม่ใส่ ผลลัพธ์นี้จะรายงานเป็นข้อมูลเชิงคุณภาพ และไม่ถูกนับรวมในมูลค่ารวมของโครงการ' : 'If left off, this outcome is reported qualitatively and is not counted in the project total.'}</p>
           </div>
 
@@ -539,7 +542,16 @@ function openOutcomeModal({ initialData = null, onSaved }) {
   const customProxyUnitInput = document.getElementById('customProxyUnitInput');
   const ocProxySource = document.getElementById('ocProxySource');
   const btnSave = document.getElementById('btnSaveOutcomeDirect');
-  const ocValueToggle = document.getElementById('ocValueToggle');
+  // Disclosure-style button (same look as "5. Advanced"); ocValueToggle.checked = expanded = money value on
+  const ocValueBtn = document.getElementById('ocValueToggle');
+  const ocValueToggle = {
+    get checked() {
+      return ocValueBtn.getAttribute('aria-expanded') === 'true';
+    },
+    set checked(on) {
+      ocValueBtn.setAttribute('aria-expanded', on ? 'true' : 'false');
+    },
+  };
   const ocValueToggleRow = document.getElementById('ocValueToggleRow');
   const ocValueOffNote = document.getElementById('ocValueOffNote');
   const ocProxyFields = document.getElementById('ocProxyFields');
@@ -556,7 +568,8 @@ function openOutcomeModal({ initialData = null, onSaved }) {
     ocProxyFields.hidden = !needed;
     btnPickProxy.hidden = !needed;
   };
-  ocValueToggle.addEventListener('change', () => {
+  ocValueBtn.addEventListener('click', () => {
+    ocValueToggle.checked = !ocValueToggle.checked;
     applyValueMode();
     if (ocValueToggle.checked) ocProxyValue.focus();
   });

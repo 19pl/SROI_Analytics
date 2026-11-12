@@ -1291,15 +1291,14 @@
   display: grid;
   gap: 4px;
 }
-.oc-value-toggle__label {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  font-weight: 600;
-  cursor: pointer;
+
+.oc-value-toggle__btn {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  font-family: inherit;
 }
-.oc-value-toggle__label input {
-  width: 18px;
-  height: 18px;
-  accent-color: var(--accent, var(--primary));
+.oc-value-toggle__btn[aria-expanded='true']::after {
+  transform: rotate(-135deg);
 }
