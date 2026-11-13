@@ -57,6 +57,24 @@
   cursor: pointer;
   padding: 4px 0;
   outline: none;
+  color-scheme: light;
+}
+
+/* Native dropdown list: follow the active theme so option text stays readable */
+.dash-select option,
+.dash-select optgroup {
+  background-color: var(--surface-card, #ffffff);
+  color: var(--on-background, #0f172a);
+}
+
+[data-theme='black'] .dash-select {
+  color-scheme: dark;
+}
+
+[data-theme='black'] .dash-select option,
+[data-theme='black'] .dash-select optgroup {
+  background-color: #111114;
+  color: #f4f4f5;
 }
 
 /* KPI Cards Hero Grid */
