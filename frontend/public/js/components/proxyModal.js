@@ -84,7 +84,7 @@ export function openProxyLibraryModal({ onSelectProxy, orgId = null }) {
         <div class="proxy-item" data-id="${p.id}">
           <div class="proxy-item-info">
             <span class="proxy-item-name">${escapeHtml(p.name)} <span class="badge badge-planned" style="font-size: 0.6875rem;">${escapeHtml(p.category)}</span></span>
-            <span class="proxy-item-source">${t('unit', 'Unit')}: ${escapeHtml(p.unit)} | ${isTh ? 'ที่มา' : 'Source'}: ${escapeHtml(p.source || 'Standard Reference')}${p.reference_year ? ` (${isTh ? 'ปี' : 'year'} ${escapeHtml(String(p.reference_year))})` : ''}${p.geography ? ` · ${escapeHtml(p.geography)}` : ''}</span>
+            <span class="proxy-item-source">${isTh ? 'หน่วยอ้างอิง' : 'Reference unit'}: ${escapeHtml(p.unit)} | ${isTh ? 'ที่มา' : 'Source'}: ${escapeHtml(p.source || 'Standard Reference')}${p.reference_year ? ` (${isTh ? 'ปี' : 'year'} ${escapeHtml(String(p.reference_year))})` : ''}${p.geography ? ` · ${escapeHtml(p.geography)}` : ''}</span>
             ${p.definition ? `<span class="muted" style="font-size: 0.75rem;">${escapeHtml(p.definition)}</span>` : ''}
             ${p.limitations ? `<span class="muted" style="font-size: 0.75rem;"><b>${isTh ? 'ข้อจำกัด' : 'Limitations'}:</b> ${escapeHtml(p.limitations)}</span>` : ''}
             ${/^https?:\/\//i.test(p.source_url || '') ? `<a class="proxy-item-link" href="${escapeHtml(p.source_url)}" target="_blank" rel="noopener noreferrer" style="font-size: 0.75rem;">${isTh ? 'เปิดแหล่งที่มา' : 'Open source'} ↗</a>` : ''}

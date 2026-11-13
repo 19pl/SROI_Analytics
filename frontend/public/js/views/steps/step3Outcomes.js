@@ -439,6 +439,7 @@ function openOutcomeModal({ initialData = null, onSaved }) {
                 ${reqTag(isTh)}
               </label>
               <input type="number" id="ocProxyValue" name="proxy_value" min="0" step="0.01" class="input" value="${src?.proxy_value ?? ''}" placeholder="2500" />
+              <p class="field-hint" id="ocProxyRefHint" hidden></p>
             </div>
           </div>
 
@@ -630,14 +631,22 @@ function openOutcomeModal({ initialData = null, onSaved }) {
       onSelectProxy: (selectedProxy) => {
         ocValueToggle.checked = true; // picking a library value means the user wants a money value
         applyValueMode();
-        if (ocProxyValue) ocProxyValue.value = selectedProxy.value;
+        // Library values are per unit, so the value box is left for the user to enter the yearly total.
+        const refUnit = selectedProxy.unit ? ` ${selectedProxy.unit}` : '';
+        const refHint = document.getElementById('ocProxyRefHint');
+        if (refHint) {
+          refHint.textContent = isTh
+            ? `ค่าอ้างอิงจากคลัง: ${Number(selectedProxy.value).toLocaleString('th-TH')}${refUnit} — นำไปคำนวณเป็นยอดรวมทั้งปีดำเนินงาน แล้วกรอกในช่องนี้`
+            : `Library reference: ${Number(selectedProxy.value).toLocaleString('en-US')}${refUnit} — work out the total for the operating year and enter it here`;
+          refHint.hidden = false;
+        }
+        const ocRationaleEl = document.getElementById('ocProxyRationale');
+        if (ocRationaleEl && !ocRationaleEl.value.trim()) {
+          ocRationaleEl.value = `${isTh ? 'ค่าอ้างอิง' : 'Reference'}: ${selectedProxy.name} ${Number(selectedProxy.value).toLocaleString(isTh ? 'th-TH' : 'en-US')}${refUnit}`;
+        }
+        if (ocProxyValue) ocProxyValue.focus();
         if (ocProxySource) {
           ocProxySource.value = selectedProxy.source + (selectedProxy.reference_year ? ` (${isTh ? 'ปี' : 'year'} ${selectedProxy.reference_year})` : '');
-        }
-        // Calculation-approach field: only pre-fill when empty, so anything the user typed is never overwritten.
-        const ocProxyRationaleEl = document.getElementById('ocProxyRationale');
-        if (ocProxyRationaleEl && !ocProxyRationaleEl.value.trim() && selectedProxy.definition) {
-          ocProxyRationaleEl.value = selectedProxy.definition;
         }
         checkVisibilityAndValidity();
       },
