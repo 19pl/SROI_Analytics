@@ -464,11 +464,17 @@ export async function renderDashboard(root) {
  * Pillar Donut Chart Renderer (Economic, Social, Environmental)
  */
 function renderPillarDonut(breakdown, isTh) {
-  const pillars = [
-    { key: 'economic', ...breakdown.economic },
-    { key: 'social', ...breakdown.social },
-    { key: 'environmental', ...breakdown.environmental },
-  ];
+  // Labels come from the backend hardcoded in Thai, so localize them here by key.
+  const pillarLabels = {
+    economic: ['ผลกระทบด้านเศรษฐกิจ (Economic)', 'Economic Impact'],
+    social: ['ผลกระทบด้านสังคมและสุขภาพ (Social)', 'Social & Health Impact'],
+    environmental: ['ผลกระทบด้านสิ่งแวดล้อม (Environmental)', 'Environmental Impact'],
+  };
+  const pillars = ['economic', 'social', 'environmental'].map((key) => ({
+    key,
+    ...breakdown[key],
+    label: pillarLabels[key][isTh ? 0 : 1],
+  }));
 
   const total = breakdown.total || 0;
   if (total === 0) {
@@ -526,7 +532,7 @@ function renderPillarDonut(breakdown, isTh) {
           )
           .join('')}
         <circle cx="${cx}" cy="${cy}" r="${rInner - 2}" fill="var(--surface)" />
-        <text x="${cx}" y="${cy - 6}" text-anchor="middle" font-size="9" font-weight="500" fill="var(--muted)">Social PV</text>
+        <text x="${cx}" y="${cy - 6}" text-anchor="middle" font-size="9" font-weight="500" fill="var(--muted)">${isTh ? 'มูลค่าทางสังคม' : 'Social PV'}</text>
         <text x="${cx}" y="${cy + 12}" text-anchor="middle" font-size="13" font-weight="700" fill="var(--on-background)">${formatBahtCompact(total)}</text>
       </svg>
     </div>
