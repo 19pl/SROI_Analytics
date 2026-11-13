@@ -13,7 +13,7 @@ function snap(array $o = [], array $p = [], array $costs = null, array $scenario
             'discount_base_year' => 0, 'investment_basis' => 'nominal', 'include_in_kind' => true],
         'costs' => $costs ?? [['id' => 1, 'category' => 'opex', 'description' => 'Delivery', 'amount' => 100000, 'currency' => 'THB', 'year' => 0]],
         'stakeholders' => [['id' => 1, 'name' => 'Families'], ['id' => 2, 'name' => 'Students']],
-        'outcomes' => [$o + ['id' => 10, 'name' => 'Reduced tutoring costs', 'stakeholder_id' => 1, 'quantity' => 40, 'proxy_value' => 2000,
+        'outcomes' => [$o + ['id' => 10, 'name' => 'Reduced tutoring costs', 'stakeholder_id' => 1, 'quantity' => 40, 'proxy_value' => 80000,
             'start_year' => 1, 'duration_years' => 1, 'evidence_quality' => 'measured', 'proxy_source' => 'survey',
             'adjustment' => ['deadweight' => 0.15, 'attribution' => 0.20, 'displacement' => 0.0, 'drop_off' => 0.0, 'justification' => 'x', 'source' => 'y']]],
         'scenario' => $scenario + ['id' => 1, 'name' => 'Base case', 'kind' => 'base', 'assumptions' => []],
@@ -22,7 +22,7 @@ function snap(array $o = [], array $p = [], array $costs = null, array $scenario
 
 $engine = new CalculationEngine();
 
-T::test('spec example: 40 x 2000, 15%/20%/0% adjustments = 54,400; PV at 3% = 52,815.53', function () use ($engine) {
+T::test('spec example: operating-year value 80,000, 15%/20%/0% adjustments = 54,400; PV at 3% = 52,815.53', function () use ($engine) {
     $r = $engine->calculate(snap());
     $y = $r['outcomes'][0]['years'][0];
     T::eq(80000.0, $y['gross_value']);
@@ -32,8 +32,8 @@ T::test('spec example: 40 x 2000, 15%/20%/0% adjustments = 54,400; PV at 3% = 52
 });
 
 T::test('spec example: PV 350,000 / investment 100,000 = 3.5:1, NSV 250,000, net return 250%', function () use ($engine) {
-    // quantity chosen so adjusted PV is exactly 350,000 with no discounting and no deductions
-    $r = $engine->calculate(snap(['quantity' => 350, 'proxy_value' => 1000, 'adjustment' => ['deadweight' => 0.0, 'attribution' => 0.0, 'displacement' => 0.0]], ['discount_rate' => 0.0]));
+    // value chosen so adjusted PV is exactly 350,000 with no discounting and no deductions
+    $r = $engine->calculate(snap(['proxy_value' => 350000, 'adjustment' => ['deadweight' => 0.0, 'attribution' => 0.0, 'displacement' => 0.0]], ['discount_rate' => 0.0]));
     T::eq(350000.0, $r['summary']['present_value_of_impact']);
     T::eq(3.5, $r['summary']['sroi_ratio']);
     T::eq(250000.0, $r['summary']['net_social_value']);
@@ -46,21 +46,21 @@ T::test('adjustments are multiplicative, not additive', function () use ($engine
 });
 
 T::test('cohort drop-off is recursive and applied once', function () use ($engine) {
-    $r = $engine->calculate(snap(['duration_years' => 3, 'quantity' => 10, 'proxy_value' => 1000,
+    $r = $engine->calculate(snap(['duration_years' => 3, 'quantity' => 10, 'proxy_value' => 10000,
         'adjustment' => ['deadweight' => 0.0, 'attribution' => 0.0, 'displacement' => 0.0, 'drop_off' => 0.1]], ['discount_rate' => 0.0]));
     $a = array_column($r['outcomes'][0]['years'], 'adjusted_impact');
     T::eq([10000.0, 9000.0, 8100.0], $a);
 });
 
 T::test('per-year drop-off override replaces the default for that year only', function () use ($engine) {
-    $r = $engine->calculate(snap(['duration_years' => 3, 'quantity' => 10, 'proxy_value' => 1000,
+    $r = $engine->calculate(snap(['duration_years' => 3, 'quantity' => 10, 'proxy_value' => 10000,
         'adjustment' => ['deadweight' => 0.0, 'attribution' => 0.0, 'displacement' => 0.0, 'drop_off' => 0.1],
         'year_overrides' => [['year' => 2, 'drop_off' => 0.5]]], ['discount_rate' => 0.0]));
     T::eq([10000.0, 5000.0, 4500.0], array_column($r['outcomes'][0]['years'], 'adjusted_impact'));
 });
 
 T::test('independent model does not apply drop-off (no double adjustment) and warns', function () use ($engine) {
-    $r = $engine->calculate(snap(['projection_model' => 'independent', 'duration_years' => 3, 'quantity' => 10, 'proxy_value' => 1000,
+    $r = $engine->calculate(snap(['projection_model' => 'independent', 'duration_years' => 3, 'quantity' => 10, 'proxy_value' => 10000,
         'adjustment' => ['deadweight' => 0.0, 'attribution' => 0.0, 'displacement' => 0.0, 'drop_off' => 0.1],
         'year_overrides' => [['year' => 2, 'quantity' => 8], ['year' => 3, 'quantity' => 6]]], ['discount_rate' => 0.0]));
     T::eq([10000.0, 8000.0, 6000.0], array_column($r['outcomes'][0]['years'], 'adjusted_impact'));
@@ -70,7 +70,7 @@ T::test('independent model does not apply drop-off (no double adjustment) and wa
 T::test('recurring cohorts: each cohort decays by its own age', function () use ($engine) {
     // new cohort of 10 every year for 3 years, each lasting 2 years with 50% drop-off in its 2nd year
     $r = $engine->calculate(snap(['projection_model' => 'recurring_cohorts', 'entry_years' => 3, 'duration_years' => 2,
-        'quantity' => 10, 'proxy_value' => 100, 'adjustment' => ['deadweight' => 0.0, 'attribution' => 0.0, 'displacement' => 0.0, 'drop_off' => 0.5]],
+        'quantity' => 10, 'proxy_value' => 1000, 'adjustment' => ['deadweight' => 0.0, 'attribution' => 0.0, 'displacement' => 0.0, 'drop_off' => 0.5]],
         ['discount_rate' => 0.0, 'analysis_period_years' => 6]));
     // y1: 10 ; y2: 10 + 5 ; y3: 10 + 5 ; y4: 5
     T::eq([1000.0, 1500.0, 1500.0, 500.0], array_column($r['outcomes'][0]['years'], 'adjusted_impact'));
@@ -82,7 +82,7 @@ T::test('cohort rejects a per-year quantity override', function () use ($engine)
 
 T::test('negative outcomes subtract and are reported separately', function () use ($engine) {
     $s = snap(['adjustment' => ['deadweight' => 0.0, 'attribution' => 0.0, 'displacement' => 0.0]], ['discount_rate' => 0.0]);
-    $s['outcomes'][] = ['id' => 11, 'name' => 'Noise harm', 'stakeholder_id' => 2, 'quantity' => 10, 'proxy_value' => 1000, 'polarity' => 'negative',
+    $s['outcomes'][] = ['id' => 11, 'name' => 'Noise harm', 'stakeholder_id' => 2, 'quantity' => 10, 'proxy_value' => 10000, 'polarity' => 'negative',
         'start_year' => 1, 'duration_years' => 1, 'evidence_quality' => 'estimated', 'adjustment' => ['deadweight' => 0.0, 'attribution' => 0.0, 'displacement' => 0.0]];
     $r = $engine->calculate($s);
     T::eq(80000.0, $r['summary']['positive_present_value']);
@@ -151,9 +151,9 @@ T::test('scenario: global multipliers/deltas and per-outcome absolute overrides'
     $base = $engine->calculate(snap([], ['discount_rate' => 0.0]));
     $cons = $engine->calculate(snap([], ['discount_rate' => 0.0], null, ['kind' => 'conservative', 'name' => 'C', 'assumptions' => ['global' => ['quantity_multiplier' => 0.5, 'deadweight_delta' => 0.05]]]));
     T::eq(54400.0, $base['summary']['present_value_of_impact']);
-    T::eq(round(20 * 2000 * 0.80 * 0.80, 2), $cons['summary']['present_value_of_impact']); // 40*.5, deadweight .15+.05
+    T::eq(round(0.5 * 80000 * 0.80 * 0.80, 2), $cons['summary']['present_value_of_impact']); // 40*.5, deadweight .15+.05
     $ovr = $engine->calculate(snap([], ['discount_rate' => 0.0], null, ['assumptions' => ['outcomes' => [10 => ['quantity' => 10, 'deadweight' => 0.0]]]]));
-    T::eq(round(10 * 2000 * 1.0 * 0.8, 2), $ovr['summary']['present_value_of_impact']);
+    T::eq(round((10 / 40) * 80000 * 1.0 * 0.8, 2), $ovr['summary']['present_value_of_impact']);
 });
 
 T::test('unconfigured conservative scenario is flagged as identical to base', function () use ($engine) {

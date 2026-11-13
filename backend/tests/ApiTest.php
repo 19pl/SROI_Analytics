@@ -123,7 +123,7 @@ T::test('api: full SROI workflow reproduces the spec example and exports', funct
     [, $st] = $call('POST', "/projects/$pid/stakeholders", ['name' => 'Families', 'estimated_count' => 40], $tok);
     $sid = $st['data']['id'];
 
-    [$s, $o] = $call('POST', "/projects/$pid/outcomes", ['stakeholder_id' => $sid, 'name' => 'Reduced tutoring costs', 'quantity' => 40, 'proxy_value' => 2000,
+    [$s, $o] = $call('POST', "/projects/$pid/outcomes", ['stakeholder_id' => $sid, 'name' => 'Reduced tutoring costs', 'quantity' => 40, 'proxy_value' => 80000,
         'proxy_source' => 'household survey', 'evidence_quality' => 'measured', 'duration_years' => 1], $tok);
     T::eq(201, $s);
     $oid = $o['data']['id'];
@@ -156,18 +156,18 @@ T::test('api: full SROI workflow reproduces the spec example and exports', funct
     $run1 = $run['data']['run']['id'];
 
     // change an input; compare runs
-    $call('PATCH', "/projects/$pid/outcomes/$oid", ['quantity' => 50, 'change_reason' => 'new survey'], $tok);
+    $call('PATCH', "/projects/$pid/outcomes/$oid", ['proxy_value' => 90000, 'change_reason' => 'new survey'], $tok);
     [, $run2] = $call('POST', "/projects/$pid/calculate", [], $tok);
     [$s, $cmp] = $call('GET', "/projects/$pid/run-comparison", null, $tok, ['a' => (string)$run1, 'b' => (string)$run2['data']['run']['id']]);
     T::eq(200, $s);
     T::true($cmp['data']['delta']['present_value'] > 0);
-    T::true(count(array_filter($cmp['data']['changed_inputs'], fn($c) => str_ends_with($c['path'], 'quantity'))) === 1);
+    T::true(count(array_filter($cmp['data']['changed_inputs'], fn($c) => str_ends_with($c['path'], 'proxy_value'))) === 1);
 
     // audit trail captured old/new and reason
     [, $aud] = $call('GET', "/projects/$pid/audit", null, $tok, ['entity_type' => 'outcome']);
     $upd = array_values(array_filter($aud['data'], fn($e) => $e['action'] === 'update'))[0];
-    T::eq(40.0, $upd['old_values']['quantity']);
-    T::eq(50.0, $upd['new_values']['quantity']);
+    T::eq(80000.0, $upd['old_values']['proxy_value']);
+    T::eq(90000.0, $upd['new_values']['proxy_value']);
     T::eq('new survey', $upd['reason']);
 
     // scenario overrides + comparison

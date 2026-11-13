@@ -290,7 +290,7 @@ export function renderStep6(container) {
           <!-- 3: Financial Proxy Valuation -->
           <div class="slider-box">
             <div class="slider-box-header">
-              <span class="slider-box-title strong">${L('มูลค่า Proxy ต่อหน่วย', 'Proxy Valuation')}</span>
+              <span class="slider-box-title strong">${L('มูลค่าในปีดำเนินงาน (บาทต่อปี)', 'Value in Operating Year (THB/year)')}</span>
               <span class="slider-badge" id="badgeSimProxyVal">100%</span>
             </div>
             <input type="range" id="rangeSimProxy" class="range-input" min="20" max="300" step="5" value="100" />

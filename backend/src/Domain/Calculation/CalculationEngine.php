@@ -695,10 +695,15 @@ final class CalculationEngine
             $rT = [];
             $aT = [];
             $pT = [];
+            // The financial value is the TOTAL for the operating year (THB per year), not a per-person amount.
+            // Quantity is used only as a ratio to the outcome's base quantity, so sensitivity runs, quantity
+            // multipliers and per-year overrides still scale the value while the base case is not multiplied.
+            $baseQty = (float)$o['quantity'];
             foreach ($years as $y => $v) {
-                $gross = $this->r2($sign * $v['gross'] * $proxy);
-                $retained = $this->r2($sign * $v['retained'] * $proxy);
-                $adjusted = $this->r2($sign * $v['retained'] * $proxy * $factor);
+                $scale = $baseQty > 0 ? 1.0 / $baseQty : 0.0;
+                $gross = $this->r2($sign * $v['gross'] * $scale * $proxy);
+                $retained = $this->r2($sign * $v['retained'] * $scale * $proxy);
+                $adjusted = $this->r2($sign * $v['retained'] * $scale * $proxy * $factor);
                 $pv = $this->r2($adjusted * $df($y));
                 $line['years'][] = [
                     'year' => $y,

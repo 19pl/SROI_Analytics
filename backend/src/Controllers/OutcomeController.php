@@ -105,9 +105,9 @@ final class OutcomeController extends ProjectResource
         foreach ($rows as &$r) {
             $id = (int)$r['id'];
             $r['monetized'] = $r['proxy_value'] !== null;
-            $r['annual_gross_value'] = $r['proxy_value'] === null ? null : round((float)$r['quantity'] * (float)$r['proxy_value'], 2);
+            $r['annual_gross_value'] = $r['proxy_value'] === null ? null : round((float)$r['proxy_value'], 2); // operating-year value is the total, not per person
             $r['formula_preview'] = $r['proxy_value'] === null ? null
-                : sprintf('Annual estimated outcome value = %s units x %s per unit = %s', (float)$r['quantity'], (float)$r['proxy_value'], $r['annual_gross_value']);
+                : sprintf('Annual estimated outcome value (operating year) = %s', $r['annual_gross_value']);
             $r['adjustment'] = isset($adj[$id]) ? $this->presentAdjustment($adj[$id], $r) : null;
             $r['year_overrides'] = $ovs[$id] ?? [];
         }
@@ -190,7 +190,7 @@ final class OutcomeController extends ProjectResource
         ];
         if ($o['proxy_value'] !== null) {
             // step-by-step effect of each deduction on a single year's value (before drop-off and discounting)
-            $g = (float)$o['quantity'] * (float)$o['proxy_value'];
+            $g = (float)$o['proxy_value']; // operating-year value is the total
             $s1 = $g * (1 - (float)($a['deadweight'] ?? 0));
             $s2 = $s1 * (1 - (float)($a['attribution'] ?? 0));
             $s3 = $s2 * (1 - (float)($a['displacement'] ?? 0));

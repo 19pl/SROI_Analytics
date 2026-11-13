@@ -183,7 +183,7 @@ export function openCalculationTraceModal({ metricType, project, result, outcome
       const sign = o.polarity === 'negative' ? -1 : 1;
       const qty = o.quantity || 0;
       const proxy = o.proxy_value || 0;
-      const gross = qty * proxy * sign;
+      const gross = proxy * sign; // operating-year value is the total, not multiplied by people
       const dw = o.deadweight !== null && o.deadweight !== undefined ? Number(o.deadweight) : 0;
       const at = o.attribution !== null && o.attribution !== undefined ? Number(o.attribution) : 0;
       const dp = o.displacement !== null && o.displacement !== undefined ? Number(o.displacement) : 0;
@@ -195,7 +195,7 @@ export function openCalculationTraceModal({ metricType, project, result, outcome
           <div class="panel panel--soft">
             <div class="trace-card-title">${isTh ? 'ขั้นตอนที่ 1: การประมาณมูลค่าขั้นต้น (Gross Valuation)' : 'Step 1: Gross Valuation'}</div>
             <div class="muted-sm">
-              ${isTh ? 'จำนวนผู้รับผล' : 'Beneficiaries'}: <strong>${Number(qty).toLocaleString()}</strong> × ${isTh ? 'ตัวแทนทางการเงิน' : 'Financial Proxy'}: <strong>${currency} ${formatBaht(proxy)}</strong> = <strong class="primary-text">${currency} ${formatBaht(gross)}/ปี</strong>
+              ${isTh ? 'มูลค่าในปีดำเนินงาน (บาทต่อปี)' : 'Value in operating year (THB per year)'}: <strong>${currency} ${formatBaht(proxy)}</strong> = <strong class="primary-text">${currency} ${formatBaht(gross)}/ปี</strong>
             </div>
             ${o.proxy_source ? `<div class="muted" class="trace-subtext muted-sm">${isTh ? 'แหล่งอ้างอิงตัวแทนทางการเงิน' : 'Financial proxy source'}: ${escapeHtml(o.proxy_source)}</div>` : ''}
           </div>
