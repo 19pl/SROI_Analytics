@@ -14,7 +14,7 @@
 import { getState, addOutcome, updateOutcome, removeOutcome } from '../../store.js';
 import { openModal, closeModal, confirmModal } from '../../components/modal.js';
 import { openProxyLibraryModal } from '../../components/proxyModal.js';
-import { formatBaht, displayUnit } from '../../utils/format.js';
+import { formatBaht } from '../../utils/format.js';
 import { escapeHtml } from '../../utils/html.js';
 import { icons } from '../../components/icons.js';
 import { showToast } from '../../components/toast.js';
@@ -131,7 +131,7 @@ export function renderStep3(container) {
                 <th>${t('col_outcome_name', 'ผลลัพธ์ / การเปลี่ยนแปลง')}</th>
                 <th>${t('col_stakeholder_name', 'ผู้มีส่วนได้ส่วนเสีย')}</th>
                 <th>${t('col_polarity', 'ลักษณะผล')}</th>
-                <th class="num">${t('col_gross_annual', 'มูลค่ารวมขั้นต้นต่อปี')}</th>
+                <th class="num">${isTh ? 'มูลค่าในปีดำเนินงาน (บาทต่อปี)' : 'Value in operating year (THB per year)'}</th>
                 <th><span class="sr-only">${t('col_actions', 'จัดการ')}</span></th>
               </tr>
             </thead>
@@ -147,8 +147,9 @@ export function renderStep3(container) {
                   : outcomes
                       .map((o) => {
                         const sign = o.polarity === 'negative' ? -1 : 1;
+                        // Shown raw: the value entered for the operating year, not multiplied by people affected.
                         const gross =
-                          o.proxy_value !== null ? o.quantity * o.proxy_value * sign : null;
+                          o.proxy_value !== null ? o.proxy_value * sign : null;
                         const stkName =
                           stakeById[o.stakeholder_id] || `Stakeholder #${o.stakeholder_id}`;
 
@@ -200,7 +201,7 @@ export function renderStep3(container) {
                         <div class="form-row">
                           <div>
                             <span class="muted-sm">${t('col_outcome_proxy', 'ตัวแทนทางการเงิน (Proxy)')}:</span>
-                            <strong>${o.proxy_value !== null ? `${project.currency} ${formatBaht(o.proxy_value)} / ${escapeHtml(displayUnit(o.proxy_unit))}` : '-'}</strong>
+                            <strong>${o.proxy_value !== null ? (isTh ? `${formatBaht(o.proxy_value)} บาทต่อปี` : `${project.currency} ${formatBaht(o.proxy_value)} per year`) : '-'}</strong>
                             ${o.proxy_rationale ? `<div class="muted-sm">${isTh ? 'แนวทางการคำนวณ' : 'Calculation'}: ${escapeHtml(o.proxy_rationale)}</div>` : ''}
                             ${o.proxy_source ? `<div class="muted-sm">${escapeHtml(o.proxy_source)}</div>` : ''}
                           </div>
@@ -402,16 +403,16 @@ function openOutcomeModal({ initialData = null, onSaved }) {
         </div>
       </div>
 
-      <!-- Part 4: Value per unit (Proxy) (Revealed once indicator is given) -->
+      <!-- Part 4: Value in operating year (Proxy) (Revealed once indicator is given) -->
       <div id="ocPart4" class="form-stack" ${src?.indicator ? '' : 'hidden'}>
         <div class="panel panel--soft stack-sm">
           <div class="cluster cluster--space-between">
             <div>
               <strong class="field-hint--primary">
-                4. ${isTh ? 'มูลค่าต่อหน่วย (ตัวแทนทางการเงิน / Financial Proxy)' : '4. Value per Unit (Financial Proxy)'}
+                4. ${isTh ? 'มูลค่าในปีดำเนินงาน (ตัวแทนทางการเงิน / Financial Proxy)' : 'Value in Operating Year (Financial Proxy)'}
               </strong>
               <p class="field-hint">
-                ${isTh ? 'ตัวแทนทางการเงินคือมูลค่าเทียบเคียงในตลาดหรือต้นทุนที่ประหยัดได้ต่อ 1 หน่วยของผลลัพธ์' : 'A financial proxy is the market equivalent value or cost avoided per 1 unit of this outcome.'}
+                ${isTh ? 'ตัวแทนทางการเงินคือมูลค่าเทียบเคียงในตลาดหรือต้นทุนที่ประหยัดได้ทั้งหมดของผลลัพธ์นี้ ในปีที่ดำเนินงาน' : 'A financial proxy is the market equivalent value or cost avoided for this outcome in the operating year.'}
               </p>
             </div>
             <button type="button" class="btn btn-secondary btn-sm" id="btnPickProxyFromLib">
@@ -434,24 +435,10 @@ function openOutcomeModal({ initialData = null, onSaved }) {
           <div class="form-row">
             <div class="field">
               <label class="field-label" for="ocProxyValue">
-                ${isTh ? 'มูลค่าต่อหน่วย' : 'Value per unit'} (${escapeHtml(project.currency)})
+                ${isTh ? 'มูลค่าในปีดำเนินงาน (บาทต่อปี)' : 'Value in operating year (THB per year)'}
                 ${reqTag(isTh)}
               </label>
               <input type="number" id="ocProxyValue" name="proxy_value" min="0" step="0.01" class="input" value="${src?.proxy_value ?? ''}" placeholder="2500" />
-            </div>
-
-            <div class="field">
-              <label class="field-label" for="ocProxyUnitSelect">${isTh ? 'หน่วยนับ' : 'Unit'} ${reqTag(isTh)}</label>
-              <select id="ocProxyUnitSelect" class="input">
-                ${[...PROXY_UNIT_SUGGESTIONS, '__other__'].map((u) => `
-                  <option value="${u}" ${(src?.proxy_unit === u || (!src?.proxy_unit && u === 'คน / ปี') || (u === '__other__' && src?.proxy_unit && !PROXY_UNIT_SUGGESTIONS.includes(src.proxy_unit))) ? 'selected' : ''}>
-                    ${u === '__other__' ? (isTh ? 'อื่น ๆ (ระบุ)' : 'Other (specify)') : displayUnit(u)}
-                  </option>
-                `).join('')}
-              </select>
-              <div id="customProxyUnitRow" class="stack-xs" ${src?.proxy_unit && !PROXY_UNIT_SUGGESTIONS.includes(src.proxy_unit) ? '' : 'hidden'}>
-                <input class="input" name="proxy_unit" id="customProxyUnitInput" value="${escapeHtml(src?.proxy_unit || (isTh ? 'คน / ปี' : 'person / year'))}" placeholder="${isTh ? 'ระบุหน่วยนับ' : 'Specify unit'}" aria-label="${isTh ? 'ระบุหน่วยนับ' : 'Specify unit'}" />
-              </div>
             </div>
           </div>
 
@@ -537,9 +524,6 @@ function openOutcomeModal({ initialData = null, onSaved }) {
   const ocQuantity = document.getElementById('ocQuantity');
   const ocIndicator = document.getElementById('ocIndicator');
   const ocProxyValue = document.getElementById('ocProxyValue');
-  const ocProxyUnitSelect = document.getElementById('ocProxyUnitSelect');
-  const customProxyUnitRow = document.getElementById('customProxyUnitRow');
-  const customProxyUnitInput = document.getElementById('customProxyUnitInput');
   const ocProxySource = document.getElementById('ocProxySource');
   const btnSave = document.getElementById('btnSaveOutcomeDirect');
   // Disclosure-style button (same look as "5. Advanced"); ocValueToggle.checked = expanded = money value on
@@ -597,16 +581,6 @@ function openOutcomeModal({ initialData = null, onSaved }) {
       if (found) {
         if (found.polarity) ocPolaritySelect.value = found.polarity;
         if (found.defaultProxy && !ocProxyValue.value) ocProxyValue.value = found.defaultProxy;
-        if (found.unit) {
-          if (PROXY_UNIT_SUGGESTIONS.includes(found.unit)) {
-            ocProxyUnitSelect.value = found.unit;
-            customProxyUnitRow.hidden = true;
-          } else {
-            ocProxyUnitSelect.value = '__other__';
-            customProxyUnitRow.hidden = false;
-            customProxyUnitInput.value = found.unit;
-          }
-        }
       }
     }
     checkVisibilityAndValidity();
@@ -650,15 +624,6 @@ function openOutcomeModal({ initialData = null, onSaved }) {
   ocProxyValue.addEventListener('input', checkVisibilityAndValidity);
   ocProxySource.addEventListener('input', checkVisibilityAndValidity);
 
-  ocProxyUnitSelect.addEventListener('change', () => {
-    if (ocProxyUnitSelect.value === '__other__') {
-      customProxyUnitRow.hidden = false;
-      customProxyUnitInput.focus();
-    } else {
-      customProxyUnitRow.hidden = true;
-      customProxyUnitInput.value = ocProxyUnitSelect.value;
-    }
-  });
 
   document.getElementById('btnPickProxyFromLib')?.addEventListener('click', () => {
     openProxyLibraryModal({
@@ -666,16 +631,6 @@ function openOutcomeModal({ initialData = null, onSaved }) {
         ocValueToggle.checked = true; // picking a library value means the user wants a money value
         applyValueMode();
         if (ocProxyValue) ocProxyValue.value = selectedProxy.value;
-        if (selectedProxy.unit) {
-          if (PROXY_UNIT_SUGGESTIONS.includes(selectedProxy.unit)) {
-            ocProxyUnitSelect.value = selectedProxy.unit;
-            customProxyUnitRow.hidden = true;
-          } else {
-            ocProxyUnitSelect.value = '__other__';
-            customProxyUnitRow.hidden = false;
-            customProxyUnitInput.value = selectedProxy.unit;
-          }
-        }
         if (ocProxySource) {
           ocProxySource.value = selectedProxy.source + (selectedProxy.reference_year ? ` (${isTh ? 'ปี' : 'year'} ${selectedProxy.reference_year})` : '');
         }
@@ -725,20 +680,15 @@ function openOutcomeModal({ initialData = null, onSaved }) {
     }
     const needValue = valueIsNeeded();
     if (needValue && (ocProxyValue.value.trim() === '' || Number.isNaN(parseFloat(ocProxyValue.value)) || parseFloat(ocProxyValue.value) < 0)) {
-      return fail(ocProxyValue, isTh ? 'กรุณาระบุมูลค่าต่อหน่วย' : 'Please enter the value per unit.');
-    }
-    if (needValue && ocProxyUnitSelect.value === '__other__' && !customProxyUnitInput.value.trim()) {
-      customProxyUnitRow.hidden = false;
-      return fail(customProxyUnitInput, isTh ? 'เลือก “อื่น ๆ” ที่หน่วยนับแล้ว กรุณาพิมพ์หน่วยนับ' : 'You chose “Other” for the unit — please type the unit.');
+      return fail(ocProxyValue, isTh ? 'กรุณาระบุมูลค่าในปีดำเนินงาน (บาทต่อปี)' : 'Please enter the value in the operating year (THB per year).');
     }
     if (needValue && !ocProxySource.value.trim()) {
-      return fail(ocProxySource, isTh ? 'กรุณาระบุแหล่งที่มาของมูลค่าต่อหน่วย' : 'Please enter where the value per unit comes from.');
+      return fail(ocProxySource, isTh ? 'กรุณาระบุแหล่งที่มาของมูลค่าในปีดำเนินงาน' : 'Please enter where the operating-year value comes from.');
     }
 
     // No money value (allowed for S2-S4): sent as null = "not monetised", never as 0.
     const proxyVal = needValue && ocProxyValue.value ? parseFloat(ocProxyValue.value) : null;
     const qty = parseFloat(ocQuantity.value) || 0;
-    const proxyUnit = ocProxyUnitSelect.value === '__other__' ? customProxyUnitInput.value.trim() : ocProxyUnitSelect.value;
 
     const data = {
       name,
@@ -748,7 +698,7 @@ function openOutcomeModal({ initialData = null, onSaved }) {
       indicator: ocIndicator.value.trim(),
       quantity: qty,
       proxy_value: proxyVal,
-      proxy_unit: needValue ? proxyUnit || 'คน / ปี' : null,
+      proxy_unit: needValue ? 'บาท / ปี' : null, // fixed: the value is baht per operating year
       proxy_source: needValue ? ocProxySource.value.trim() : null,
       proxy_rationale: needValue ? document.getElementById('ocProxyRationale')?.value.trim() || null : null,
       duration_years: parseInt(form.duration_years.value, 10) || 1,
